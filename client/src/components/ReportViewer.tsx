@@ -18,17 +18,21 @@ export const ReportViewer: React.FC<Props> = ({ report, currentTargetUrl }) => {
   if (!report) return null;
 
   return (
-    <div style={{ marginTop: '24px', background: '#1e1e1e', padding: '20px', borderRadius: '8px', border: '1px solid #333' }}>
-      <h2>📊 Reporte de Análisis (ID: {report.runId})</h2>
-      <p style={{ color: '#9ca3af' }}>Total de hallazgos detectados: <strong>{report.findingsCount}</strong></p>
+    <div style={{ marginTop: '24px', background: '#111827', padding: '20px', borderRadius: '8px', border: '1px solid #1f2937', maxWidth: '1200px', margin: '24px auto 0 auto' }}>
+      <h2 style={{ margin: '0 0 6px 0', fontSize: '20px', color: '#f9fafb' }}>📊 Reporte Transaccional de Análisis (ID: {report.runId})</h2>
+      <p style={{ color: '#9ca3af', margin: '0 0 16px 0', fontSize: '13px' }}>
+        Total de verificaciones realizadas: <strong>{report.findingsCount}</strong>
+      </p>
 
       {report.aiSummary && <AiSummaryBanner summary={report.aiSummary} />}
 
-      <h3 style={{ borderBottom: '1px solid #444', paddingBottom: '8px' }}>Hallazgos Técnicos</h3>
+      <h3 style={{ borderBottom: '1px solid #374151', paddingBottom: '8px', marginTop: '16px', color: '#e5e7eb', fontSize: '16px' }}>
+        Trazabilidad y Hallazgos Técnicos
+      </h3>
 
       {report.findings.map((item, index) => (
         <FindingCard
-          key={index}
+          key={item.findingId || index}
           item={item}
           currentTargetUrl={currentTargetUrl}
           onSelectFinding={setSelectedFinding}

@@ -9,6 +9,7 @@ import {
   getEnrichFindingsPrompt,
   getNetworkConfigPrompt,
 } from './gemini/gemini.prompts.js';
+import { buildFormAuditPrompt, FormAuditAiInput } from './gemini/formAudit.prompt.js';
 
 export class GeminiAIService {
   private ai: GoogleGenAI;
@@ -51,6 +52,28 @@ export class GeminiAIService {
     }
 
     throw lastError || new Error('Todos los modelos de respaldo de Gemini fallaron.');
+  }
+
+  public async evaluateFormResponseWithAi(input: FormAuditAiInput): Promise<{
+    resilienceStatus: string;
+    technicalAnalysis: string;
+    recommendedAction: string;
+  }> {
+    const defaultResponse = {
+      resilienceStatus: input.httpStatus >= 500 ? 'RISK_DETECTED' : 'SECURE',
+      technicalAnalysis: `El servidor respondió con código HTTP ${input.httpStatus}.`,
+      recommendedAction: 'Garantizar consultas parametrizadas (Prepared Statements) y validación de entradas.',
+    };
+
+    try {
+      console.log(`🤖 [Gemini AI] Evaluando respuesta transaccional del formulario...`);
+      const prompt = buildFormAuditPrompt(input);
+      const text = await this.executeWithFallback('', prompt, 500);
+      return this.parseJsonResponse(text, defaultResponse);
+    } catch {
+      console.warn('⚠️ [Gemini AI] Error evaluando respuesta del formulario con IA. Usando dictamen por defecto.');
+      return defaultResponse;
+    }
   }
 
   public async generateSuiteFromPrompt(promptText: string): Promise<GeneratedSuiteConfig> {

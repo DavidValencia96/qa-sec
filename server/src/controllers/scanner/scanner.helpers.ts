@@ -21,7 +21,7 @@ export const executeModulesAndSaveFindings = async (
       await saveFinding({
         id: findingId,
         test_run_id: runId,
-        module_name: finding.moduleName,
+        type: finding.moduleName, 
         severity: finding.severity,
         title: finding.title,
         description: finding.description,
@@ -29,7 +29,7 @@ export const executeModulesAndSaveFindings = async (
         target_url: finding.targetUrl || targetUrl,
         evidence: finding.evidence || null,
         raw_payload: finding.rawPayload,
-      });
+      } as any);
 
       allFindings.push(finding);
     }

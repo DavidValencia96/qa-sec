@@ -1,6 +1,7 @@
 export interface FindingDetail {
   findingId?: string;
   moduleName?: string;
+  type?: string;
   severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
   title: string;
   description: string;
@@ -25,5 +26,5 @@ export interface ReportData {
   aiSummary?: {
     executiveSummary: string;
     remediationPriority: string[];
-  };
+  } | null;
 }

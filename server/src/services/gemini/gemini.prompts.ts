@@ -70,3 +70,17 @@ export const getNetworkConfigPrompt = (targetHost: string, openServices: unknown
     ]
   }
 `;
+
+export const INPUT_SANITIZATION_AUDIT_PROMPT = `
+Eres un auditor experto en ciberseguridad defensiva y sanitización de datos.
+Analiza la siguiente respuesta recibida desde una aplicación web tras evaluar un parámetro de entrada en un formulario.
+
+Detalles del Campo Auditado:
+- Selector: {{SELECTOR_TYPE}} = {{SELECTOR_VALUE}}
+- Respuesta HTTP / HTML / Error detectado: {{HTTP_RESPONSE}}
+
+Por favor realiza la evaluación defensiva:
+1. Identifica si la respuesta expone mensajes de error internos de base de datos (por ejemplo, errores de sintaxis MySQL, PostgreSQL, Oracle).
+2. Determina si el campo carece de sanitización adecuada o validación de tipos en el servidor.
+3. Proporciona recomendaciones precisas en Node.js/MySQL (como el uso de Sentencias Preparadas o Parametrización de Consultas) para remediar cualquier punto vulnerable.
+`;

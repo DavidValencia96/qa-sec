@@ -1,28 +1,30 @@
 import { getDbPool } from '../config/database.js';
 import { normalizeFindingPayload, type ExtendedFindingInput } from './findings/findings.helpers.js';
 
-export const saveFinding = async (finding: ExtendedFindingInput): Promise<void> => {
-  const query = `
-    INSERT INTO findings (id, test_run_id, module_name, severity, title, description, recommendation, target_url, evidence, raw_payload)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `;
-
+function buildInsertValues(finding: ExtendedFindingInput) {
   const { targetUrlValue, evidenceValue, formattedPayload } = normalizeFindingPayload(finding);
+  const findingType = finding.type || finding.module_name || 'UNKNOWN_MODULE';
 
-  const values = [
+  return [
     finding.id,
     finding.test_run_id,
-    finding.module_name,
+    findingType,
     finding.severity,
     finding.title,
     finding.description,
-    finding.recommendation,
+    finding.recommendation || null,
     targetUrlValue,
     evidenceValue,
     formattedPayload,
   ];
+}
 
-  await getDbPool().execute(query, values);
+export const saveFinding = async (finding: ExtendedFindingInput): Promise<void> => {
+  const query = `
+    INSERT INTO findings (id, test_run_id, type, severity, title, description, recommendation, target_url, evidence, raw_payload)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+  await getDbPool().execute(query, buildInsertValues(finding));
 };
 
 export const getFindingsByRunId = async (runId: string): Promise<Record<string, unknown>[]> => {
@@ -30,7 +32,7 @@ export const getFindingsByRunId = async (runId: string): Promise<Record<string, 
     SELECT 
       id,
       test_run_id AS testRunId,
-      module_name AS moduleName,
+      type AS moduleName,
       severity,
       title,
       description,
@@ -51,7 +53,7 @@ export const getFullReportByRunId = async (runId: string) => {
   const query = `
     SELECT 
       f.id AS findingId,
-      f.module_name AS moduleName,
+      f.type AS moduleName,
       f.severity,
       f.title,
       f.description,

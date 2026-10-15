@@ -15,14 +15,17 @@ export const insertTestSuiteRecord = async (
   suiteId: string,
   projectId: string,
   userPrompt: string,
-  suiteConfig: GeneratedSuiteConfig
+  suiteConfig: GeneratedSuiteConfig,
+  promptId?: string
 ): Promise<void> => {
-  const query = 'INSERT INTO test_suites (id, project_id, name, prompt_input, modules_config) VALUES (?, ?, ?, ?, ?)';
+  const query =
+    'INSERT INTO test_suites (id, project_id, name, prompt_input, prompt_id, modules_config) VALUES (?, ?, ?, ?, ?, ?)';
   await getDbPool().execute(query, [
     suiteId,
     projectId,
-    suiteConfig.suiteName,
+    suiteConfig.suiteName || 'Suite General QA',
     userPrompt || null,
+    promptId || null,
     JSON.stringify(suiteConfig),
   ]);
 };
@@ -30,13 +33,13 @@ export const insertTestSuiteRecord = async (
 export interface PromptPreset {
   id: number;
   title: string;
-  promptText: string;
+  prompt_text: string;
   category: string;
 }
 
 export const fetchPromptPresets = async (): Promise<PromptPreset[]> => {
   const [rows] = await getDbPool().query(
-    'SELECT id, title, prompt_text AS promptText, category FROM prompt_presets ORDER BY id ASC'
+    'SELECT id, title, prompt_text, category FROM prompt_presets ORDER BY id ASC'
   );
   return rows as PromptPreset[];
 };

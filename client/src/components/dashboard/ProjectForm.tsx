@@ -62,7 +62,6 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
           alignItems: 'center',
         }}
       >
-        {/* Botón 1: Inicializar Proyecto */}
         <button
           onClick={onInitProject}
           disabled={isRunning}
@@ -94,7 +93,6 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
           1. Inicializar Proyecto
         </button>
 
-        {/* Botón Nuevo: Nuevo Análisis (Habilitado si está corriendo o para reiniciar) */}
         {isRunning && (
           <button
             onClick={onResetAnalysis}

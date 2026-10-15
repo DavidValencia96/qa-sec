@@ -1,6 +1,8 @@
 import { FindingEntity } from '../db.types.js';
 
 export type ExtendedFindingInput = FindingEntity & {
+  type?: string;
+  module_name?: string;
   targetUrl?: string;
   rawPayload?: unknown;
 };

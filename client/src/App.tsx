@@ -1,17 +1,21 @@
 import { useState, useEffect } from 'react';
 import { createProjectApi, runTestApi, getReportApi } from './services/api.client';
 import { AISuiteGenerator } from './components/AISuiteGenerator';
+import { InputSuiteGenerator } from './components/InputSuiteGenerator';
 import { ReportViewer, type ReportData } from './components/ReportViewer';
 import { ReportHistory } from './components/ReportHistory';
 import { NetworkConfigAuditor } from './components/NetworkConfigAuditor';
 
 import { NavigationTabs, type TabType } from './components/dashboard/NavigationTabs';
 import { ProjectForm } from './components/dashboard/ProjectForm';
+import { InputInjectionAuditor } from './components/dashboard/InputInjectionAuditor';
 import { ScanProgressBar } from './components/dashboard/ScanProgressBar';
+import type { TargetInput } from './components/dashboard/dashboard.types';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<TabType>('scanner');
-  const [targetUrl, setTargetUrl] = useState('https://www.URL.co/');
+  const [targetUrl, setTargetUrl] = useState('https://www.google.com/');
+  const [targetInputs, setTargetInputs] = useState<TargetInput[]>([]);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [suiteId, setSuiteId] = useState<string | null>(null);
   const [report, setReport] = useState<ReportData | null>(null);
@@ -25,10 +29,18 @@ export function App() {
       interval = setInterval(() => {
         setProgress((prev) => {
           if (prev < 30) {
-            setStatusText('Interceptando tráfico de red y encabezados HTTP...');
+            setStatusText(
+              activeTab === 'injection'
+                ? 'Localizando campos objetivo en el DOM con Playwright...'
+                : 'Interceptando tráfico de red y encabezados HTTP...'
+            );
             return prev + 5;
           } else if (prev < 65) {
-            setStatusText('Escaneando archivos sensibles (.env, .git, config)...');
+            setStatusText(
+              activeTab === 'injection'
+                ? 'Analizando tipos de datos, atributos de sanitización y respuestas...'
+                : 'Escaneando archivos sensibles y configuraciones...'
+            );
             return prev + 5;
           } else if (prev < 90) {
             setStatusText('Analizando respuestas y ejecutando análisis defensivo con Gemini...');
@@ -39,7 +51,7 @@ export function App() {
       }, 600);
     }
     return () => clearInterval(interval);
-  }, [running]);
+  }, [running, activeTab]);
 
   const handleInitProject = async () => {
     let formattedUrl = targetUrl.trim();
@@ -54,6 +66,7 @@ export function App() {
     }
   };
 
+  // Ejecución para la Pestaña 1 (Escáner General)
   const handleRunScanner = async () => {
     if (!suiteId) return alert('Debes generar o seleccionar una suite primero.');
     setProgress(5);
@@ -81,7 +94,38 @@ export function App() {
     }
   };
 
-  // Función para cancelar la ejecución y restablecer la interfaz para un nuevo análisis
+  // Ejecución para la Pestaña 2 (Inyección & Inputs Sec)
+  const handleRunScannerWithInputs = async () => {
+    if (!suiteId) return alert('Debes generar o seleccionar una suite primero.');
+    if (targetInputs.length === 0) {
+      alert('Por favor agrega al menos un campo/localizador (ID, Name, XPath o CSS) para auditar.');
+      return;
+    }
+    setProgress(5);
+    setStatusText('Iniciando navegador e interactuando con los campos objetivo...');
+    setRunning(true);
+    setReport(null);
+
+    try {
+      const data = await runTestApi(suiteId, targetUrl, targetInputs);
+      if (data.success) {
+        setProgress(95);
+        setStatusText('Generando reporte técnico de sanitización...');
+        const reportData = await getReportApi(data.runId);
+        setProgress(100);
+        setReport(reportData as ReportData);
+      } else {
+        alert(`Error durante la ejecución del análisis de inputs: ${data.error || 'Fallo desconocido'}`);
+        setProgress(0);
+      }
+    } catch (err) {
+      alert(`Error de conexión con el backend: ${(err as Error).message}`);
+      setProgress(0);
+    } finally {
+      setRunning(false);
+    }
+  };
+
   const handleResetAnalysis = () => {
     setRunning(false);
     setProgress(0);
@@ -89,6 +133,7 @@ export function App() {
     setReport(null);
     setSuiteId(null);
     setProjectId(null);
+    setTargetInputs([]);
   };
 
   return (
@@ -101,15 +146,17 @@ export function App() {
         background: '#121212',
         color: '#fff',
         borderRadius: '8px',
-        boxSizing: 'border-box'
+        boxSizing: 'border-box',
       }}
     >
-      <h1 style={{ marginTop: 0, textAlign: 'center', marginBottom: '50px' }}>🛡️ QA-Sec Suite Dashboard</h1>
+      <h1 style={{ marginTop: 0, textAlign: 'center', marginBottom: '40px' }}>
+        🛡️ QA-Sec Suite Dashboard
+      </h1>
 
       {/* MENÚ DE PESTAÑAS */}
       <NavigationTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-      {/* PESTAÑA 1: ESCÁNER Y DISEÑADOR IA */}
+      {/* PESTAÑA 1: ESCÁNER GENERAL Y DISEÑADOR IA */}
       {activeTab === 'scanner' && (
         <div>
           <ProjectForm
@@ -160,10 +207,63 @@ export function App() {
         </div>
       )}
 
-      {/* PESTAÑA 2: AUDITORÍA DEFENSIVA DE CONFIGURACIÓN DE RED */}
+      {/* PESTAÑA 2: MÓDULO DE INYECCIÓN & INPUTS SEC */}
+      {activeTab === 'injection' && (
+        <div>
+          <InputInjectionAuditor
+            targetUrl={targetUrl}
+            onTargetUrlChange={setTargetUrl}
+            targetInputs={targetInputs}
+            onTargetInputsChange={setTargetInputs}
+            onInitProject={handleInitProject}
+            onResetAnalysis={handleResetAnalysis}
+            isRunning={running}
+          />
+
+          {projectId && (
+            <InputSuiteGenerator
+              projectId={projectId}
+              isScanRunning={running}
+              onSuiteCreated={(id: string) => {
+                setSuiteId(id);
+                alert('Suite de prueba de inputs configurada por Gemini AI.');
+              }}
+            />
+          )}
+
+          {suiteId && (
+            <div style={{ marginTop: '16px' }}>
+              <button
+                onClick={handleRunScannerWithInputs}
+                disabled={running}
+                style={{
+                  width: '100%',
+                  background: running ? '#374151' : '#2563eb',
+                  color: '#fff',
+                  padding: '12px 20px',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  cursor: running ? 'not-allowed' : 'pointer',
+                  opacity: running ? 0.7 : 1,
+                }}
+              >
+                {running ? 'Auditando Inputs...' : '🚀 Ejecutar Auditoría de Inputs'}
+              </button>
+
+              {running && <ScanProgressBar progress={progress} statusText={statusText} />}
+            </div>
+          )}
+
+          <ReportViewer report={report} currentTargetUrl={targetUrl} />
+        </div>
+      )}
+
+      {/* PESTAÑA 3: AUDITORÍA DEFENSIVA DE CONFIGURACIÓN DE RED */}
       {activeTab === 'network' && <NetworkConfigAuditor />}
 
-      {/* PESTAÑA 3: HISTORIAL Y BUSCADOR */}
+      {/* PESTAÑA 4: HISTORIAL Y BUSCADOR */}
       {activeTab === 'history' && <ReportHistory />}
     </div>
   );

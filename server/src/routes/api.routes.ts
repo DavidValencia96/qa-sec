@@ -7,6 +7,7 @@ import {
   handleAnalyzeNetworkConfig,
   getTestRunsHistory,
   getPromptPresets,
+  getInputPrompts,
 } from '../controllers/index.js';
 
 const router = Router();
@@ -25,8 +26,9 @@ router.post('/network/analyze-config', handleAnalyzeNetworkConfig);
 // Historial
 router.get('/history', getTestRunsHistory);
 
+// Prompts y Presets
 router.get('/prompts/presets', getPromptPresets);
-
+router.get('/prompts', getInputPrompts);
 
 export const apiRouter = router;
 export default router;

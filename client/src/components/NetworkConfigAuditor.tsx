@@ -52,7 +52,7 @@ export const NetworkConfigAuditor: React.FC = () => {
             type="text"
             value={targetHost}
             onChange={(e) => setTargetHost(e.target.value)}
-            placeholder="ej. https://www.URL.co o 192.168.1.10"
+            placeholder="ej. https://www.google.com/ o 192.168.1.10"
             style={{ flex: 1, padding: '10px', background: '#09090b', border: '1px solid #444', color: '#fff', borderRadius: '4px', outline: 'none' }}
           />
           <button

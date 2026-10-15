@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { getPromptPresetsApi, generateSuiteAIApi } from '../services/api.client.js';
+import { getPromptPresetsApi, generateSuiteAIApi } from '../services/api.client';
 
 interface PromptPreset {
   id: number;
   title: string;
-  promptText: string;
+  prompt_text: string;
+  category?: string;
 }
 
 export interface GeneratedSuiteResponse {
@@ -33,21 +34,48 @@ export const AISuiteGenerator: React.FC<AISuiteGeneratorProps> = ({
   const [presets, setPresets] = useState<PromptPreset[]>([]);
   const [selectedPresetId, setSelectedPresetId] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const [fetchingPresets, setFetchingPresets] = useState<boolean>(true);
+  const [errorPresets, setErrorPresets] = useState<string | null>(null);
+  const [reloadTrigger, setReloadTrigger] = useState<number>(0);
   const [isHovered, setIsHovered] = useState<boolean>(false);
 
   useEffect(() => {
+    let isMounted = true;
+
     const loadPresets = async () => {
       try {
         const data = await getPromptPresetsApi();
-        if (data.success) {
-          setPresets(data.presets);
+        if (isMounted) {
+          if (data && data.success && Array.isArray(data.presets)) {
+            setPresets(data.presets);
+            setErrorPresets(null);
+          } else {
+            throw new Error('Respuesta inválida o sin datos en prompt_presets.');
+          }
         }
       } catch (error) {
-        console.error('Error al cargar plantillas de prompts:', error);
+        if (isMounted) {
+          console.error('Error al cargar plantillas de prompts:', error);
+          setErrorPresets((error as Error).message);
+        }
+      } finally {
+        if (isMounted) {
+          setFetchingPresets(false);
+        }
       }
     };
+
     loadPresets();
-  }, []);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [reloadTrigger]);
+
+  const handleRetryFetch = () => {
+    setFetchingPresets(true);
+    setReloadTrigger((prev) => prev + 1);
+  };
 
   const handlePresetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const presetId = e.target.value;
@@ -60,7 +88,7 @@ export const AISuiteGenerator: React.FC<AISuiteGeneratorProps> = ({
 
     const foundPreset = presets.find((p) => String(p.id) === presetId);
     if (foundPreset) {
-      setPrompt(foundPreset.promptText);
+      setPrompt(foundPreset.prompt_text);
     }
   };
 
@@ -93,41 +121,67 @@ export const AISuiteGenerator: React.FC<AISuiteGeneratorProps> = ({
     }
   };
 
-  const isDisabled = loading || isScanRunning || !prompt.trim() || !projectId;
+  const isDisabled = loading || isScanRunning || !prompt.trim() || !projectId || fetchingPresets;
 
   return (
     <div className="card prompt-designer-card" style={{ marginTop: '16px' }}>
-      <h3>🤖 Diseñador de Pruebas con Gemini AI</h3>
+      <h3 style={{ marginTop: 0, color: '#38bdf8' }}>🤖 Diseñador de Pruebas con Gemini AI</h3>
 
       {/* Selector de Plantillas Predefinidas */}
       <div style={{ marginBottom: '12px' }}>
         <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '6px', color: '#a0aec0' }}>
           Plantillas de Prompts Recomendados:
         </label>
-        <select
-          value={selectedPresetId}
-          onChange={handlePresetChange}
-          disabled={loading || isScanRunning}
-          style={{
-            width: '100%',
-            padding: '10px 14px',
-            backgroundColor: '#1a202c',
-            color: '#e2e8f0',
-            border: '1px solid #4a5568',
-            borderRadius: '6px',
-            fontSize: '0.9rem',
-            cursor: loading || isScanRunning ? 'not-allowed' : 'pointer',
-            opacity: loading || isScanRunning ? 0.5 : 1,
-            outline: 'none',
-          }}
-        >
-          <option value="">-- Selecciona un Prompt Predefinido o Escribe Uno Personalizado --</option>
-          {presets.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.title}
+
+        {fetchingPresets ? (
+          <p style={{ color: '#60a5fa', fontSize: '0.85rem' }}>🔄 Cargando plantillas desde la base de datos...</p>
+        ) : errorPresets ? (
+          <div style={{ marginBottom: '8px' }}>
+            <p style={{ color: '#f87171', fontSize: '0.85rem', margin: '0 0 6px 0' }}>⚠️ {errorPresets}</p>
+            <button
+              type="button"
+              onClick={handleRetryFetch}
+              style={{
+                background: '#374151',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '4px',
+                padding: '4px 10px',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+              }}
+            >
+              Reintentar Carga
+            </button>
+          </div>
+        ) : (
+          <select
+            value={selectedPresetId}
+            onChange={handlePresetChange}
+            disabled={loading || isScanRunning}
+            style={{
+              width: '100%',
+              padding: '10px 14px',
+              backgroundColor: '#1a202c',
+              color: '#e2e8f0',
+              border: '1px solid #4a5568',
+              borderRadius: '6px',
+              fontSize: '0.9rem',
+              cursor: loading || isScanRunning ? 'not-allowed' : 'pointer',
+              opacity: loading || isScanRunning ? 0.5 : 1,
+              outline: 'none',
+            }}
+          >
+            <option value="">
+              -- Selecciona un Prompt Predefinido o Escribe Uno Personalizado ({presets.length} disponibles) --
             </option>
-          ))}
-        </select>
+            {presets.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.title}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* Textarea para Prompt Editable */}

@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type TabType = 'scanner' | 'network' | 'history';
+export type TabType = 'scanner' | 'injection' | 'network' | 'history';
 
 interface NavigationTabsProps {
   activeTab: TabType;
@@ -12,11 +12,12 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({ activeTab, onTab
     <div
       style={{
         display: 'flex',
-        justifyContent: 'center', // 🎯 Centra los botones del menú
+        justifyContent: 'center',
         alignItems: 'center',
         gap: '12px',
         marginBottom: '24px',
         width: '100%',
+        flexWrap: 'wrap',
       }}
     >
       <button
@@ -35,6 +36,25 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({ activeTab, onTab
         }}
       >
         🚀 Escáner & Diseñador IA
+      </button>
+
+      {/* NUEVA PESTAÑA DEDICADA A INPUTS / INYECCIÓN */}
+      <button
+        onClick={() => onTabChange('injection')}
+        style={{
+          padding: '10px 18px',
+          borderRadius: '6px',
+          border: 'none',
+          fontSize: '0.9rem',
+          fontWeight: '600',
+          cursor: 'pointer',
+          backgroundColor: activeTab === 'injection' ? '#2563eb' : '#27272a',
+          color: '#ffffff',
+          boxShadow: activeTab === 'injection' ? '0 0 12px rgba(37, 99, 235, 0.4)' : 'none',
+          transition: 'all 0.2s ease',
+        }}
+      >
+        🎯 Inyección & Inputs Sec
       </button>
 
       <button
