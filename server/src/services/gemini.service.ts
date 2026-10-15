@@ -1,0 +1,174 @@
+import { GoogleGenAI } from '@google/genai';
+import { config } from '../config/env.js';
+import { GeneratedSuiteConfig, SummaryFindingInput, DefensivenessSummary } from './gemini.types.js';
+import {
+  DEFAULT_SUITE_CONFIG,
+  DEFAULT_EXECUTIVE_SUMMARY,
+  SYSTEM_PROMPT_SUITE_GENERATION,
+  getExecutiveSummaryPrompt,
+  getEnrichFindingsPrompt,
+  getNetworkConfigPrompt,
+} from './gemini/gemini.prompts.js';
+
+export class GeminiAIService {
+  private ai: GoogleGenAI;
+  private fallbackModels = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
+
+  constructor() {
+    this.ai = new GoogleGenAI({ apiKey: config.geminiApiKey });
+  }
+
+  private async executeWithFallback(systemPrompt: string, userPrompt: string, maxTokens: number): Promise<string> {
+    let lastError: unknown = null;
+
+    for (const modelName of this.fallbackModels) {
+      try {
+        const fetchPromise = this.ai.models.generateContent({
+          model: modelName,
+          contents: systemPrompt ? [systemPrompt, userPrompt] : [userPrompt],
+          config: {
+            maxOutputTokens: maxTokens,
+            temperature: 0.2,
+          },
+        });
+
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('TIMEOUT: Tiempo de espera agotado (15s)')), 15000)
+        );
+
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
+        const text = response.text || '';
+
+        console.log(`✅ [Gemini AI] HTTP 200 OK - Respuesta obtenida exitosamente usando el modelo: ${modelName}`);
+        return text;
+      } catch (error: unknown) {
+        lastError = error;
+        const errObj = error as { status?: string; code?: string; message?: string };
+        const status = errObj?.status || errObj?.code || 'ERROR';
+        const message = errObj?.message || String(error);
+        console.warn(`⚠️ [Gemini AI] HTTP ${status} en modelo ${modelName}:${message}. Reintentando con modelo de respaldo...`);
+      }
+    }
+
+    throw lastError || new Error('Todos los modelos de respaldo de Gemini fallaron.');
+  }
+
+  public async generateSuiteFromPrompt(promptText: string): Promise<GeneratedSuiteConfig> {
+    try {
+      console.log('🤖 [Gemini AI] Enviando prompt para generación de suite...');
+      const text = await this.executeWithFallback(SYSTEM_PROMPT_SUITE_GENERATION, promptText, 400);
+      return this.parseJsonResponse<GeneratedSuiteConfig>(text, DEFAULT_SUITE_CONFIG);
+    } catch {
+      console.warn('❌ [Gemini AI] No se pudo generar la suite con ningún modelo. Aplicando configuración de respaldo por defecto.');
+      return DEFAULT_SUITE_CONFIG;
+    }
+  }
+
+  public async generateExecutiveSummary(findings: SummaryFindingInput[]): Promise<DefensivenessSummary> {
+    if (!findings || findings.length === 0) {
+      console.log('ℹ️ [Gemini AI] No hay hallazgos para analizar.');
+      return {
+        executiveSummary: 'No se detectaron hallazgos de seguridad durante esta ejecución.',
+        remediationPriority: ['Mantener las configuraciones de seguridad actuales.'],
+      };
+    }
+
+    try {
+      console.log(`🤖 [Gemini AI] Enviando ${findings.length} hallazgo(s) para resumen ejecutivo...`);
+      const prompt = getExecutiveSummaryPrompt(findings);
+      const text = await this.executeWithFallback('', prompt, 500);
+      return this.parseJsonResponse<DefensivenessSummary>(text, DEFAULT_EXECUTIVE_SUMMARY);
+    } catch {
+      console.warn('❌ [Gemini AI] No se pudo generar el resumen ejecutivo con ningún modelo. Usando resumen por defecto.');
+      return DEFAULT_EXECUTIVE_SUMMARY;
+    }
+  }
+
+  public async enrichFindingsWithAiRecommendations(findings: any[]): Promise<any[]> {
+    if (!findings || findings.length === 0) return findings;
+
+    const mappedFindings = findings.map((f) => ({
+      id: f.id || f.findingId,
+      title: f.title,
+      severity: f.severity,
+      description: f.description,
+      evidence: f.evidence?.substring(0, 300),
+    }));
+
+    try {
+      const prompt = getEnrichFindingsPrompt(mappedFindings);
+      const text = await this.executeWithFallback('', prompt, 800);
+      const parsed = this.parseJsonResponse<{ mitigations: Array<{ id: string; recommendation: string }> }>(text, { mitigations: [] });
+
+      return findings.map((finding) => {
+        const aiMitigation = parsed.mitigations.find((m) => m.id === (finding.id || finding.findingId));
+        return {
+          ...finding,
+          recommendation: aiMitigation?.recommendation || finding.recommendation,
+        };
+      });
+    } catch {
+      console.warn('⚠️ [Gemini AI] No se pudieron enriquecer las recomendaciones. Usando recomendaciones base del módulo.');
+      return findings;
+    }
+  }
+
+  public async analyzeNetworkConfigurationWithAi(
+    targetHost: string,
+    openServices: Array<{ port: number; service: string }>
+  ): Promise<{
+    riskAssessment: string;
+    mitigations: Array<{ port: number; recommendation: string }>;
+  }> {
+    if (!openServices || openServices.length === 0) {
+      return {
+        riskAssessment: `🟢 Perímetro de Red Seguro: La auditoría en tiempo real no detectó puertos ni servicios TCP abiertos/expuestos públicamente en "${targetHost}". La superficie de exposición de red se encuentra minimizada.`,
+        mitigations: [
+          {
+            port: 0,
+            recommendation: 'Políticas de Firewall: Mantener activas las reglas de denegación por defecto (DEFAULT DROP) en UFW/Iptables para tráfico entrante no autorizado.',
+          },
+          {
+            port: 0,
+            recommendation: 'Monitoreo Preventivo: Configurar un sistema de detección de intrusos (IDS/Fail2ban) para registrar e inspeccionar intentos de escaneo de puertos persistentes.',
+          },
+        ],
+      };
+    }
+
+    try {
+      console.log(`🤖 [Gemini AI] Evaluando configuración defensiva de red para ${targetHost}...`);
+      const prompt = getNetworkConfigPrompt(targetHost, openServices);
+      const text = await this.executeWithFallback('', prompt, 700);
+      return this.parseJsonResponse(text, {
+        riskAssessment: `Análisis defensivo completado para ${targetHost}.`,
+        mitigations: [],
+      });
+    } catch {
+      console.warn('⚠️ [Gemini AI] Error analizando configuración de red. Retornando respuesta de respaldo.');
+      return {
+        riskAssessment: `Se identificaron ${openServices.length} puerto(s) abierto(s) en ${targetHost}, pero la IA no pudo procesar la recomendación detallada.`,
+        mitigations: openServices.map((s) => ({
+          port: s.port,
+          recommendation: `Restringir el acceso al servicio ${s.service} (Puerto ${s.port}) utilizando reglas de firewall o VPN.`,
+        })),
+      };
+    }
+  }
+
+  private parseJsonResponse<T>(text: string, defaultValue: T): T {
+    try {
+      const cleanedText = text
+        .replace(/```json/gi, '')
+        .replace(/```/g, '')
+        .trim();
+
+      const match = cleanedText.match(/\{[\s\S]*\}/);
+      if (!match) return defaultValue;
+
+      return JSON.parse(match[0]) as T;
+    } catch {
+      return defaultValue;
+    }
+  }
+}
