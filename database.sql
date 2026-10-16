@@ -243,3 +243,16 @@ CREATE TABLE IF NOT EXISTS cve_ai_cache (
     urgency ENUM('CRITICAL', 'HIGH', 'MEDIUM', 'LOW') NOT NULL DEFAULT 'MEDIUM',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
+
+
+CREATE TABLE IF NOT EXISTS sast_audit_history (
+  id VARCHAR(64) PRIMARY KEY,
+  file_name VARCHAR(255) DEFAULT 'snippet.txt',
+  file_type VARCHAR(50) NOT NULL,
+  health_score INT NOT NULL,
+  total_findings INT NOT NULL,
+  findings_json LONGTEXT NOT NULL,
+  remediated_code LONGTEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+

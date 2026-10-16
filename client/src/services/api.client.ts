@@ -100,3 +100,22 @@ export const analyzeCveWithAiApi = async (cveData: {
   if (!res.ok) throw new Error(`HTTP ${res.status}: Error al analizar CVE con IA.`);
   return res.json();
 };
+
+export const analyzeSastContentApi = async (payload: {
+  codeOrContent: string;
+  fileName?: string;
+  fileType?: 'code' | 'env' | 'package_json';
+  language?: string;
+}) => {
+  const res = await fetch(`${BASE_URL}/sast/analyze`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}: Error al realizar el análisis estático.`);
+  }
+
+  return res.json();
+};

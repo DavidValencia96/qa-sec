@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { config } from '../config/env.js';
-import { GeneratedSuiteConfig, SummaryFindingInput, DefensivenessSummary } from './gemini.types.js';
+import type { GeneratedSuiteConfig, SummaryFindingInput, DefensivenessSummary } from './gemini.types.js';
 import {
   DEFAULT_SUITE_CONFIG,
   DEFAULT_EXECUTIVE_SUMMARY,
@@ -11,12 +11,15 @@ import {
 } from './gemini/gemini.prompts.js';
 import { buildFormAuditPrompt, FormAuditAiInput } from './gemini/formAudit.prompt.js';
 import { buildCveAnalysisPrompt, CveAnalysisInput } from './gemini/cveAnalysis.prompt.js';
-import { CveAiAnalysisResult } from './gemini/cveAnalysis.types.js';
+import type { CveAiAnalysisResult } from './gemini/cveAnalysis.types.js';
+import { buildSastAnalysisPrompt, SastAiInput } from './gemini/sastAnalysis.prompt.js';
+import type { SastFinding } from '../modules/sast/sast.types.js';
+import { generateId } from '../utils/id.generator.js';
 
 export class GeminiAIService {
   private ai: GoogleGenAI;
   // Modelos ordenados por velocidad de respuesta y disponibilidad activa
-  private fallbackModels = ['gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash'];
+  private fallbackModels = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
 
   constructor() {
     this.ai = new GoogleGenAI({ apiKey: config.geminiApiKey });
@@ -190,11 +193,10 @@ export class GeminiAIService {
       console.log(`🤖 [Gemini AI] Analizando vulnerabilidad ${input.cveId}...`);
       const prompt = buildCveAnalysisPrompt(input);
       const text = await this.executeWithFallback('', prompt, 700);
-      
+
       const parsed = this.parseJsonResponse<any>(text, null);
       if (!parsed) return fallback;
 
-      // Mapeo flexible para asegurar la correcta lectura de campos independientemente de la nomenclatura que devuelva Gemini
       return {
         summaryEs: parsed.summaryEs || parsed.summary_es || parsed.summary || fallback.summaryEs,
         impactLevel: parsed.impactLevel || parsed.impact_level || parsed.impact || fallback.impactLevel,
@@ -203,6 +205,47 @@ export class GeminiAIService {
       };
     } catch (error) {
       console.error(`[!] Error al analizar ${input.cveId} con Gemini AI:`, (error as Error).message);
+      return fallback;
+    }
+  }
+
+  public async analyzeCodeWithAi(input: SastAiInput): Promise<{
+    score: number;
+    findings: SastFinding[];
+    remediatedCode: string;
+  }> {
+    const fallback = {
+      score: 70,
+      findings: [],
+      remediatedCode: input.codeOrContent,
+    };
+
+    try {
+      console.log('🤖 [Gemini AI] Ejecutando análisis estático de código (SAST)...');
+      const prompt = buildSastAnalysisPrompt(input);
+      const text = await this.executeWithFallback('', prompt, 1200);
+
+      const parsed = this.parseJsonResponse<any>(text, null);
+      if (!parsed) return fallback;
+
+      const aiFindings: SastFinding[] = (parsed.findings || []).map((f: any) => ({
+        id: generateId('sast'),
+        type: 'CODE_VULNERABILITY',
+        severity: f.severity || 'MEDIUM',
+        ruleId: 'SAST-AI-RULE',
+        title: f.title || 'Vulnerabilidad Detectada',
+        description: f.description || 'Hallazgo identificado mediante IA.',
+        lineNumber: f.lineNumber || undefined,
+        recommendation: f.recommendation || 'Revisar y aplicar corrección defensiva.',
+      }));
+
+      return {
+        score: typeof parsed.healthScore === 'number' ? parsed.healthScore : 80,
+        findings: aiFindings,
+        remediatedCode: parsed.remediatedCode || input.codeOrContent,
+      };
+    } catch (error) {
+      console.error('[!] Error en analyzeCodeWithAi:', (error as Error).message);
       return fallback;
     }
   }
