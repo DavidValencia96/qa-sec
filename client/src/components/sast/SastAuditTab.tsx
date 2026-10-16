@@ -3,6 +3,7 @@ import type { SastAnalysisResponse } from './sast.types';
 import { CodeSnippetEditor } from './CodeSnippetEditor';
 import { SastFindingsTable } from './SastFindingsTable';
 import { SastDiffModal } from './SastDiffModal';
+import { ReportExportActions } from '../report/ReportExportActions';
 import { analyzeSastContentApi } from '../../services/api.client';
 
 export const SastAuditTab: React.FC = () => {
@@ -47,7 +48,7 @@ export const SastAuditTab: React.FC = () => {
 
       {result && (
         <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#18181b', padding: '16px', borderRadius: '8px', border: '1px solid #27272a' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#18181b', padding: '16px', borderRadius: '8px', border: '1px solid #27272a', flexWrap: 'wrap', gap: '12px' }}>
             <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
               <div>
                 <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>Salud de Código:</span>
@@ -61,22 +62,33 @@ export const SastAuditTab: React.FC = () => {
               </div>
             </div>
 
-            {result.remediatedCode && (
-              <button
-                onClick={() => setShowDiffModal(true)}
-                style={{
-                  background: '#0284c7',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '6px',
-                  padding: '10px 16px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                }}
-              >
-                ✨ Ver Código Refactorizado por IA
-              </button>
-            )}
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <ReportExportActions
+                title={`Auditoría SAST - ${activeFileName}`}
+                summary={`Auditoría estática de código completada con un puntaje de salud de ${result.score}/100 y un total de ${result.totalFindings} hallazgos.`}
+                score={result.score}
+                findings={result.findings}
+                remediatedCode={result.remediatedCode}
+              />
+
+              {result.remediatedCode && (
+                <button
+                  type="button"
+                  onClick={() => setShowDiffModal(true)}
+                  style={{
+                    background: '#0284c7',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '10px 16px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                  }}
+                >
+                  ✨ Ver Refactorización
+                </button>
+              )}
+            </div>
           </div>
 
           <SastFindingsTable findings={result.findings} />

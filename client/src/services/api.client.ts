@@ -119,3 +119,47 @@ export const analyzeSastContentApi = async (payload: {
 
   return res.json();
 };
+
+export const exportReportApi = async (payload: {
+  title: string;
+  targetUrl?: string;
+  summary: string;
+  score?: number;
+  findings: Array<{
+    title: string;
+    severity: string;
+    description: string;
+    recommendation?: string;
+    evidence?: string;
+  }>;
+  remediatedCode?: string;
+  format: 'html' | 'markdown';
+}): Promise<void> => {
+  const res = await fetch(`${BASE_URL}/reports/export`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}: Error al exportar el reporte.`);
+  }
+
+  const blob = await res.blob();
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = downloadUrl;
+
+  const contentDisposition = res.headers.get('content-disposition');
+  let fileName = `reporte_seguridad.${payload.format === 'html' ? 'html' : 'md'}`;
+
+  if (contentDisposition && contentDisposition.includes('filename=')) {
+    fileName = contentDisposition.split('filename=')[1].replace(/"/g, '');
+  }
+
+  link.setAttribute('download', fileName);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(downloadUrl);
+};
