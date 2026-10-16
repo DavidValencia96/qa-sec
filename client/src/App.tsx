@@ -11,6 +11,7 @@ import { ProjectForm } from './components/dashboard/ProjectForm';
 import { InputInjectionAuditor } from './components/dashboard/InputInjectionAuditor';
 import { ScanProgressBar } from './components/dashboard/ScanProgressBar';
 import type { TargetInput } from './components/dashboard/dashboard.types';
+import { CveRadarTab } from './components/cve/CveRadarTab';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<TabType>('scanner');
@@ -263,7 +264,10 @@ export function App() {
       {/* PESTAÑA 3: AUDITORÍA DEFENSIVA DE CONFIGURACIÓN DE RED */}
       {activeTab === 'network' && <NetworkConfigAuditor />}
 
-      {/* PESTAÑA 4: HISTORIAL Y BUSCADOR */}
+      {/* PESTAÑA 4: Vulnerabilides actuales */}
+      {activeTab === 'cve' && <CveRadarTab />}
+
+      {/* PESTAÑA 5: HISTORIAL Y BUSCADOR */}
       {activeTab === 'history' && <ReportHistory />}
     </div>
   );

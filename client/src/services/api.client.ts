@@ -68,3 +68,35 @@ export async function getPromptsApi() {
   }
   return await response.json();
 }
+
+export const getLatestThreatsApi = async (
+  keyword?: string,
+  limit: number = 40,
+  startDate?: string,
+  endDate?: string
+) => {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (keyword) params.append('keyword', keyword);
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+
+  const res = await fetch(`${BASE_URL}/threats/latest?${params.toString()}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}: Error obteniendo vulnerabilidades.`);
+  return res.json();
+};
+
+export const analyzeCveWithAiApi = async (cveData: {
+  cveId: string;
+  severity: string;
+  cvssScore: number;
+  description: string;
+  targetStack?: string;
+}) => {
+  const res = await fetch(`${BASE_URL}/threats/analyze-cve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(cveData),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}: Error al analizar CVE con IA.`);
+  return res.json();
+};

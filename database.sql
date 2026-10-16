@@ -232,3 +232,14 @@ INSERT INTO input_payloads (id, prompt_id, payload_value, description) VALUES
 -- Logic / Precios
 ('pay-logic-01', 'p-logic-01', '-100', 'Monto numérico negativo para pruebas transaccionales')
 ON DUPLICATE KEY UPDATE payload_value=VALUES(payload_value), description=VALUES(description);
+
+
+-- Tabla de Caché y Persistencia de Análisis CVE por Gemini AI
+CREATE TABLE IF NOT EXISTS cve_ai_cache (
+    cve_id VARCHAR(50) PRIMARY KEY,
+    summary_es TEXT NOT NULL,
+    impact_level TEXT NOT NULL,
+    mitigation_steps JSON NOT NULL,
+    urgency ENUM('CRITICAL', 'HIGH', 'MEDIUM', 'LOW') NOT NULL DEFAULT 'MEDIUM',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;

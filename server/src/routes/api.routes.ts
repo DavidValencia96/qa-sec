@@ -8,6 +8,8 @@ import {
   getTestRunsHistory,
   getPromptPresets,
   getInputPrompts,
+  getLatestThreats,
+  analyzeCveWithAiHandler,
 } from '../controllers/index.js';
 
 const router = Router();
@@ -29,6 +31,10 @@ router.get('/history', getTestRunsHistory);
 // Prompts y Presets
 router.get('/prompts/presets', getPromptPresets);
 router.get('/prompts', getInputPrompts);
+
+// CiberThreat Feed & CVE Radar
+router.get('/threats/latest', getLatestThreats);
+router.post('/threats/analyze-cve', analyzeCveWithAiHandler);
 
 export const apiRouter = router;
 export default router;

@@ -3,4 +3,5 @@ export * from './portScan.controller.js';
 export * from './project.controller.js';
 export * from './scanner.controller.js';
 export * from './prompts.controller.js';
+export * from './cve.controller.js';
 export * from './api.types.js';

@@ -10,10 +10,13 @@ import {
   getNetworkConfigPrompt,
 } from './gemini/gemini.prompts.js';
 import { buildFormAuditPrompt, FormAuditAiInput } from './gemini/formAudit.prompt.js';
+import { buildCveAnalysisPrompt, CveAnalysisInput } from './gemini/cveAnalysis.prompt.js';
+import { CveAiAnalysisResult } from './gemini/cveAnalysis.types.js';
 
 export class GeminiAIService {
   private ai: GoogleGenAI;
-  private fallbackModels = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
+  // Modelos ordenados por velocidad de respuesta y disponibilidad activa
+  private fallbackModels = ['gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash'];
 
   constructor() {
     this.ai = new GoogleGenAI({ apiKey: config.geminiApiKey });
@@ -30,11 +33,13 @@ export class GeminiAIService {
           config: {
             maxOutputTokens: maxTokens,
             temperature: 0.2,
+            responseMimeType: 'application/json',
           },
         });
 
+        // Timeout ágil de 12s para saltar rápidamente si un modelo se congela
         const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('TIMEOUT: Tiempo de espera agotado (15s)')), 15000)
+          setTimeout(() => reject(new Error('TIMEOUT: Tiempo de espera agotado (12s)')), 12000)
         );
 
         const response = await Promise.race([fetchPromise, timeoutPromise]);
@@ -47,7 +52,7 @@ export class GeminiAIService {
         const errObj = error as { status?: string; code?: string; message?: string };
         const status = errObj?.status || errObj?.code || 'ERROR';
         const message = errObj?.message || String(error);
-        console.warn(`⚠️ [Gemini AI] HTTP ${status} en modelo ${modelName}:${message}. Reintentando con modelo de respaldo...`);
+        console.warn(`⚠️ [Gemini AI] HTTP ${status} en modelo ${modelName}: ${message}. Reintentando con modelo de respaldo...`);
       }
     }
 
@@ -177,6 +182,38 @@ export class GeminiAIService {
         })),
       };
     }
+  }
+
+  public async analyzeCveWithAi(input: CveAnalysisInput): Promise<CveAiAnalysisResult> {
+    const fallback = this.getFallbackCveAnalysis(input);
+    try {
+      console.log(`🤖 [Gemini AI] Analizando vulnerabilidad ${input.cveId}...`);
+      const prompt = buildCveAnalysisPrompt(input);
+      const text = await this.executeWithFallback('', prompt, 700);
+      
+      const parsed = this.parseJsonResponse<any>(text, null);
+      if (!parsed) return fallback;
+
+      // Mapeo flexible para asegurar la correcta lectura de campos independientemente de la nomenclatura que devuelva Gemini
+      return {
+        summaryEs: parsed.summaryEs || parsed.summary_es || parsed.summary || fallback.summaryEs,
+        impactLevel: parsed.impactLevel || parsed.impact_level || parsed.impact || fallback.impactLevel,
+        mitigationSteps: parsed.mitigationSteps || parsed.mitigation_steps || parsed.mitigations || fallback.mitigationSteps,
+        urgency: parsed.urgency || fallback.urgency,
+      };
+    } catch (error) {
+      console.error(`[!] Error al analizar ${input.cveId} con Gemini AI:`, (error as Error).message);
+      return fallback;
+    }
+  }
+
+  private getFallbackCveAnalysis(input: CveAnalysisInput): CveAiAnalysisResult {
+    return {
+      summaryEs: `Vulnerabilidad ${input.cveId} con severidad ${input.severity}. Descripción original: ${input.description}`,
+      impactLevel: 'No se pudo generar la evaluación detallada con IA. Se sugiere revisión manual.',
+      mitigationSteps: ['Verificar la versión del paquete o componente afectado y actualizar a la última versión parcheada.'],
+      urgency: (['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].includes(input.severity) ? input.severity : 'MEDIUM') as any,
+    };
   }
 
   private parseJsonResponse<T>(text: string, defaultValue: T): T {

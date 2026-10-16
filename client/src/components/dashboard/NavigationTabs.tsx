@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type TabType = 'scanner' | 'injection' | 'network' | 'history';
+export type TabType = 'scanner' | 'injection' | 'network' | 'cve' | 'history';
 
 interface NavigationTabsProps {
   activeTab: TabType;
@@ -38,7 +38,6 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({ activeTab, onTab
         🚀 Escáner & Diseñador IA
       </button>
 
-      {/* NUEVA PESTAÑA DEDICADA A INPUTS / INYECCIÓN */}
       <button
         onClick={() => onTabChange('injection')}
         style={{
@@ -73,6 +72,24 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({ activeTab, onTab
         }}
       >
         🛡️ Configuración de Red
+      </button>
+
+      <button
+        onClick={() => onTabChange('cve')}
+        style={{
+          padding: '10px 18px',
+          borderRadius: '6px',
+          border: 'none',
+          fontSize: '0.9rem',
+          fontWeight: '600',
+          cursor: 'pointer',
+          backgroundColor: activeTab === 'cve' ? '#2563eb' : '#27272a',
+          color: '#ffffff',
+          boxShadow: activeTab === 'cve' ? '0 0 12px rgba(37, 99, 235, 0.4)' : 'none',
+          transition: 'all 0.2s ease',
+        }}
+      >
+        📰 CiberThreat Feed & CVE Radar
       </button>
 
       <button
