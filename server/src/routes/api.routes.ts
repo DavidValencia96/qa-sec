@@ -13,6 +13,10 @@ import {
 } from '../controllers/index.js';
 import { analyzeSastContentHandler } from '../controllers/sast.controller.js';
 import { exportReportHandler } from '../controllers/reportExport.controller.js';
+import {
+  getSastHistoryHandler,
+  getSastHistoryItemHandler,
+} from '../controllers/sast/sastHistory.controller.js';
 
 const router = Router();
 
@@ -39,6 +43,10 @@ router.get('/threats/latest', getLatestThreats);
 router.post('/threats/analyze-cve', analyzeCveWithAiHandler);
 router.post('/sast/analyze', analyzeSastContentHandler);
 router.post('/reports/export', exportReportHandler);
+
+// Registrar rutas de historial SAST:
+router.get('/sast/history', getSastHistoryHandler);
+router.get('/sast/history/:id', getSastHistoryItemHandler);
 
 export const apiRouter = router;
 export default router;

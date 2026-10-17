@@ -163,3 +163,29 @@ export const exportReportApi = async (payload: {
   link.remove();
   window.URL.revokeObjectURL(downloadUrl);
 };
+
+export interface SastHistoryItem {
+  id: string;
+  fileName: string;
+  fileType: string;
+  healthScore: number;
+  totalFindings: number;
+  findings: Array<{
+    title: string;
+    severity: string;
+    description: string;
+    recommendation?: string;
+    evidence?: string;
+  }>;
+  remediatedCode?: string;
+  createdAt: string;
+}
+
+export const fetchSastHistoryApi = async (): Promise<SastHistoryItem[]> => {
+  const res = await fetch(`${BASE_URL}/sast/history`);
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}: Error al obtener el historial SAST.`);
+  }
+  const data = await res.json();
+  return data.data || [];
+};
