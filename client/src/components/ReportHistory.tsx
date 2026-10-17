@@ -140,6 +140,7 @@ export const ReportHistory: React.FC = () => {
     }
   };
 
+  // Handler simplificado utilizando el objeto completo directamente
   const handleExportSingleLoadTest = async (item: LoadTestHistoryItem) => {
     try {
       await exportSingleRecordApi({

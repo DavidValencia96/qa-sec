@@ -213,6 +213,8 @@ export interface LoadTestHistoryItem {
   method: string;
   concurrency: number;
   durationSeconds: number;
+  payloadJson?: string;
+  headersJson?: string;
   totalRequests: number;
   rps: number;
   avgLatencyMs: number;

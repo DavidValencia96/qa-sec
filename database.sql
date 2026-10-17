@@ -272,5 +272,9 @@ CREATE TABLE IF NOT EXISTS load_test_history (
   ai_diagnosis_json LONGTEXT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
 ALTER TABLE load_test_history 
 ADD COLUMN payload_json LONGTEXT NULL AFTER duration_seconds;
+
+ALTER TABLE load_test_history 
+ADD COLUMN headers_json LONGTEXT NULL AFTER payload_json;

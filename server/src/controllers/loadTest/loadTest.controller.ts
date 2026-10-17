@@ -24,6 +24,7 @@ export const runLoadTestHandler = async (req: Request, res: Response): Promise<v
       concurrency: Math.min(Math.max(config.concurrency || 10, 1), 100), // Max 100 conexiones
       durationSeconds: Math.min(Math.max(config.durationSeconds || 5, 2), 30), // Max 30s
       headers: config.headers,
+      headersJson: config.headersJson,
       payloadJson: config.payloadJson,
     };
 

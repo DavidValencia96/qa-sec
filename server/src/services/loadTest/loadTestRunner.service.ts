@@ -11,6 +11,32 @@ export class LoadTestRunnerService {
       timeouts: 0,
     };
 
+    // 1. Preparar Cabeceras HTTP por defecto y personalizadas
+    const requestHeaders: Record<string, string> = {
+      'User-Agent': 'QA-Sec-Suite-LoadTester/1.0',
+    };
+
+    if (config.payloadJson && config.method !== 'GET') {
+      requestHeaders['Content-Type'] = 'application/json';
+    }
+
+    // Integrar cabeceras provistas como objeto si existen
+    if (config.headers) {
+      Object.assign(requestHeaders, config.headers);
+    }
+
+    // Parsear e integrar cabeceras recibidas como string JSON (headersJson)
+    if (config.headersJson && config.headersJson.trim().length > 0) {
+      try {
+        const parsedCustomHeaders = JSON.parse(config.headersJson);
+        if (typeof parsedCustomHeaders === 'object' && parsedCustomHeaders !== null) {
+          Object.assign(requestHeaders, parsedCustomHeaders);
+        }
+      } catch {
+        console.warn('⚠️ [LoadTestRunner] No se pudieron parsear las cabeceras personalizadas en headersJson. Continuando con cabeceras por defecto.');
+      }
+    }
+
     const startTime = Date.now();
     const endTime = startTime + config.durationSeconds * 1000;
 
@@ -23,7 +49,7 @@ export class LoadTestRunnerService {
 
           const res = await fetch(config.targetUrl, {
             method: config.method,
-            headers: config.headers || {},
+            headers: requestHeaders,
             body: config.method !== 'GET' ? config.payloadJson : undefined,
             signal: controller.signal,
           });
@@ -41,7 +67,7 @@ export class LoadTestRunnerService {
           } else if (res.status >= 500) {
             statusBreakdown.status5xx++;
           }
-        } catch (err) {
+        } catch {
           statusBreakdown.timeouts++;
           latencies.push(5000);
         }

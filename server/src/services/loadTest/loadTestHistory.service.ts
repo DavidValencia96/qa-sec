@@ -7,7 +7,8 @@ export interface LoadTestHistoryItem {
   method: string;
   concurrency: number;
   durationSeconds: number;
-  payloadJson?: string; // <-- AÑADIDO
+  payloadJson?: string;
+  headersJson?: string;
   totalRequests: number;
   rps: number;
   avgLatencyMs: number;
@@ -33,6 +34,7 @@ export class LoadTestHistoryService {
           concurrency, 
           duration_seconds AS durationSeconds, 
           payload_json AS payloadJson, 
+          headers_json AS headersJson, 
           total_requests AS totalRequests, 
           rps, 
           avg_latency_ms AS avgLatencyMs, 
@@ -55,7 +57,8 @@ export class LoadTestHistoryService {
         method: row.method,
         concurrency: row.concurrency,
         durationSeconds: row.durationSeconds,
-        payloadJson: row.payloadJson || undefined, // <-- RECUPERADO DE MYSQL
+        payloadJson: row.payloadJson || undefined,
+        headersJson: row.headersJson || undefined, 
         totalRequests: row.totalRequests,
         rps: row.rps,
         avgLatencyMs: row.avgLatencyMs,

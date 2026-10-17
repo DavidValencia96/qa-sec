@@ -4,6 +4,7 @@ export interface LoadTestConfig {
   concurrency: number;
   durationSeconds: number;
   payloadJson?: string;
+  headersJson?: string;
 }
 
 export interface StatusCodeBreakdown {

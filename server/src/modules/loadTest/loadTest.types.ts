@@ -5,6 +5,7 @@ export interface LoadTestConfigDTO {
   durationSeconds: number; // Ej. 5 a 30 segundos
   headers?: Record<string, string>;
   payloadJson?: string;
+  headersJson?: string;
 }
 
 export interface StatusCodeBreakdown {

@@ -19,7 +19,7 @@ export const exportSingleRecordHandler = async (req: Request, res: Response): Pr
       const breakdown = metrics.statusBreakdown || {};
       const total = recordData.totalRequests || 1;
 
-      // Porcentajes para gráfico visual
+      // Porcentajes para el gráfico visual de respuestas
       const p2xx = Math.round(((breakdown.status2xx || 0) / total) * 100);
       const p429 = Math.round(((breakdown.status429RateLimited || 0) / total) * 100);
       const p4xx = Math.round(((breakdown.status4xx || 0) / total) * 100);
@@ -27,9 +27,10 @@ export const exportSingleRecordHandler = async (req: Request, res: Response): Pr
       const pTimeout = Math.round(((breakdown.timeouts || 0) / total) * 100);
 
       const rawPayload = recordData.payloadJson || recordData.config?.payloadJson;
-      const payloadText = rawPayload && String(rawPayload).trim().length > 0 
-        ? String(rawPayload) 
-        : null;
+      const payloadText = rawPayload && String(rawPayload).trim().length > 0 ? String(rawPayload) : null;
+
+      const rawHeaders = recordData.headersJson || recordData.config?.headersJson;
+      const headersText = rawHeaders && String(rawHeaders).trim().length > 0 ? String(rawHeaders) : null;
 
       htmlBody = `
         <div style="border-bottom: 2px solid #334155; padding-bottom: 16px; margin-bottom: 24px;">
@@ -66,16 +67,30 @@ export const exportSingleRecordHandler = async (req: Request, res: Response): Pr
             </div>
           </div>
 
-          <!-- SECCIÓN SIEMPRE VISIBLE DE PAYLOAD -->
-          <div style="padding-top: 14px; border-top: 1px solid #1e293b;">
+          <!-- MUESTRA DE CABECERAS HTTP -->
+          <div style="padding-top: 14px; border-top: 1px solid #1e293b; margin-bottom: 12px;">
+            <span style="color: #94a3b8; display: block; font-size: 0.8rem; margin-bottom: 6px;">
+              🔑 Cabeceras HTTP Personalizadas (Headers):
+            </span>
+            ${headersText ? `
+              <pre style="background: #020617; color: #38bdf8; padding: 10px 12px; border-radius: 6px; border: 1px solid #1e293b; font-family: monospace; font-size: 0.85rem; margin: 0; overflow-x: auto;">${headersText}</pre>
+            ` : `
+              <div style="background: #020617; color: #64748b; padding: 8px 12px; border-radius: 6px; border: 1px dashed #334155; font-size: 0.85rem; font-style: italic;">
+                Sin cabeceras personalizadas adicionales (Standard Headers).
+              </div>
+            `}
+          </div>
+
+          <!-- MUESTRA DE PAYLOAD -->
+          <div style="padding-top: 12px; border-top: 1px solid #1e293b;">
             <span style="color: #94a3b8; display: block; font-size: 0.8rem; margin-bottom: 6px;">
               📦 Payload HTTP Enviado (Body / Data):
             </span>
             ${payloadText ? `
-              <pre style="background: #020617; color: #4ade80; padding: 12px; border-radius: 6px; border: 1px solid #1e293b; font-family: monospace; font-size: 0.85rem; margin: 0; overflow-x: auto; max-height: 200px;">${payloadText}</pre>
+              <pre style="background: #020617; color: #4ade80; padding: 10px 12px; border-radius: 6px; border: 1px solid #1e293b; font-family: monospace; font-size: 0.85rem; margin: 0; overflow-x: auto; max-height: 200px;">${payloadText}</pre>
             ` : `
-              <div style="background: #020617; color: #64748b; padding: 10px 12px; border-radius: 6px; border: 1px dashed #334155; font-size: 0.85rem; font-style: italic;">
-                Petición ejecutada sin cuerpo de datos (No Payload / Headless Body).
+              <div style="background: #020617; color: #64748b; padding: 8px 12px; border-radius: 6px; border: 1px dashed #334155; font-size: 0.85rem; font-style: italic;">
+                Petición ejecutada sin cuerpo de datos (No Payload).
               </div>
             `}
           </div>

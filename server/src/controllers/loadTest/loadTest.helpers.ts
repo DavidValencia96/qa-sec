@@ -10,16 +10,26 @@ export const saveLoadTestAuditRecord = async (
   try {
     const query = `
       INSERT INTO load_test_history 
-        (id, target_url, method, concurrency, duration_seconds, payload_json, total_requests, rps, avg_latency_ms, p95_latency_ms, rate_limit_protection, metrics_json, ai_diagnosis_json) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (id, target_url, method, concurrency, duration_seconds, payload_json, headers_json, total_requests, rps, avg_latency_ms, p95_latency_ms, rate_limit_protection, metrics_json, ai_diagnosis_json) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
+
+    const payloadToSave = config.payloadJson && config.payloadJson.trim().length > 0 
+      ? config.payloadJson.trim() 
+      : null;
+
+    const headersToSave = config.headersJson && config.headersJson.trim().length > 0 
+      ? config.headersJson.trim() 
+      : null;
+
     await getDbPool().execute(query, [
       id,
       config.targetUrl,
       config.method,
       config.concurrency,
       config.durationSeconds,
-      config.payloadJson || null,
+      payloadToSave,
+      headersToSave, 
       metrics.totalRequests,
       metrics.requestsPerSecond,
       metrics.avgLatencyMs,
