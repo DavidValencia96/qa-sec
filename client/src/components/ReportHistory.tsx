@@ -4,6 +4,8 @@ import {
   getReportApi,
   fetchSastHistoryApi,
   fetchLoadTestHistoryApi,
+  exportConsolidatedReportApi,
+  exportSingleRecordApi,
   type SastHistoryItem,
   type LoadTestHistoryItem,
 } from '../services/api.client';
@@ -16,6 +18,10 @@ import { LoadTestHistoryTable } from './history/LoadTestHistoryTable';
 import { SastDiffModal } from './sast/SastDiffModal';
 import { SastFindingsTable } from './sast/SastFindingsTable';
 import { LoadTestMetricsCard } from './loadTest/LoadTestMetricsCard';
+import {
+  ConsolidatedReportExportModal,
+  type ConsolidatedReportOptions,
+} from './report/ConsolidatedReportExportModal';
 import type { SastFinding } from './sast/sast.types';
 
 export type { HistoryItem };
@@ -40,10 +46,14 @@ export const ReportHistory: React.FC = () => {
   const [selectedSastAudit, setSelectedSastAudit] = useState<SastHistoryItem | null>(null);
   const [showDiffModal, setShowDiffModal] = useState<boolean>(false);
 
-  // Estados para el Historial de Pruebas de Carga (Nuevos)
+  // Estados para el Historial de Pruebas de Carga (Existentes)
   const [loadTestItems, setLoadTestItems] = useState<LoadTestHistoryItem[]>([]);
   const [loadingLoadTest, setLoadingLoadTest] = useState<boolean>(false);
   const [selectedLoadTest, setSelectedLoadTest] = useState<LoadTestHistoryItem | null>(null);
+
+  // Estados para el Modal de Exportación Consolidada
+  const [showConsolidatedModal, setShowConsolidatedModal] = useState<boolean>(false);
+  const [exportingConsolidated, setExportingConsolidated] = useState<boolean>(false);
 
   // Función explícita para cargar el historial SAST
   const loadSastHistory = async () => {
@@ -118,6 +128,30 @@ export const ReportHistory: React.FC = () => {
     }
   };
 
+  const handleExportConsolidated = async (options: ConsolidatedReportOptions) => {
+    setExportingConsolidated(true);
+    try {
+      await exportConsolidatedReportApi(options);
+      setShowConsolidatedModal(false);
+    } catch (err) {
+      alert(`Error al exportar reporte consolidado: ${(err as Error).message}`);
+    } finally {
+      setExportingConsolidated(false);
+    }
+  };
+
+  const handleExportSingleLoadTest = async (item: LoadTestHistoryItem) => {
+    try {
+      await exportSingleRecordApi({
+        moduleType: 'load-test',
+        recordData: item,
+        format: 'html',
+      });
+    } catch (err) {
+      alert(`Error al exportar registro individual: ${(err as Error).message}`);
+    }
+  };
+
   const filterItem = (item: HistoryItem, query: string) => {
     const q = query.toLowerCase();
     return (
@@ -147,9 +181,34 @@ export const ReportHistory: React.FC = () => {
 
   return (
     <div style={{ background: '#1e1e1e', padding: '20px', borderRadius: '8px', marginTop: '20px' }}>
-      <h2 style={{ color: '#fff', marginTop: 0, fontSize: '20px', marginBottom: '16px' }}>
-        📜 Historial Centralizado de Seguridad
-      </h2>
+      {/* CABECERA CON TÍTULO Y BOTÓN DE EXPORTACIÓN CONSOLIDADA */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+        <h2 style={{ color: '#fff', margin: 0, fontSize: '20px' }}>
+          📜 Historial Centralizado de Seguridad
+        </h2>
+
+        <button
+          type="button"
+          onClick={() => setShowConsolidatedModal(true)}
+          style={{
+            background: '#0284c7',
+            color: '#ffffff',
+            border: 'none',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            fontWeight: 'bold',
+            fontSize: '0.85rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            boxShadow: '0 0 10px rgba(2, 132, 199, 0.4)',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          📄 Exportar Informe Consolidado Global
+        </button>
+      </div>
 
       {/* BOTONES PESTAÑA SUB-NAVEGACIÓN */}
       <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
@@ -309,7 +368,11 @@ export const ReportHistory: React.FC = () => {
             <div style={{ color: '#60a5fa', padding: '20px 0' }}>🔄 Cargando registros de pruebas de carga desde MySQL...</div>
           ) : (
             <>
-              <LoadTestHistoryTable items={loadTestItems} onSelectResult={(item) => setSelectedLoadTest(item)} />
+              <LoadTestHistoryTable
+                items={loadTestItems}
+                onSelectResult={(item) => setSelectedLoadTest(item)}
+                onExportSingleRecord={handleExportSingleLoadTest}
+              />
 
               {/* Vista expandida con la tarjeta completa de métricas para la prueba seleccionada */}
               {selectedLoadTest && (
@@ -346,6 +409,14 @@ export const ReportHistory: React.FC = () => {
           )}
         </>
       )}
+
+      {/* MODAL DE EXPORTACIÓN CONSOLIDADA */}
+      <ConsolidatedReportExportModal
+        isOpen={showConsolidatedModal}
+        onClose={() => setShowConsolidatedModal(false)}
+        onExport={handleExportConsolidated}
+        loading={exportingConsolidated}
+      />
     </div>
   );
 };

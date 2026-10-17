@@ -17,6 +17,8 @@ import type { SastFinding } from '../modules/sast/sast.types.js';
 import { generateId } from '../utils/id.generator.js';
 import type { LoadTestConfigDTO, LoadTestMetrics } from '../modules/loadTest/loadTest.types.js';
 import { buildLoadTestAnalysisPrompt } from './gemini/loadTestAnalysis.prompt.js';
+import type { ConsolidatedReportInputDTO, ConsolidatedExecutiveSummary } from '../modules/report/consolidatedReport.types.js';
+import { buildConsolidatedReportPrompt } from './gemini/consolidatedReport.prompt.js';
 
 export class GeminiAIService {
   private ai: GoogleGenAI;
@@ -281,6 +283,36 @@ export class GeminiAIService {
       };
     } catch (error) {
       console.error('[!] Error en analyzeLoadTestWithAi:', (error as Error).message);
+      return fallback;
+    }
+  }
+
+  public async generateConsolidatedExecutiveSummary(
+    data: ConsolidatedReportInputDTO
+  ): Promise<ConsolidatedExecutiveSummary> {
+    const fallback: ConsolidatedExecutiveSummary = {
+      overallRiskLevel: 'MEDIUM',
+      globalHealthScore: 75,
+      executiveOverview: 'Reporte consolidado generado exitosamente. No se pudo obtener la evaluación detallada de la IA.',
+      priorityRemediations: ['Revisar los hallazgos individuales reportados en cada módulo de auditoría.'],
+    };
+
+    try {
+      console.log(`🤖 [Gemini AI] Generando Resumen Ejecutivo Consolidado para el proyecto: ${data.projectName}...`);
+      const prompt = buildConsolidatedReportPrompt(data);
+      const text = await this.executeWithFallback('', prompt, 900);
+
+      const parsed = this.parseJsonResponse<any>(text, null);
+      if (!parsed) return fallback;
+
+      return {
+        overallRiskLevel: parsed.overallRiskLevel || fallback.overallRiskLevel,
+        globalHealthScore: typeof parsed.globalHealthScore === 'number' ? parsed.globalHealthScore : fallback.globalHealthScore,
+        executiveOverview: parsed.executiveOverview || fallback.executiveOverview,
+        priorityRemediations: Array.isArray(parsed.priorityRemediations) ? parsed.priorityRemediations : fallback.priorityRemediations,
+      };
+    } catch (error) {
+      console.error('[!] Error en generateConsolidatedExecutiveSummary:', (error as Error).message);
       return fallback;
     }
   }

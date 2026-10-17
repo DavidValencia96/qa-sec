@@ -19,6 +19,8 @@ import {
 } from '../controllers/sast/sastHistory.controller.js';
 import { runLoadTestHandler } from '../controllers/loadTest/loadTest.controller.js';
 import { getLoadTestHistoryHandler } from '../controllers/loadTest/loadTestHistory.controller.js';
+import { exportConsolidatedReportHandler } from '../controllers/report/consolidatedReport.controller.js';
+import { exportSingleRecordHandler } from '../controllers/report/singleReportExport.controller.js';
 
 const router = Router();
 
@@ -52,6 +54,9 @@ router.get('/sast/history/:id', getSastHistoryItemHandler);
 
 router.post('/load-test/run', runLoadTestHandler);
 router.get('/load-test/history', getLoadTestHistoryHandler);
+
+router.post('/reports/consolidated/export', exportConsolidatedReportHandler);
+router.post('/reports/single/export', exportSingleRecordHandler);
 
 export const apiRouter = router;
 export default router;

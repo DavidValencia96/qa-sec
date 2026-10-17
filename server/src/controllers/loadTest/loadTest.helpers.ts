@@ -10,8 +10,8 @@ export const saveLoadTestAuditRecord = async (
   try {
     const query = `
       INSERT INTO load_test_history 
-        (id, target_url, method, concurrency, duration_seconds, total_requests, rps, avg_latency_ms, p95_latency_ms, rate_limit_protection, metrics_json, ai_diagnosis_json) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (id, target_url, method, concurrency, duration_seconds, payload_json, total_requests, rps, avg_latency_ms, p95_latency_ms, rate_limit_protection, metrics_json, ai_diagnosis_json) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     await getDbPool().execute(query, [
       id,
@@ -19,6 +19,7 @@ export const saveLoadTestAuditRecord = async (
       config.method,
       config.concurrency,
       config.durationSeconds,
+      config.payloadJson || null,
       metrics.totalRequests,
       metrics.requestsPerSecond,
       metrics.avgLatencyMs,

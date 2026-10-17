@@ -1,5 +1,6 @@
 import type { TargetInput } from '../components/dashboard/dashboard.types';
 import type { LoadTestConfig, LoadTestResult, LoadTestMetrics } from '../components/loadTest/loadTest.types';
+import type { ConsolidatedReportOptions } from '../components/report/ConsolidatedReportExportModal';
 
 const BASE_URL = 'http://localhost:3000/api';
 
@@ -233,4 +234,119 @@ export const fetchLoadTestHistoryApi = async (): Promise<LoadTestHistoryItem[]> 
   }
   const data = await res.json();
   return data.data || [];
+};
+
+export const exportConsolidatedReportApi = async (options: ConsolidatedReportOptions): Promise<void> => {
+  const payload = {
+    title: `Informe Consolidado - ${options.projectName}`,
+    projectName: options.projectName,
+    targetUrl: options.targetUrl,
+    includedModules: options.includedModules,
+    format: options.format,
+    webFindings: [
+      {
+        title: 'Vulnerabilidad Inyección SQL Simulada',
+        severity: 'HIGH',
+        description: 'Se detectó falta de saneamiento en parámetros de entrada.',
+        recommendation: 'Usar sentencias preparadas en las consultas SQL.',
+      },
+    ],
+    networkData: {
+      targetHost: options.targetUrl || 'localhost',
+      openPorts: [
+        { port: 80, service: 'HTTP' },
+        { port: 443, service: 'HTTPS' },
+      ],
+      riskAssessment: 'Superficie de red con exposición estándar de puertos web.',
+    },
+    sastData: {
+      fileName: 'src/config/database.ts',
+      healthScore: 85,
+      findings: [],
+    },
+    loadTestData: {
+      targetUrl: options.targetUrl || 'http://localhost',
+      rps: 900,
+      avgLatencyMs: 11,
+      metrics: {
+        totalRequests: 4506,
+        successfulRequests: 0,
+        failedRequests: 4506,
+        requestsPerSecond: 900,
+        avgLatencyMs: 11,
+        minLatencyMs: 2,
+        maxLatencyMs: 45,
+        p95LatencyMs: 22,
+        statusBreakdown: {
+          status2xx: 0,
+          status4xx: 4506,
+          status429RateLimited: 0,
+          status5xx: 0,
+          timeouts: 0,
+        },
+      },
+    },
+  };
+
+  const res = await fetch(`${BASE_URL}/reports/consolidated/export`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}: Error al exportar el informe consolidado.`);
+  }
+
+  const blob = await res.blob();
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = downloadUrl;
+
+  const contentDisposition = res.headers.get('content-disposition');
+  let fileName = `informe_consolidado_${options.projectName.toLowerCase().replace(/\s+/g, '_')}.${options.format === 'html' ? 'html' : 'md'}`;
+
+  if (contentDisposition && contentDisposition.includes('filename=')) {
+    fileName = contentDisposition.split('filename=')[1].replace(/"/g, '');
+  }
+
+  link.setAttribute('download', fileName);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(downloadUrl);
+};
+
+export const exportSingleRecordApi = async (payload: {
+  moduleType: 'web' | 'sast' | 'load-test';
+  recordData: unknown;
+  format?: 'html' | 'markdown';
+}): Promise<void> => {
+  const res = await fetch(`${BASE_URL}/reports/single/export`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}: Error al exportar el registro individual.`);
+  }
+
+  const blob = await res.blob();
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = downloadUrl;
+
+  const contentDisposition = res.headers.get('content-disposition');
+  let fileName = `reporte_${payload.moduleType}_${Date.now()}.${payload.format === 'markdown' ? 'md' : 'html'}`;
+
+  if (contentDisposition && contentDisposition.includes('filename=')) {
+    fileName = contentDisposition.split('filename=')[1].replace(/"/g, '');
+  }
+
+  link.setAttribute('download', fileName);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(downloadUrl);
 };

@@ -4,9 +4,14 @@ import type { LoadTestHistoryItem } from '../../services/api.client';
 interface LoadTestHistoryTableProps {
   items: LoadTestHistoryItem[];
   onSelectResult: (item: LoadTestHistoryItem) => void;
+  onExportSingleRecord?: (item: LoadTestHistoryItem) => void;
 }
 
-export const LoadTestHistoryTable: React.FC<LoadTestHistoryTableProps> = ({ items, onSelectResult }) => {
+export const LoadTestHistoryTable: React.FC<LoadTestHistoryTableProps> = ({
+  items,
+  onSelectResult,
+  onExportSingleRecord,
+}) => {
   if (items.length === 0) {
     return (
       <div style={{ padding: '24px', textAlign: 'center', color: '#9ca3af', background: '#18181b', borderRadius: '8px', border: '1px solid #27272a' }}>
@@ -27,7 +32,7 @@ export const LoadTestHistoryTable: React.FC<LoadTestHistoryTableProps> = ({ item
             <th style={{ padding: '12px 16px' }}>Latencia Media</th>
             <th style={{ padding: '12px 16px' }}>Protección Rate Limit</th>
             <th style={{ padding: '12px 16px' }}>Fecha</th>
-            <th style={{ padding: '12px 16px', textAlign: 'right' }}>Acción</th>
+            <th style={{ padding: '12px 16px', textAlign: 'right' }}>Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -58,7 +63,26 @@ export const LoadTestHistoryTable: React.FC<LoadTestHistoryTableProps> = ({ item
                 <td style={{ padding: '12px 16px', color: '#a1a1aa' }}>
                   {new Date(item.createdAt).toLocaleString()}
                 </td>
-                <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  {onExportSingleRecord && (
+                    <button
+                      type="button"
+                      onClick={() => onExportSingleRecord(item)}
+                      style={{
+                        background: '#059669',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '6px 12px',
+                        fontSize: '0.8rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        marginRight: '8px',
+                      }}
+                    >
+                      📥 Exportar PDF/HTML
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => onSelectResult(item)}
