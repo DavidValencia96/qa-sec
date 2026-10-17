@@ -1,19 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { getHistoryApi, getReportApi, fetchSastHistoryApi, type SastHistoryItem } from '../services/api.client';
+import {
+  getHistoryApi,
+  getReportApi,
+  fetchSastHistoryApi,
+  fetchLoadTestHistoryApi,
+  type SastHistoryItem,
+  type LoadTestHistoryItem,
+} from '../services/api.client';
 import type { ReportData } from './ReportViewer';
 import type { HistoryItem } from './history/history.types';
 import { HistoryTable } from './history/HistoryTable';
 import { ReportModal } from './history/ReportModal';
 import { SastHistoryTable } from './history/SastHistoryTable';
+import { LoadTestHistoryTable } from './history/LoadTestHistoryTable';
 import { SastDiffModal } from './sast/SastDiffModal';
 import { SastFindingsTable } from './sast/SastFindingsTable';
+import { LoadTestMetricsCard } from './loadTest/LoadTestMetricsCard';
 import type { SastFinding } from './sast/sast.types';
 
 export type { HistoryItem };
 
 export const ReportHistory: React.FC = () => {
-  // Estado para la pestaña de historial activa ('web' | 'sast')
-  const [activeSubTab, setActiveSubTab] = useState<'web' | 'sast'>('web');
+  // Estado para la pestaña de historial activa ('web' | 'sast' | 'load')
+  const [activeSubTab, setActiveSubTab] = useState<'web' | 'sast' | 'load'>('web');
 
   // Estados del Historial Web Dinámico (Existentes)
   const [items, setItems] = useState<HistoryItem[]>([]);
@@ -25,11 +34,16 @@ export const ReportHistory: React.FC = () => {
   const [selectedTargetUrl, setSelectedTargetUrl] = useState<string>('');
   const [loadingReport, setLoadingReport] = useState(false);
 
-  // Estados para el Historial SAST (Nuevos)
+  // Estados para el Historial SAST (Existentes)
   const [sastItems, setSastItems] = useState<SastHistoryItem[]>([]);
   const [loadingSast, setLoadingSast] = useState<boolean>(false);
   const [selectedSastAudit, setSelectedSastAudit] = useState<SastHistoryItem | null>(null);
   const [showDiffModal, setShowDiffModal] = useState<boolean>(false);
+
+  // Estados para el Historial de Pruebas de Carga (Nuevos)
+  const [loadTestItems, setLoadTestItems] = useState<LoadTestHistoryItem[]>([]);
+  const [loadingLoadTest, setLoadingLoadTest] = useState<boolean>(false);
+  const [selectedLoadTest, setSelectedLoadTest] = useState<LoadTestHistoryItem | null>(null);
 
   // Función explícita para cargar el historial SAST
   const loadSastHistory = async () => {
@@ -41,6 +55,19 @@ export const ReportHistory: React.FC = () => {
       console.error('Error al cargar historial SAST:', err);
     } finally {
       setLoadingSast(false);
+    }
+  };
+
+  // Función explícita para cargar el historial de Pruebas de Carga
+  const loadLoadTestHistory = async () => {
+    setLoadingLoadTest(true);
+    try {
+      const data = await fetchLoadTestHistoryApi();
+      setLoadTestItems(data);
+    } catch (err) {
+      console.error('Error al cargar historial de Pruebas de Carga:', err);
+    } finally {
+      setLoadingLoadTest(false);
     }
   };
 
@@ -69,10 +96,12 @@ export const ReportHistory: React.FC = () => {
   }, []);
 
   // Handler para cambiar de pestaña sin disparar cascading renders en useEffect
-  const handleTabChange = (tab: 'web' | 'sast') => {
+  const handleTabChange = (tab: 'web' | 'sast' | 'load') => {
     setActiveSubTab(tab);
     if (tab === 'sast' && sastItems.length === 0) {
       loadSastHistory();
+    } else if (tab === 'load' && loadTestItems.length === 0) {
+      loadLoadTestHistory();
     }
   };
 
@@ -102,7 +131,7 @@ export const ReportHistory: React.FC = () => {
 
   const filteredItems = items.filter((i) => filterItem(i, searchTerm));
 
-// Mapear hallazgos garantizando compatibilidad exacta de tipos (no undefined)
+  // Mapear hallazgos garantizando compatibilidad exacta de tipos (no undefined)
   const mappedSastFindings: SastFinding[] = selectedSastAudit
     ? selectedSastAudit.findings.map((f, idx) => ({
         id: `finding-hist-${idx}`,
@@ -160,6 +189,25 @@ export const ReportHistory: React.FC = () => {
           }}
         >
           🔍 Auditorías SAST & Código
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleTabChange('load')}
+          style={{
+            padding: '8px 16px',
+            borderRadius: '6px',
+            border: 'none',
+            fontSize: '0.85rem',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            backgroundColor: activeSubTab === 'load' ? '#2563eb' : '#27272a',
+            color: '#ffffff',
+            boxShadow: activeSubTab === 'load' ? '0 0 10px rgba(37, 99, 235, 0.4)' : 'none',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          🎯 Pruebas de Carga & DoS
         </button>
       </div>
 
@@ -248,6 +296,51 @@ export const ReportHistory: React.FC = () => {
                   fileName={selectedSastAudit.fileName}
                   onClose={() => setShowDiffModal(false)}
                 />
+              )}
+            </>
+          )}
+        </>
+      )}
+
+      {/* CONTENIDO 3: HISTORIAL PRUEBAS DE CARGA & DOS */}
+      {activeSubTab === 'load' && (
+        <>
+          {loadingLoadTest ? (
+            <div style={{ color: '#60a5fa', padding: '20px 0' }}>🔄 Cargando registros de pruebas de carga desde MySQL...</div>
+          ) : (
+            <>
+              <LoadTestHistoryTable items={loadTestItems} onSelectResult={(item) => setSelectedLoadTest(item)} />
+
+              {/* Vista expandida con la tarjeta completa de métricas para la prueba seleccionada */}
+              {selectedLoadTest && (
+                <div style={{ marginTop: '24px', background: '#09090b', padding: '20px', borderRadius: '8px', border: '1px solid #38bdf8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                    <h3 style={{ margin: 0, color: '#38bdf8' }}>
+                      🎯 Detalle de Prueba de Estrés: {selectedLoadTest.targetUrl}
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedLoadTest(null)}
+                      style={{ background: '#27272a', color: '#a1a1aa', border: 'none', padding: '8px 14px', borderRadius: '6px', cursor: 'pointer' }}
+                    >
+                      ✕ Cerrar Detalle
+                    </button>
+                  </div>
+
+                  <LoadTestMetricsCard
+                    result={{
+                      runId: selectedLoadTest.id,
+                      config: {
+                        targetUrl: selectedLoadTest.targetUrl,
+                        method: selectedLoadTest.method as 'GET' | 'POST' | 'PUT' | 'DELETE',
+                        concurrency: selectedLoadTest.concurrency,
+                        durationSeconds: selectedLoadTest.durationSeconds,
+                      },
+                      metrics: selectedLoadTest.metrics,
+                      aiDiagnosis: selectedLoadTest.aiDiagnosis,
+                    }}
+                  />
+                </div>
               )}
             </>
           )}

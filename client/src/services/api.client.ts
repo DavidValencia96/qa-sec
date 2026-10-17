@@ -1,5 +1,5 @@
 import type { TargetInput } from '../components/dashboard/dashboard.types';
-import type { LoadTestConfig, LoadTestResult } from '../components/loadTest/loadTest.types';
+import type { LoadTestConfig, LoadTestResult, LoadTestMetrics } from '../components/loadTest/loadTest.types';
 
 const BASE_URL = 'http://localhost:3000/api';
 
@@ -204,4 +204,33 @@ export const runLoadTestApi = async (payload: LoadTestConfig): Promise<LoadTestR
   }
 
   return res.json();
+};
+
+export interface LoadTestHistoryItem {
+  id: string;
+  targetUrl: string;
+  method: string;
+  concurrency: number;
+  durationSeconds: number;
+  totalRequests: number;
+  rps: number;
+  avgLatencyMs: number;
+  p95LatencyMs: number;
+  rateLimitProtection: string;
+  metrics: LoadTestMetrics;
+  aiDiagnosis: {
+    rateLimitingProtection: 'EXCELLENT' | 'WEAK' | 'CRITICAL_MISSING';
+    summary: string;
+    recommendations: string[];
+  };
+  createdAt: string;
+}
+
+export const fetchLoadTestHistoryApi = async (): Promise<LoadTestHistoryItem[]> => {
+  const res = await fetch(`${BASE_URL}/load-test/history`);
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}: Error al obtener el historial de pruebas de carga.`);
+  }
+  const data = await res.json();
+  return data.data || [];
 };
