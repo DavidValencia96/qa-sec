@@ -5,3 +5,5 @@ export interface TargetInput {
   type: LocatorType;
   value: string; 
 }
+
+export type TabType = 'scanner' | 'injection' | 'network' | 'cve' | 'sast' | 'load-test' | 'history';

@@ -15,6 +15,8 @@ import type { CveAiAnalysisResult } from './gemini/cveAnalysis.types.js';
 import { buildSastAnalysisPrompt, SastAiInput } from './gemini/sastAnalysis.prompt.js';
 import type { SastFinding } from '../modules/sast/sast.types.js';
 import { generateId } from '../utils/id.generator.js';
+import type { LoadTestConfigDTO, LoadTestMetrics } from '../modules/loadTest/loadTest.types.js';
+import { buildLoadTestAnalysisPrompt } from './gemini/loadTestAnalysis.prompt.js';
 
 export class GeminiAIService {
   private ai: GoogleGenAI;
@@ -246,6 +248,39 @@ export class GeminiAIService {
       };
     } catch (error) {
       console.error('[!] Error en analyzeCodeWithAi:', (error as Error).message);
+      return fallback;
+    }
+  }
+
+  public async analyzeLoadTestWithAi(
+    config: LoadTestConfigDTO,
+    metrics: LoadTestMetrics
+  ): Promise<{
+    rateLimitingProtection: 'EXCELLENT' | 'WEAK' | 'CRITICAL_MISSING';
+    summary: string;
+    recommendations: string[];
+  }> {
+    const fallback = {
+      rateLimitingProtection: (metrics.statusBreakdown.status429RateLimited > 0 ? 'EXCELLENT' : 'WEAK') as 'EXCELLENT' | 'WEAK' | 'CRITICAL_MISSING',
+      summary: 'Prueba de carga completada. No se pudo obtener el diagnóstico detallado de la IA.',
+      recommendations: ['Configurar un middleware de Rate Limiting como express-rate-limit en la API.'],
+    };
+
+    try {
+      console.log(`🤖 [Gemini AI] Analizando resultados de prueba de estrés para ${config.targetUrl}...`);
+      const prompt = buildLoadTestAnalysisPrompt(config, metrics);
+      const text = await this.executeWithFallback('', prompt, 800);
+
+      const parsed = this.parseJsonResponse<any>(text, null);
+      if (!parsed) return fallback;
+
+      return {
+        rateLimitingProtection: parsed.rateLimitingProtection || fallback.rateLimitingProtection,
+        summary: parsed.summary || fallback.summary,
+        recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : fallback.recommendations,
+      };
+    } catch (error) {
+      console.error('[!] Error en analyzeLoadTestWithAi:', (error as Error).message);
       return fallback;
     }
   }

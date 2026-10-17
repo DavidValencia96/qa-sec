@@ -1,4 +1,5 @@
 import type { TargetInput } from '../components/dashboard/dashboard.types';
+import type { LoadTestConfig, LoadTestResult } from '../components/loadTest/loadTest.types';
 
 const BASE_URL = 'http://localhost:3000/api';
 
@@ -188,4 +189,19 @@ export const fetchSastHistoryApi = async (): Promise<SastHistoryItem[]> => {
   }
   const data = await res.json();
   return data.data || [];
+};
+
+export const runLoadTestApi = async (payload: LoadTestConfig): Promise<LoadTestResult> => {
+  const res = await fetch(`${BASE_URL}/load-test/run`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || `HTTP ${res.status}: Error al ejecutar la prueba de carga.`);
+  }
+
+  return res.json();
 };

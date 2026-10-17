@@ -1,6 +1,6 @@
 import React from 'react';
-
-export type TabType = 'scanner' | 'injection' | 'network' | 'cve' | 'sast' | 'history';
+import type { TabType } from './dashboard.types';
+export type { TabType };
 
 interface NavigationTabsProps {
   activeTab: TabType;
@@ -113,6 +113,25 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({ activeTab, onTab
         }}
       >
         🔍 Auditoría SAST & Secret Scanning
+      </button>
+
+      <button
+        type="button"
+        onClick={() => onTabChange('load-test')}
+        style={{
+          padding: '10px 18px',
+          borderRadius: '6px',
+          border: 'none',
+          fontSize: '0.9rem',
+          fontWeight: '600',
+          cursor: 'pointer',
+          backgroundColor: activeTab === 'load-test' ? '#2563eb' : '#27272a',
+          color: '#ffffff',
+          boxShadow: activeTab === 'load-test' ? '0 0 12px rgba(37, 99, 235, 0.4)' : 'none',
+          transition: 'all 0.2s ease',
+        }}
+      >
+        💥 Pruebas de Carga & DoS
       </button>
 
       <button

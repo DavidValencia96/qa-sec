@@ -13,6 +13,7 @@ import { ScanProgressBar } from './components/dashboard/ScanProgressBar';
 import type { TargetInput } from './components/dashboard/dashboard.types';
 import { CveRadarTab } from './components/cve/CveRadarTab';
 import { SastAuditTab } from './components/sast/SastAuditTab';
+import { LoadTestTab } from './components/loadTest/LoadTestTab';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<TabType>('scanner');
@@ -270,6 +271,8 @@ export function App() {
 
       {/* PESTAÑA 5: Auditoría SAST & Secret Scanning */}
       {activeTab === 'sast' && <SastAuditTab />}
+
+      {activeTab === 'load-test' && <LoadTestTab />}
 
       {/* PESTAÑA 6: HISTORIAL Y BUSCADOR */}
       {activeTab === 'history' && <ReportHistory />}

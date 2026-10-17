@@ -17,6 +17,7 @@ import {
   getSastHistoryHandler,
   getSastHistoryItemHandler,
 } from '../controllers/sast/sastHistory.controller.js';
+import { runLoadTestHandler } from '../controllers/loadTest/loadTest.controller.js';
 
 const router = Router();
 
@@ -47,6 +48,8 @@ router.post('/reports/export', exportReportHandler);
 // Registrar rutas de historial SAST:
 router.get('/sast/history', getSastHistoryHandler);
 router.get('/sast/history/:id', getSastHistoryItemHandler);
+
+router.post('/load-test/run', runLoadTestHandler);
 
 export const apiRouter = router;
 export default router;

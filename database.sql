@@ -256,3 +256,19 @@ CREATE TABLE IF NOT EXISTS sast_audit_history (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+
+CREATE TABLE IF NOT EXISTS load_test_history (
+  id VARCHAR(64) PRIMARY KEY,
+  target_url VARCHAR(255) NOT NULL,
+  method VARCHAR(10) NOT NULL,
+  concurrency INT NOT NULL,
+  duration_seconds INT NOT NULL,
+  total_requests INT NOT NULL,
+  rps INT NOT NULL,
+  avg_latency_ms INT NOT NULL,
+  p95_latency_ms INT NOT NULL,
+  rate_limit_protection VARCHAR(50) NOT NULL,
+  metrics_json LONGTEXT NOT NULL,
+  ai_diagnosis_json LONGTEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
