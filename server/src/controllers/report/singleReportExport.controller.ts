@@ -307,6 +307,59 @@ export const exportSingleRecordHandler = async (req: Request, res: Response): Pr
           </ul>
         </div>
       `;
+    } else if (moduleType === 'easm') {
+      const subdomains = recordData.subdomains || [];
+      const wafAndTech = recordData.wafAndTech || {};
+      const sslDetails = recordData.sslDetails || {};
+      const aiSummary = recordData.aiSummary || {};
+
+      htmlBody = `
+        <div style="border-bottom: 2px solid #334155; padding-bottom: 16px; margin-bottom: 24px;">
+          <h2 style="margin: 0 0 8px 0; color: #38bdf8;">🕸️ Reporte Técnico - External Attack Surface Management</h2>
+          <span style="color: #94a3b8; font-size: 0.9rem;">
+            ID de Auditoría: <strong>${recordData.id || recordData.runId || 'N/A'}</strong> | Fecha: ${dateStr}
+          </span>
+        </div>
+
+        <!-- PARAMETRIZACIÓN -->
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 16px 0; color: #38bdf8; font-size: 1.05rem;">🌐 Resumen del Perímetro Expuesto</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; font-size: 0.9rem;">
+            <div>
+              <span style="color: #94a3b8; display: block; font-size: 0.8rem;">Dominio Objetivo:</span>
+              <strong style="color: #f8fafc;">${recordData.targetDomain}</strong>
+            </div>
+            <div>
+              <span style="color: #94a3b8; display: block; font-size: 0.8rem;">Subdominios Descubiertos:</span>
+              <strong style="color: #38bdf8;">${subdomains.length}</strong>
+            </div>
+            <div>
+              <span style="color: #94a3b8; display: block; font-size: 0.8rem;">WAF Detectado:</span>
+              <strong style="color: ${wafAndTech.wafDetected ? '#22c55e' : '#facc15'};">${wafAndTech.wafDetected ? wafAndTech.wafName || 'Sí' : 'No Detectado'}</strong>
+            </div>
+            <div>
+              <span style="color: #94a3b8; display: block; font-size: 0.8rem;">Estado SSL/TLS:</span>
+              <strong style="color: ${sslDetails.valid ? '#22c55e' : '#ef4444'};">${sslDetails.valid ? 'Válido' : 'Inválido'}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- DIAGNÓSTICO IA -->
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border-left: 4px solid #38bdf8; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 8px 0; color: #38bdf8; font-size: 1.05rem;">🤖 Diagnóstico Ejecutivo EASM (Gemini AI)</h3>
+          <p style="margin: 0; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+            ${aiSummary.summary || 'Análisis de la superficie de ataque completado.'}
+          </p>
+        </div>
+
+        <!-- RECOMENDACIONES -->
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155;">
+          <h3 style="margin: 0 0 12px 0; color: #38bdf8; font-size: 1rem;">💡 Acciones Defensivas Recomendadas</h3>
+          <ul style="margin: 0; padding-left: 20px; color: #cbd5e1; font-size: 0.9rem; line-height: 1.6;">
+            ${(aiSummary.recommendations || []).map((r: string) => `<li style="margin-bottom: 6px;">${r}</li>`).join('')}
+          </ul>
+        </div>
+      `;
     } else {
       htmlBody = `<h2>Reporte de auditoría estándar</h2>`;
     }

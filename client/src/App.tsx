@@ -16,6 +16,7 @@ import { SastAuditTab } from './components/sast/SastAuditTab';
 import { LoadTestTab } from './components/loadTest/LoadTestTab';
 import { DastAuditTab } from './components/dast/DastAuditTab';
 import { ScaAuditTab } from './components/sca/ScaAuditTab';
+import { EasmAuditTab } from './components/EasmAuditTab';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<TabType>('scanner');
@@ -282,6 +283,8 @@ export function App() {
 
       {/* PESTAÑA 8: SCA & Supply Chain Security */}
       {activeTab === 'sca' && <ScaAuditTab />}
+      
+      {activeTab === 'easm' && <EasmAuditTab />}
 
       {/* PESTAÑA 9: HISTORIAL Y BUSCADOR */}
       {activeTab === 'history' && <ReportHistory />}

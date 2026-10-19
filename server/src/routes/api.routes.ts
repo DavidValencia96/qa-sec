@@ -23,6 +23,7 @@ import { exportConsolidatedReportHandler } from '../controllers/report/consolida
 import { exportSingleRecordHandler } from '../controllers/report/singleReportExport.controller.js';
 import { runDastAuditHandler } from '../controllers/dast/dast.controller.js';
 import { runScaAuditHandler } from '../controllers/sca/sca.controller.js';
+import { runEasmAuditHandler } from '../controllers/easm/easm.controller.js';
 
 const router = Router();
 
@@ -62,6 +63,9 @@ router.post('/reports/single/export', exportSingleRecordHandler);
 
 router.post('/dast/run', runDastAuditHandler);
 router.post('/sca/run', runScaAuditHandler);
+
+// Endpoint de Auditoría EASM mapeado correctamente
+router.post('/easm/audit', runEasmAuditHandler);
 
 export const apiRouter = router;
 export default router;

@@ -297,3 +297,14 @@ CREATE TABLE IF NOT EXISTS sca_history (
   ai_summary_json LONGTEXT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS easm_history (
+  id VARCHAR(36) PRIMARY KEY,
+  target_domain VARCHAR(255) NOT NULL,
+  dns_records_json JSON NULL,
+  subdomains_json JSON NULL,
+  waf_tech_json JSON NULL,
+  ssl_details_json JSON NULL,
+  ai_summary_json JSON NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

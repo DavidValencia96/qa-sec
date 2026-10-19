@@ -46,10 +46,20 @@ export interface ScaHistoryItem {
   createdAt: string;
 }
 
-type SubTabType = 'web' | 'sast' | 'load' | 'dast' | 'sca';
+export interface EasmHistoryItem {
+  id: string;
+  targetDomain: string;
+  dnsRecordsJson?: string;
+  subdomainsJson?: string;
+  wafTechJson?: string;
+  sslDetailsJson?: string;
+  aiSummaryJson?: string;
+  createdAt: string;
+}
+
+type SubTabType = 'web' | 'sast' | 'load' | 'dast' | 'sca' | 'easm';
 
 export const ReportHistory: React.FC = () => {
-  // Estado para la pestaña de historial activa ('web' | 'sast' | 'load' | 'dast' | 'sca')
   const [activeSubTab, setActiveSubTab] = useState<SubTabType>('web');
 
   // Estados del Historial Web Dinámico
@@ -57,9 +67,10 @@ export const ReportHistory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // Estados fuertemente tipados para DAST y SCA (reemplazan a any[])
+  // Estados fuertemente tipados para DAST, SCA y EASM
   const [dastItems, setDastItems] = useState<DastHistoryItem[]>([]);
   const [scaItems, setScaItems] = useState<ScaHistoryItem[]>([]);
+  const [easmItems, setEasmItems] = useState<EasmHistoryItem[]>([]);
 
   // Estados para el Modal del Reporte Web
   const [selectedReport, setSelectedReport] = useState<ReportData | null>(null);
@@ -118,6 +129,7 @@ export const ReportHistory: React.FC = () => {
           if (Array.isArray(data.history)) setItems(data.history);
           if (Array.isArray(data.dastHistory)) setDastItems(data.dastHistory);
           if (Array.isArray(data.scaHistory)) setScaItems(data.scaHistory);
+          if (Array.isArray(data.easmHistory)) setEasmItems(data.easmHistory);
         }
       } catch (err) {
         console.error('Error al cargar historial centralizado:', err);
@@ -327,6 +339,24 @@ export const ReportHistory: React.FC = () => {
         >
           🔐 SCA & Supply Chain
         </button>
+
+        <button
+          type="button"
+          onClick={() => handleTabChange('easm')}
+          style={{
+            padding: '8px 16px',
+            borderRadius: '6px',
+            border: 'none',
+            fontSize: '0.85rem',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            backgroundColor: activeSubTab === 'easm' ? '#2563eb' : '#27272a',
+            color: '#ffffff',
+            boxShadow: activeSubTab === 'easm' ? '0 0 10px rgba(37, 99, 235, 0.4)' : 'none',
+          }}
+        >
+          🕸️ EASM & OSINT
+        </button>
       </div>
 
       {/* CONTENIDO 1: HISTORIAL WEB */}
@@ -512,6 +542,50 @@ export const ReportHistory: React.FC = () => {
 
       {/* CONTENIDO 5: HISTORIAL SCA */}
       {activeSubTab === 'sca' && <ScaHistoryTable items={scaItems} />}
+
+      {/* CONTENIDO 6: HISTORIAL EASM */}
+      {activeSubTab === 'easm' && (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', color: '#f4f4f5', fontSize: '0.9rem' }}>
+            <thead>
+              <tr style={{ background: '#09090b', borderBottom: '1px solid #27272a', textAlign: 'left' }}>
+                <th style={{ padding: '12px' }}>ID Ejecución</th>
+                <th style={{ padding: '12px' }}>Dominio Objetivo</th>
+                <th style={{ padding: '12px' }}>Subdominios Detectados</th>
+                <th style={{ padding: '12px' }}>Certificado SSL</th>
+                <th style={{ padding: '12px' }}>Fecha</th>
+              </tr>
+            </thead>
+            <tbody>
+              {easmItems.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ padding: '20px', textAlign: 'center', color: '#a1a1aa' }}>
+                    No se registran auditorías EASM en el historial.
+                  </td>
+                </tr>
+              ) : (
+                easmItems.map((item) => {
+                  const subdomains = item.subdomainsJson ? JSON.parse(item.subdomainsJson) : [];
+                  const sslDetails = item.sslDetailsJson ? JSON.parse(item.sslDetailsJson) : {};
+                  return (
+                    <tr key={item.id} style={{ borderBottom: '1px solid #27272a' }}>
+                      <td style={{ padding: '12px', fontFamily: 'monospace', color: '#38bdf8' }}>{item.id}</td>
+                      <td style={{ padding: '12px', fontWeight: 'bold' }}>{item.targetDomain}</td>
+                      <td style={{ padding: '12px', color: '#38bdf8' }}>{subdomains.length} subdominios</td>
+                      <td style={{ padding: '12px', color: sslDetails.valid ? '#22c55e' : '#ef4444', fontWeight: 'bold' }}>
+                        {sslDetails.valid ? 'VÁLIDO' : 'INVÁLIDO / EXPIRADO'}
+                      </td>
+                      <td style={{ padding: '12px', color: '#a1a1aa' }}>
+                        {new Date(item.createdAt).toLocaleString('es-ES')}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* MODAL DE EXPORTACIÓN CONSOLIDADA */}
       <ConsolidatedReportExportModal

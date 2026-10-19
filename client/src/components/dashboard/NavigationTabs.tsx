@@ -175,6 +175,24 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({ activeTab, onTab
 
       <button
         type="button"
+        onClick={() => onTabChange('easm')}
+        style={{
+          padding: '8px 16px',
+          borderRadius: '6px',
+          border: 'none',
+          fontWeight: 'bold',
+          fontSize: '0.85rem',
+          cursor: 'pointer',
+          background: activeTab === 'easm' ? '#0284c7' : '#27272a',
+          color: '#fff',
+          transition: 'all 0.2s ease',
+        }}
+      >
+        🕸️ EASM & Recon OSINT
+      </button>
+
+      <button
+        type="button"
         onClick={() => onTabChange('history')}
         style={{
           padding: '10px 18px',

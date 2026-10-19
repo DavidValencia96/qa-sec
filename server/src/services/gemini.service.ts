@@ -21,8 +21,15 @@ import type { ConsolidatedReportInputDTO, ConsolidatedExecutiveSummary } from '.
 import { buildConsolidatedReportPrompt } from './gemini/consolidatedReport.prompt.js';
 import { buildDastAnalysisPrompt } from './gemini/dastAnalysis.prompt.js';
 import type { DastFinding } from '../modules/dast/dast.types.js';
+import { buildEasmAnalysisPrompt } from './gemini/easmAnalysis.prompt.js';
 
 export interface DastAiAnalysisResult {
+  summary: string;
+  riskLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  recommendations: string[];
+}
+
+export interface EasmAiAnalysisResult {
   summary: string;
   riskLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
   recommendations: string[];
@@ -354,6 +361,36 @@ export class GeminiAIService {
       };
     } catch (error) {
       console.error('[!] Error en analyzeDastResultsWithAi:', (error as Error).message);
+      return fallback;
+    }
+  }
+
+  public async generateEasmSummary(easmData: any): Promise<EasmAiAnalysisResult> {
+    const fallback: EasmAiAnalysisResult = {
+      summary: `Superficie externa analizada para ${easmData.cleanDomain || 'el objetivo'}. Se identificaron ${easmData.subdomains?.length || 0} subdominios activos y ${easmData.dnsRecords?.length || 0} registros DNS.`,
+      riskLevel: easmData.sslDetails?.valid ? 'LOW' : 'MEDIUM',
+      recommendations: [
+        'Garantizar que todas las comunicaciones HTTPS utilicen protocolos modernos (TLS 1.2+).',
+        'Configurar registros SPF, DKIM y DMARC en la zona DNS para prevenir suplantación de correo.',
+        'Restringir acceso a subdominios de entornos de desarrollo/staging.',
+      ],
+    };
+
+    try {
+      console.log(`🤖 [Gemini AI] Evaluando superficie de ataque externa (EASM) para ${easmData.cleanDomain}...`);
+      const prompt = buildEasmAnalysisPrompt(easmData);
+      const text = await this.executeWithFallback('', prompt, 800);
+
+      const parsed = this.parseJsonResponse<EasmAiAnalysisResult>(text, null as any);
+      if (!parsed) return fallback;
+
+      return {
+        summary: parsed.summary || fallback.summary,
+        riskLevel: parsed.riskLevel || fallback.riskLevel,
+        recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : fallback.recommendations,
+      };
+    } catch (error) {
+      console.error('[!] Error en generateEasmSummary:', (error as Error).message);
       return fallback;
     }
   }

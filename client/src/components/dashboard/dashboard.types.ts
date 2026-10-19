@@ -8,4 +8,14 @@ export interface TargetInput {
   selector: string;
 }
 
-export type TabType = 'scanner' | 'injection' | 'network' | 'cve' | 'sast' | 'load-test' | 'dast' | 'sca' | 'history';
+export type TabType =
+  | 'scanner'
+  | 'injection'
+  | 'network'
+  | 'cve'
+  | 'sast'
+  | 'load-test'
+  | 'dast'
+  | 'sca'
+  | 'easm'
+  | 'history';
