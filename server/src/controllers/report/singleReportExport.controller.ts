@@ -1,5 +1,90 @@
 import type { Request, Response } from 'express';
+import { GeminiAIService } from '../../services/gemini.service.js';
+import { ConsolidatedReportFormatterService } from '../../services/report/consolidatedReportFormatter.service.js';
+import type { ConsolidatedReportInputDTO } from '../../modules/report/consolidatedReport.types.js';
 import type { DastFinding } from '../../modules/dast/dast.types.js';
+import { getDbPool } from '../../config/database.js';
+
+const geminiService = new GeminiAIService();
+const formatterService = new ConsolidatedReportFormatterService();
+
+export const exportConsolidatedReportHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const data = req.body as ConsolidatedReportInputDTO;
+
+    if (!data.projectName) {
+      res.status(400).json({ success: false, error: 'El nombre del proyecto (projectName) es requerido.' });
+      return;
+    }
+
+    const pool = getDbPool();
+
+    // 1. Consultar datos de DAST si está activado
+    if (data.includedModules?.dastAudit) {
+      const [dastRows]: any = await pool.query('SELECT * FROM dast_history ORDER BY created_at DESC LIMIT 1');
+      if (dastRows.length > 0) {
+        const lastDast = dastRows[0];
+        (data as any).dastData = {
+          targetBaseUrl: lastDast.target_base_url,
+          totalTestedEndpoints: lastDast.total_endpoints_tested,
+          findings: lastDast.findings_json ? JSON.parse(lastDast.findings_json) : [],
+          aiSummary: lastDast.ai_summary_json ? JSON.parse(lastDast.ai_summary_json) : {},
+        };
+      }
+    }
+
+    // 2. Consultar datos de SCA si está activado
+    if (data.includedModules?.scaAudit) {
+      const [scaRows]: any = await pool.query('SELECT * FROM sca_history ORDER BY created_at DESC LIMIT 1');
+      if (scaRows.length > 0) {
+        const lastSca = scaRows[0];
+        (data as any).scaData = {
+          manifestType: lastSca.manifest_type,
+          totalDependenciesAudited: lastSca.total_deps_audited,
+          vulnerabilities: lastSca.vulnerabilities_json ? JSON.parse(lastSca.vulnerabilities_json) : [],
+          gitSecrets: lastSca.git_secrets_json ? JSON.parse(lastSca.git_secrets_json) : [],
+          aiSummary: lastSca.ai_summary_json ? JSON.parse(lastSca.ai_summary_json) : {},
+        };
+      }
+    }
+
+    // 3. Consultar datos de EASM si está activado
+    if (data.includedModules?.easmAudit) {
+      const [easmRows]: any = await pool.query('SELECT * FROM easm_history ORDER BY created_at DESC LIMIT 1');
+      if (easmRows.length > 0) {
+        const lastEasm = easmRows[0];
+        (data as any).easmData = {
+          targetDomain: lastEasm.target_domain,
+          dnsRecords: lastEasm.dns_records_json ? JSON.parse(lastEasm.dns_records_json) : [],
+          subdomains: lastEasm.subdomains_json ? JSON.parse(lastEasm.subdomains_json) : [],
+          wafAndTech: lastEasm.waf_tech_json ? JSON.parse(lastEasm.waf_tech_json) : {},
+          sslDetails: lastEasm.ssl_details_json ? JSON.parse(lastEasm.ssl_details_json) : {},
+          aiSummary: lastEasm.ai_summary_json ? JSON.parse(lastEasm.ai_summary_json) : {},
+        };
+      }
+    }
+
+    // 4. Diagnóstico Global con Gemini AI
+    const aiSummary = await geminiService.generateConsolidatedExecutiveSummary(data);
+
+    // 5. Generar informe en el formato solicitado
+    if (data.format === 'markdown') {
+      const markdownContent = formatterService.generateMarkdownReport(data, aiSummary);
+      res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="informe_consolidado_${data.projectName.toLowerCase().replace(/\s+/g, '_')}.md"`);
+      res.status(200).send(markdownContent);
+      return;
+    }
+
+    const htmlContent = formatterService.generateHtmlReport(data, aiSummary);
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="informe_consolidado_${data.projectName.toLowerCase().replace(/\s+/g, '_')}.html"`);
+    res.status(200).send(htmlContent);
+  } catch (error) {
+    console.error('[!] Error en exportConsolidatedReportHandler:', error);
+    res.status(500).json({ success: false, error: (error as Error).message });
+  }
+};
 
 export const exportSingleRecordHandler = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -308,10 +393,29 @@ export const exportSingleRecordHandler = async (req: Request, res: Response): Pr
         </div>
       `;
     } else if (moduleType === 'easm') {
+      const dnsRecords = recordData.dnsRecords || [];
       const subdomains = recordData.subdomains || [];
       const wafAndTech = recordData.wafAndTech || {};
       const sslDetails = recordData.sslDetails || {};
       const aiSummary = recordData.aiSummary || {};
+
+      const dnsRowsHtml = dnsRecords.length === 0
+        ? '<tr><td colSpan="2" style="padding: 10px; color: #94a3b8;">Sin registros DNS obtenidos.</td></tr>'
+        : dnsRecords.map((r: { type: string; value: string }) => `
+            <tr style="border-bottom: 1px solid #1e293b;">
+              <td style="padding: 8px 10px; color: #38bdf8; font-weight: bold;">${r.type}</td>
+              <td style="padding: 8px 10px; font-family: monospace; word-break: break-all;">${r.value}</td>
+            </tr>
+          `).join('');
+
+      const subdomainsRowsHtml = subdomains.length === 0
+        ? '<tr><td colSpan="2" style="padding: 10px; color: #94a3b8;">No se detectaron subdominios públicos adicionales.</td></tr>'
+        : subdomains.map((s: { subdomain: string; ipAddress?: string }) => `
+            <tr style="border-bottom: 1px solid #1e293b;">
+              <td style="padding: 8px 10px; color: #38bdf8; font-weight: bold;">${s.subdomain}</td>
+              <td style="padding: 8px 10px; font-family: monospace;">IP: ${s.ipAddress || 'Sin IP asignada'}</td>
+            </tr>
+          `).join('');
 
       htmlBody = `
         <div style="border-bottom: 2px solid #334155; padding-bottom: 16px; margin-bottom: 24px;">
@@ -321,7 +425,7 @@ export const exportSingleRecordHandler = async (req: Request, res: Response): Pr
           </span>
         </div>
 
-        <!-- PARAMETRIZACIÓN -->
+        <!-- RESUMEN DEL PERÍMETRO -->
         <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 24px;">
           <h3 style="margin: 0 0 16px 0; color: #38bdf8; font-size: 1.05rem;">🌐 Resumen del Perímetro Expuesto</h3>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; font-size: 0.9rem;">
@@ -334,12 +438,12 @@ export const exportSingleRecordHandler = async (req: Request, res: Response): Pr
               <strong style="color: #38bdf8;">${subdomains.length}</strong>
             </div>
             <div>
-              <span style="color: #94a3b8; display: block; font-size: 0.8rem;">WAF Detectado:</span>
+              <span style="color: #94a3b8; display: block; font-size: 0.8rem;">WAF / Perímetro:</span>
               <strong style="color: ${wafAndTech.wafDetected ? '#22c55e' : '#facc15'};">${wafAndTech.wafDetected ? wafAndTech.wafName || 'Sí' : 'No Detectado'}</strong>
             </div>
             <div>
               <span style="color: #94a3b8; display: block; font-size: 0.8rem;">Estado SSL/TLS:</span>
-              <strong style="color: ${sslDetails.valid ? '#22c55e' : '#ef4444'};">${sslDetails.valid ? 'Válido' : 'Inválido'}</strong>
+              <strong style="color: ${sslDetails.valid ? '#22c55e' : '#ef4444'};">${sslDetails.valid ? `Válido (${sslDetails.daysRemaining ?? 'N/A'} días)` : 'Inválido'}</strong>
             </div>
           </div>
         </div>
@@ -352,12 +456,51 @@ export const exportSingleRecordHandler = async (req: Request, res: Response): Pr
           </p>
         </div>
 
-        <!-- RECOMENDACIONES -->
-        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155;">
+        <!-- ACCIONES DEFENSIVAS -->
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 24px;">
           <h3 style="margin: 0 0 12px 0; color: #38bdf8; font-size: 1rem;">💡 Acciones Defensivas Recomendadas</h3>
           <ul style="margin: 0; padding-left: 20px; color: #cbd5e1; font-size: 0.9rem; line-height: 1.6;">
             ${(aiSummary.recommendations || []).map((r: string) => `<li style="margin-bottom: 6px;">${r}</li>`).join('')}
           </ul>
+        </div>
+
+        <!-- CAPA TÉCNICA HTTP Y SSL -->
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 24px; font-size: 0.9rem;">
+          <h3 style="margin: 0 0 12px 0; color: #f8fafc; font-size: 1rem;">🔒 Certificación SSL/TLS y Servidor</h3>
+          <p style="margin: 4px 0; color: #cbd5e1;"><strong>Emisor SSL:</strong> ${sslDetails.issuer || 'Desconocido'}</p>
+          <p style="margin: 4px 0; color: #cbd5e1;"><strong>Encabezado Server:</strong> <code style="color: #38bdf8;">${wafAndTech.serverHeader || 'No revelado'}</code></p>
+        </div>
+
+        <!-- TABLA COMPLETA DE REGISTROS DNS -->
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 16px 0; color: #f8fafc; font-size: 1rem;">🌐 Registros DNS Obtenidos (${dnsRecords.length})</h3>
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: #cbd5e1;">
+            <thead>
+              <tr style="background: #1e293b; text-align: left; border-bottom: 1px solid #334155;">
+                <th style="padding: 10px; color: #38bdf8;">Tipo</th>
+                <th style="padding: 10px; color: #38bdf8;">Valor / Destino</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${dnsRowsHtml}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- TABLA COMPLETA DE SUBDOMINIOS -->
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155;">
+          <h3 style="margin: 0 0 16px 0; color: #f8fafc; font-size: 1rem;">🔍 Subdominios Descubiertos (${subdomains.length})</h3>
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: #cbd5e1;">
+            <thead>
+              <tr style="background: #1e293b; text-align: left; border-bottom: 1px solid #334155;">
+                <th style="padding: 10px; color: #38bdf8;">Subdominio FQDN</th>
+                <th style="padding: 10px; color: #38bdf8;">Dirección IP Pública</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${subdomainsRowsHtml}
+            </tbody>
+          </table>
         </div>
       `;
     } else {

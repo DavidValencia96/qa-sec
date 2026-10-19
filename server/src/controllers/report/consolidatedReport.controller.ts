@@ -18,7 +18,7 @@ export const exportConsolidatedReportHandler = async (req: Request, res: Respons
 
     const pool = getDbPool();
 
-    // Consultar últimos datos de DAST si está activado
+    // 1. Consultar últimos datos de DAST si está activado
     if (data.includedModules?.dastAudit) {
       const [dastRows]: any = await pool.query(
         'SELECT * FROM dast_history ORDER BY created_at DESC LIMIT 1'
@@ -34,7 +34,7 @@ export const exportConsolidatedReportHandler = async (req: Request, res: Respons
       }
     }
 
-    // Consultar últimos datos de SCA si está activado
+    // 2. Consultar últimos datos de SCA si está activado
     if (data.includedModules?.scaAudit) {
       const [scaRows]: any = await pool.query(
         'SELECT * FROM sca_history ORDER BY created_at DESC LIMIT 1'
@@ -51,10 +51,28 @@ export const exportConsolidatedReportHandler = async (req: Request, res: Respons
       }
     }
 
-    // 1. Diagnóstico Global con Gemini AI
+    // 3. Consultar últimos datos de EASM si está activado
+    if (data.includedModules?.easmAudit) {
+      const [easmRows]: any = await pool.query(
+        'SELECT * FROM easm_history ORDER BY created_at DESC LIMIT 1'
+      );
+      if (easmRows.length > 0) {
+        const lastEasm = easmRows[0];
+        (data as any).easmData = {
+          targetDomain: lastEasm.target_domain,
+          dnsRecords: lastEasm.dns_records_json ? JSON.parse(lastEasm.dns_records_json) : [],
+          subdomains: lastEasm.subdomains_json ? JSON.parse(lastEasm.subdomains_json) : [],
+          wafAndTech: lastEasm.waf_tech_json ? JSON.parse(lastEasm.waf_tech_json) : {},
+          sslDetails: lastEasm.ssl_details_json ? JSON.parse(lastEasm.ssl_details_json) : {},
+          aiSummary: lastEasm.ai_summary_json ? JSON.parse(lastEasm.ai_summary_json) : {},
+        };
+      }
+    }
+
+    // 4. Diagnóstico Global con Gemini AI
     const aiSummary = await geminiService.generateConsolidatedExecutiveSummary(data);
 
-    // 2. Generar informe según formato deseado (HTML o Markdown)
+    // 5. Generar informe según formato deseado (HTML o Markdown)
     if (data.format === 'markdown') {
       const markdownContent = formatterService.generateMarkdownReport(data, aiSummary);
       res.setHeader('Content-Type', 'text/markdown; charset=utf-8');

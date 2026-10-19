@@ -27,11 +27,27 @@ export const getTestRunsHistory = async (_req: Request, res: Response): Promise<
     // 3. Historial SCA
     const scaHistory = await fetchScaTestRuns();
 
+    // 4. Historial EASM
+    const [easmRows] = await pool.query(`
+      SELECT 
+        id,
+        target_domain AS targetDomain,
+        dns_records_json AS dnsRecordsJson,
+        subdomains_json AS subdomainsJson,
+        waf_tech_json AS wafTechJson,
+        ssl_details_json AS sslDetailsJson,
+        ai_summary_json AS aiSummaryJson,
+        created_at AS createdAt
+      FROM easm_history
+      ORDER BY created_at DESC
+    `);
+
     res.status(200).json({
       success: true,
       history,
       dastHistory: dastRows,
       scaHistory,
+      easmHistory: easmRows,
     });
   } catch (error) {
     console.error('[!] Error consultando historial centralizado:', error);

@@ -11,6 +11,7 @@ export interface ConsolidatedReportOptions {
     loadTest: boolean;
     dastAudit: boolean;
     scaAudit: boolean;
+    easmAudit: boolean;
   };
 }
 
@@ -37,6 +38,7 @@ export const ConsolidatedReportExportModal: React.FC<ConsolidatedReportExportMod
     loadTest: true,
     dastAudit: true,
     scaAudit: true,
+    easmAudit: true,
   });
 
   if (!isOpen) return null;
@@ -193,6 +195,15 @@ export const ConsolidatedReportExportModal: React.FC<ConsolidatedReportExportMod
                   onChange={(e) => setModules({ ...modules, scaAudit: e.target.checked })}
                 />{' '}
                 🔐 SCA & Supply Chain Security (Dependencias y Secretos)
+              </label>
+
+              <label style={{ color: '#f4f4f5', fontSize: '0.85rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={modules.easmAudit}
+                  onChange={(e) => setModules({ ...modules, easmAudit: e.target.checked })}
+                />{' '}
+                🕸️ External Attack Surface Management (EASM & OSINT)
               </label>
             </div>
           </div>

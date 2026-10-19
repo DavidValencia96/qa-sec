@@ -1,5 +1,11 @@
 import type { ConsolidatedReportInputDTO, ConsolidatedExecutiveSummary } from '../../modules/report/consolidatedReport.types.js';
 
+interface EasmAiSummary {
+  summary?: string;
+  riskLevel?: string;
+  recommendations?: string[];
+}
+
 export class ConsolidatedReportFormatterService {
   public generateHtmlReport(
     data: ConsolidatedReportInputDTO,
@@ -15,6 +21,69 @@ export class ConsolidatedReportFormatterService {
         : '#22c55e';
 
     const dateStr = new Date().toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' });
+
+    // Preparación de datos EASM
+    let easmHtmlSection = '';
+    if (data.includedModules.easmAudit && data.easmData) {
+      const easm = data.easmData;
+      const dnsRecords = easm.dnsRecords || [];
+      const subdomains = easm.subdomains || [];
+      const wafAndTech = easm.wafAndTech || {};
+      const sslDetails = easm.sslDetails || {};
+      const ai = (easm.aiSummary || {}) as EasmAiSummary;
+
+      const dnsRowsHtml = dnsRecords.length === 0
+        ? '<tr><td colSpan="2" style="color: #94a3b8;">Sin registros DNS obtenidos.</td></tr>'
+        : dnsRecords.map((r: any) => `
+            <tr>
+              <td><strong style="color: #38bdf8;">${r.type}</strong></td>
+              <td style="font-family: monospace;">${r.value}</td>
+            </tr>
+          `).join('');
+
+      const subdomainsRowsHtml = subdomains.length === 0
+        ? '<tr><td colSpan="3" style="color: #94a3b8;">No se detectaron subdominios adicionales activos.</td></tr>'
+        : subdomains.map((s: any) => `
+            <tr>
+              <td><strong style="color: #38bdf8;">${s.subdomain}</strong></td>
+              <td style="font-family: monospace;">${s.ipAddress || 'Sin IP asignada'}</td>
+              <td><span style="color: #22c55e; font-weight: bold;">${s.status}</span></td>
+            </tr>
+          `).join('');
+
+      easmHtmlSection = `
+        <h2>🕸️ Módulo 7: External Attack Surface Management (EASM & OSINT)</h2>
+        <div class="card" style="margin-bottom: 20px;">
+          <p><strong>Dominio Objetivo:</strong> ${easm.targetDomain}</p>
+          <p><strong>Subdominios Públicos Descubiertos:</strong> <strong style="color: #38bdf8;">${subdomains.length}</strong></p>
+          <p><strong>WAF Detectado:</strong> <strong style="color: ${wafAndTech.wafDetected ? '#22c55e' : '#facc15'};">${wafAndTech.wafDetected ? wafAndTech.wafName || 'Sí' : 'No Detectado'}</strong></p>
+          <p><strong>Encabezado Server HTTP:</strong> <code>${wafAndTech.serverHeader || 'No Revelado'}</code></p>
+          <p><strong>Certificado SSL/TLS:</strong> <strong style="color: ${sslDetails.valid ? '#22c55e' : '#ef4444'};">${sslDetails.valid ? `VÁLIDO (${sslDetails.daysRemaining ?? 'N/A'} días restantes)` : 'INVÁLIDO / EXPIRADO'}</strong></p>
+          <p><strong>Emisor Certificado:</strong> ${sslDetails.issuer || 'Desconocido'}</p>
+          ${ai.summary ? `<p><strong>Diagnóstico Perimetral IA:</strong> ${ai.summary}</p>` : ''}
+
+          <h4 style="color: #38bdf8; margin-top: 16px; margin-bottom: 8px;">🌐 Todos los Registros DNS Detectados (${dnsRecords.length}):</h4>
+          <table>
+            <thead>
+              <tr><th>Tipo</th><th>Valor / Host Destino</th></tr>
+            </thead>
+            <tbody>
+              ${dnsRowsHtml}
+            </tbody>
+          </table>
+
+          <h4 style="color: #38bdf8; margin-top: 16px; margin-bottom: 8px;">🔍 Mapeo Completo de Subdominios (${subdomains.length}):</h4>
+          <table>
+            <thead>
+              <tr><th>Subdominio FQDN</th><th>Dirección IP Pública</th><th>Estado</th></tr>
+            </thead>
+            <tbody>
+              ${subdomainsRowsHtml}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
 
     return `<!DOCTYPE html>
 <html lang="es">
@@ -121,7 +190,7 @@ export class ConsolidatedReportFormatterService {
   <div class="container">
     <div class="header">
       <div>
-        <h1 class="title">🛡️ QA-Sec Suite - Informe Consolidado Ejecuto</h1>
+        <h1 class="title">🛡️ QA-Sec Suite - Informe Consolidado Ejecutivo</h1>
         <div class="subtitle">Proyecto: <strong>${data.projectName}</strong> | Generado: ${dateStr}</div>
       </div>
       <div class="no-print">
@@ -150,6 +219,7 @@ export class ConsolidatedReportFormatterService {
       </ul>
     </div>
 
+    <!-- MÓDULO 1: WEB SCAN -->
     ${data.includedModules.webScan && data.webFindings ? `
       <h2>🌐 Módulo 1: Auditoría Web & Inyección de Inputs</h2>
       <table>
@@ -169,6 +239,7 @@ export class ConsolidatedReportFormatterService {
       </table>
     ` : ''}
 
+    <!-- MÓDULO 2: NETWORK -->
     ${data.includedModules.networkScan && data.networkData ? `
       <h2>🛡️ Módulo 2: Configuración & Superficie de Red</h2>
       <div class="card" style="margin-bottom: 20px;">
@@ -183,6 +254,7 @@ export class ConsolidatedReportFormatterService {
       </div>
     ` : ''}
 
+    <!-- MÓDULO 3: SAST -->
     ${data.includedModules.sastAudit && data.sastData ? `
       <h2>🔍 Módulo 3: Auditoría Estática de Código (SAST)</h2>
       <div class="card" style="margin-bottom: 20px;">
@@ -192,15 +264,40 @@ export class ConsolidatedReportFormatterService {
       </div>
     ` : ''}
 
+    <!-- MÓDULO 4: LOAD TEST -->
     ${data.includedModules.loadTest && data.loadTestData ? `
       <h2>💥 Módulo 4: Resiliencia & Pruebas de Carga DoS</h2>
-      <div class="card">
+      <div class="card" style="margin-bottom: 20px;">
         <p><strong>Endpoint Evaluado:</strong> ${data.loadTestData.targetUrl}</p>
         <p><strong>Peticiones por Segundo (RPS):</strong> <strong style="color: #a855f7;">${data.loadTestData.rps} req/s</strong></p>
         <p><strong>Latencia Promedio:</strong> ${data.loadTestData.avgLatencyMs} ms</p>
         <p><strong>Total Peticiones Enviadas:</strong> ${data.loadTestData.metrics.totalRequests}</p>
       </div>
     ` : ''}
+
+    <!-- MÓDULO 5: DAST -->
+    ${data.includedModules.dastAudit && data.dastData ? `
+      <h2>🛡️ Módulo 5: DAST & OpenAPI Dynamic Fuzzing</h2>
+      <div class="card" style="margin-bottom: 20px;">
+        <p><strong>URL Base Objetivo:</strong> ${data.dastData.targetBaseUrl}</p>
+        <p><strong>Endpoints Auditados:</strong> ${data.dastData.totalTestedEndpoints}</p>
+        <p><strong>Hallazgos Detectados:</strong> <strong style="color: ${data.dastData.findings.length > 0 ? '#ef4444' : '#22c55e'};">${data.dastData.findings.length}</strong></p>${(data.dastData.aiSummary as any)?.summary ? `<p><strong>Diagnóstico DAST:</strong> ${(data.dastData.aiSummary as any).summary}</p>` : ''}
+      </div>
+    ` : ''}
+
+    <!-- MÓDULO 6: SCA -->
+    ${data.includedModules.scaAudit && data.scaData ? `
+      <h2>🔐 Módulo 6: SCA & Supply Chain Security</h2>
+      <div class="card" style="margin-bottom: 20px;">
+        <p><strong>Manifest / Configuración:</strong> ${data.scaData.manifestType}</p>
+        <p><strong>Dependencias Auditadas:</strong> ${data.scaData.totalDependenciesAudited}</p>
+        <p><strong>Vulnerabilidades en Paquetes:</strong> <strong style="color: ${data.scaData.vulnerabilities.length > 0 ? '#ef4444' : '#22c55e'};">${data.scaData.vulnerabilities.length}</strong></p>
+        <p><strong>Secretos Git Expuestos:</strong> <strong style="color: ${data.scaData.gitSecrets.length > 0 ? '#ef4444' : '#22c55e'};">${data.scaData.gitSecrets.length}</strong></p>
+      </div>
+    ` : ''}
+
+    <!-- MÓDULO 7: EASM SECCIÓN COMPLETA -->
+    ${easmHtmlSection}
 
   </div>
 </body>
@@ -211,9 +308,9 @@ export class ConsolidatedReportFormatterService {
     data: ConsolidatedReportInputDTO,
     aiSummary: ConsolidatedExecutiveSummary
   ): string {
-    return `# 🛡️ QA-Sec Suite - Informe Consolidado Ejecuto
+    let markdown = `# 🛡️ QA-Sec Suite - Informe Consolidado Ejecutivo
 **Proyecto:** ${data.projectName}
-**Fecha:** ${new Date().toLocaleString()}
+**Fecha:** ${new Date().toLocaleString('es-ES')}
 **Nivel de Riesgo Consolidado:** ${aiSummary.overallRiskLevel}
 **Score Global de Salud:** ${aiSummary.globalHealthScore} / 100
 
@@ -226,6 +323,52 @@ ${aiSummary.executiveOverview}
 ${aiSummary.priorityRemediations.map((r, i) => `${i + 1}.${r}`).join('\n')}
 
 ---
-*Informe generado automáticamente por QA-Sec Suite Orchestrator.*`;
+`;
+
+    if (data.includedModules.webScan && data.webFindings) {
+      markdown += `\n## 🌐 Módulo 1: Auditoría Web & Inputs\nTotal hallazgos: ${data.webFindings.length}\n`;
+    }
+
+    if (data.includedModules.networkScan && data.networkData) {
+      markdown += `\n## 🛡️ Módulo 2: Red & Perímetro\nHost: ${data.networkData.targetHost}\nPuertos Abiertos: ${data.networkData.openPorts.length}\n`;
+    }
+
+    if (data.includedModules.sastAudit && data.sastData) {
+      markdown += `\n## 🔍 Módulo 3: SAST & Código\nArchivo: ${data.sastData.fileName}\nHealth Score: ${data.sastData.healthScore}/100\n`;
+    }
+
+    if (data.includedModules.loadTest && data.loadTestData) {
+      markdown += `\n## 💥 Módulo 4: Pruebas de Carga\nTarget: ${data.loadTestData.targetUrl}\nRPS: ${data.loadTestData.rps}\n`;
+    }
+
+    if (data.includedModules.dastAudit && data.dastData) {
+      markdown += `\n## 🛡️ Módulo 5: DAST & API Fuzzing\nTarget: ${data.dastData.targetBaseUrl}\nHallazgos: ${data.dastData.findings.length}\n`;
+    }
+
+    if (data.includedModules.scaAudit && data.scaData) {
+      markdown += `\n## 🔐 Módulo 6: SCA & Cadena de Suministro\nVulnerabilidades: ${data.scaData.vulnerabilities.length}\nSecretos Expuestos: ${data.scaData.gitSecrets.length}\n`;
+    }
+
+    if (data.includedModules.easmAudit && data.easmData) {
+      const dns = data.easmData.dnsRecords || [];
+      const subs = data.easmData.subdomains || [];
+      const dnsList = dns.map((r: any) => `- [${r.type}] ${r.value}`).join('\n');
+      const subsList = subs.map((s: any) => `- ${s.subdomain} (IP: ${s.ipAddress || 'N/A'})`).join('\n');
+
+      markdown += `\n## 🕸️ Módulo 7: EASM & Recon OSINT
+**Dominio:** ${data.easmData.targetDomain}
+**WAF:** ${data.easmData.wafAndTech?.wafDetected ? data.easmData.wafAndTech?.wafName || 'Sí' : 'No Detectado'}
+**SSL:** ${data.easmData.sslDetails?.valid ? 'VÁLIDO' : 'INVÁLIDO'}
+
+### Registros DNS (${dns.length}):
+${dnsList || 'Sin registros obtenidos.'}
+
+### Subdominios (${subs.length}):
+${subsList || 'Sin subdominios detectados.'}
+`;
+    }
+
+    markdown += `\n---\n*Informe generado automáticamente por QA-Sec Suite Orchestrator.*`;
+    return markdown;
   }
 }

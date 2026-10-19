@@ -2,6 +2,7 @@ import type { SastFinding } from '../sast/sast.types.js';
 import type { LoadTestMetrics } from '../loadTest/loadTest.types.js';
 import type { DastFinding } from '../dast/dast.types.js';
 import type { ScaVulnerability, GitSecretFinding } from '../sca/sca.types.js';
+import type { DnsRecordItem, SubdomainItem, WafTechnologyDetails, SslCertificateDetails } from '../easm/easm.types.js';
 
 export interface ConsolidatedReportInputDTO {
   title: string;
@@ -14,6 +15,7 @@ export interface ConsolidatedReportInputDTO {
     loadTest?: boolean;
     dastAudit?: boolean;
     scaAudit?: boolean;
+    easmAudit?: boolean;
   };
   webFindings?: Array<{
     title: string;
@@ -52,6 +54,18 @@ export interface ConsolidatedReportInputDTO {
     totalDependenciesAudited: number;
     vulnerabilities: ScaVulnerability[];
     gitSecrets: GitSecretFinding[];
+    aiSummary?: {
+      summary: string;
+      riskLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+      recommendations: string[];
+    };
+  };
+  easmData?: {
+    targetDomain: string;
+    dnsRecords: DnsRecordItem[];
+    subdomains: SubdomainItem[];
+    wafAndTech: WafTechnologyDetails;
+    sslDetails: SslCertificateDetails;
     aiSummary?: {
       summary: string;
       riskLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';

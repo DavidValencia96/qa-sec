@@ -191,6 +191,33 @@ export const ReportHistory: React.FC = () => {
     }
   };
 
+  const handleExportSingleEasm = async (item: EasmHistoryItem) => {
+    try {
+      const dnsRecords = item.dnsRecordsJson ? JSON.parse(item.dnsRecordsJson) : [];
+      const subdomains = item.subdomainsJson ? JSON.parse(item.subdomainsJson) : [];
+      const wafAndTech = item.wafTechJson ? JSON.parse(item.wafTechJson) : {};
+      const sslDetails = item.sslDetailsJson ? JSON.parse(item.sslDetailsJson) : {};
+      const aiSummary = item.aiSummaryJson ? JSON.parse(item.aiSummaryJson) : {};
+
+      await exportSingleRecordApi({
+        moduleType: 'easm',
+        recordData: {
+          id: item.id,
+          targetDomain: item.targetDomain,
+          dnsRecords,
+          subdomains,
+          wafAndTech,
+          sslDetails,
+          aiSummary,
+          createdAt: item.createdAt,
+        },
+        format: 'html',
+      });
+    } catch (err) {
+      alert(`Error al exportar reporte EASM: ${(err as Error).message}`);
+    }
+  };
+
   const filterItem = (item: HistoryItem, query: string) => {
     const q = query.toLowerCase();
     return (
@@ -554,12 +581,13 @@ export const ReportHistory: React.FC = () => {
                 <th style={{ padding: '12px' }}>Subdominios Detectados</th>
                 <th style={{ padding: '12px' }}>Certificado SSL</th>
                 <th style={{ padding: '12px' }}>Fecha</th>
+                <th style={{ padding: '12px', textAlign: 'right' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {easmItems.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ padding: '20px', textAlign: 'center', color: '#a1a1aa' }}>
+                  <td colSpan={6} style={{ padding: '20px', textAlign: 'center', color: '#a1a1aa' }}>
                     No se registran auditorías EASM en el historial.
                   </td>
                 </tr>
@@ -577,6 +605,24 @@ export const ReportHistory: React.FC = () => {
                       </td>
                       <td style={{ padding: '12px', color: '#a1a1aa' }}>
                         {new Date(item.createdAt).toLocaleString('es-ES')}
+                      </td>
+                      <td style={{ padding: '12px', textAlign: 'right' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleExportSingleEasm(item)}
+                          style={{
+                            background: '#0284c7',
+                            color: '#ffffff',
+                            border: 'none',
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            fontSize: '0.8rem',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          📥 Exportar PDF / HTML
+                        </button>
                       </td>
                     </tr>
                   );

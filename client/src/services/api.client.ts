@@ -321,7 +321,7 @@ export const exportConsolidatedReportApi = async (options: ConsolidatedReportOpt
 };
 
 export const exportSingleRecordApi = async (payload: {
-  moduleType: 'web' | 'sast' | 'load-test' | 'dast' | 'sca';
+  moduleType: 'web' | 'sast' | 'load-test' | 'dast' | 'sca' | 'easm';
   recordData: unknown;
   format?: 'html' | 'markdown';
 }): Promise<void> => {
@@ -449,7 +449,7 @@ export interface EasmAuditPayload {
 }
 
 export const runEasmAuditApi = async (payload: EasmAuditPayload) => {
-  const response = await fetch('/api/easm/audit', {
+  const response = await fetch(`${BASE_URL}/easm/audit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
