@@ -278,3 +278,12 @@ ADD COLUMN payload_json LONGTEXT NULL AFTER duration_seconds;
 
 ALTER TABLE load_test_history 
 ADD COLUMN headers_json LONGTEXT NULL AFTER payload_json;
+
+CREATE TABLE IF NOT EXISTS dast_history (
+  id VARCHAR(64) PRIMARY KEY,
+  target_base_url VARCHAR(255) NOT NULL,
+  total_endpoints_tested INT NOT NULL DEFAULT 0,
+  findings_json LONGTEXT NULL,
+  ai_summary_json LONGTEXT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

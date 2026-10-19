@@ -320,7 +320,7 @@ export const exportConsolidatedReportApi = async (options: ConsolidatedReportOpt
 };
 
 export const exportSingleRecordApi = async (payload: {
-  moduleType: 'web' | 'sast' | 'load-test';
+  moduleType: 'web' | 'sast' | 'load-test' | 'dast';
   recordData: unknown;
   format?: 'html' | 'markdown';
 }): Promise<void> => {
@@ -351,4 +351,43 @@ export const exportSingleRecordApi = async (payload: {
   link.click();
   link.remove();
   window.URL.revokeObjectURL(downloadUrl);
+};
+
+export interface DastFindingItem {
+  vulnerabilityType: 'BOLA_IDOR' | 'CRLF_INJECTION' | 'HOST_HEADER_INJECTION' | 'UNAUTHORIZED_VERB';
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  endpointPath: string;
+  httpMethod: string;
+  description: string;
+  remediation: string;
+  evidencePayload: string;
+}
+
+export interface DastAuditResponse {
+  success: boolean;
+  runId: string;
+  totalTestedEndpoints: number;
+  findings: DastFindingItem[];
+  aiSummary?: {
+    summary: string;
+    riskLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+    recommendations: string[];
+  };
+  error?: string;
+}
+
+export const runDastAuditApi = async (data: {
+  targetBaseUrl: string;
+  openApiSpecJson?: string;
+  primaryAuthHeader?: string;
+  secondaryAuthHeader?: string;
+  enableBolaTesting: boolean;
+  enableHeaderInjectionTesting: boolean;
+}): Promise<DastAuditResponse> => {
+  const response = await fetch(`${BASE_URL}/dast/run`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return response.json();
 };

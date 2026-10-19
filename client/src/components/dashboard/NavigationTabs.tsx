@@ -134,6 +134,26 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({ activeTab, onTab
         💥 Pruebas de Carga & DoS
       </button>
 
+      {/* NUEVA PESTAÑA DAST & OPENAPI FUZZER */}
+      <button
+        type="button"
+        onClick={() => onTabChange('dast')}
+        style={{
+          padding: '10px 18px',
+          borderRadius: '6px',
+          border: 'none',
+          fontSize: '0.9rem',
+          fontWeight: '600',
+          cursor: 'pointer',
+          backgroundColor: activeTab === 'dast' ? '#2563eb' : '#27272a',
+          color: '#ffffff',
+          boxShadow: activeTab === 'dast' ? '0 0 12px rgba(37, 99, 235, 0.4)' : 'none',
+          transition: 'all 0.2s ease',
+        }}
+      >
+        🛡️ DAST & OpenAPI Fuzzer
+      </button>
+
       <button
         type="button"
         onClick={() => onTabChange('history')}

@@ -6,4 +6,4 @@ export interface TargetInput {
   value: string; 
 }
 
-export type TabType = 'scanner' | 'injection' | 'network' | 'cve' | 'sast' | 'load-test' | 'history';
+export type TabType = 'scanner' | 'injection' | 'network' | 'cve' | 'sast' | 'load-test' | 'dast' | 'history';

@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import type { DastFinding } from '../../modules/dast/dast.types.js';
 
 export const exportSingleRecordHandler = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -153,6 +154,74 @@ export const exportSingleRecordHandler = async (req: Request, res: Response): Pr
           </ul>
         </div>
       `;
+    } else if (moduleType === 'dast') {
+      const findings: DastFinding[] = recordData.findings || [];
+      const aiSummary = recordData.aiSummary || {};
+
+      htmlBody = `
+        <div style="border-bottom: 2px solid #334155; padding-bottom: 16px; margin-bottom: 24px;">
+          <h2 style="margin: 0 0 8px 0; color: #38bdf8;">🛡️ Reporte Técnico - Auditoría DAST & API Fuzzing</h2>
+          <span style="color: #94a3b8; font-size: 0.9rem;">
+            ID de Auditoría: <strong>${recordData.id || 'N/A'}</strong> | Fecha: ${dateStr}
+          </span>
+        </div>
+
+        <!-- PARAMETRIZACIÓN DAST -->
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 16px 0; color: #38bdf8; font-size: 1.05rem;">⚙️ Parámetros de Escaneo Dinámico</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; font-size: 0.9rem;">
+            <div>
+              <span style="color: #94a3b8; display: block; font-size: 0.8rem;">URL Base Objetivo:</span>
+              <strong style="color: #f8fafc; word-break: break-all;">${recordData.targetBaseUrl}</strong>
+            </div>
+            <div>
+              <span style="color: #94a3b8; display: block; font-size: 0.8rem;">Endpoints Evaluados:</span>
+              <strong style="color: #38bdf8;">${recordData.totalTestedEndpoints || 0} endpoints</strong>
+            </div>
+            <div>
+              <span style="color: #94a3b8; display: block; font-size: 0.8rem;">Total Hallazgos:</span>
+              <strong style="color: ${findings.length > 0 ? '#ef4444' : '#22c55e'};">${findings.length} hallazgos</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- SÍNTESIS GEMINI IA -->
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border-left: 4px solid #38bdf8; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 8px 0; color: #38bdf8; font-size: 1.05rem;">🤖 Diagnóstico Ejecutivo DAST (Gemini AI)</h3>
+          <p style="margin: 0; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+            ${aiSummary.summary || 'Escaneo dinámico de APIs completado.'}
+          </p>
+        </div>
+
+        <!-- TABLA DE HALLAZGOS DAST -->
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 16px 0; color: #f8fafc; font-size: 1rem;">🔍 Hallazgos de Seguridad Detectados (${findings.length})</h3>
+          ${findings.length === 0 ? `
+            <p style="color: #4ade80; margin: 0;">✅ No se detectaron vulnerabilidades de BOLA ni inyecciones de cabeceras.</p>
+          ` : findings.map((f) => `
+            <div style="background: #1e293b; padding: 14px; border-radius: 6px; border-left: 4px solid ${f.severity === 'CRITICAL' ? '#ef4444' : '#f97316'}; margin-bottom: 12px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <strong style="color: #f8fafc;">[${f.vulnerabilityType}] ${f.httpMethod}${f.endpointPath}</strong>
+                <span style="background: #0f172a; color: ${f.severity === 'CRITICAL' ? '#ef4444' : '#f97316'}; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem;">
+                  ${f.severity}
+                </span>
+              </div>
+              <p style="color: #cbd5e1; font-size: 0.88rem; margin: 0 0 8px 0;">${f.description}</p>
+              <div style="background: #020617; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 0.8rem; color: #38bdf8; word-break: break-all;">
+                Evidence: ${f.evidencePayload}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
+        <!-- RECOMENDACIONES -->
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155;">
+          <h3 style="margin: 0 0 12px 0; color: #38bdf8; font-size: 1rem;">💡 Recomendaciones Defensivas DAST</h3>
+          <ul style="margin: 0; padding-left: 20px; color: #cbd5e1; font-size: 0.9rem; line-height: 1.6;">
+            ${(aiSummary.recommendations || []).map((r: string) => `<li style="margin-bottom: 6px;">${r}</li>`).join('')}
+          </ul>
+        </div>
+      `;
     } else {
       htmlBody = `<h2>Reporte de auditoría estándar</h2>`;
     }
@@ -172,7 +241,7 @@ export const exportSingleRecordHandler = async (req: Request, res: Response): Pr
 <body>
   <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;" class="no-print">
-      <span style="color: #94a3b8; font-weight: bold;">🛡️ QA-Sec Suite — Informe Técnico de Carga</span>
+      <span style="color: #94a3b8; font-weight: bold;">🛡️ QA-Sec Suite — Informe Técnico Individual</span>
       <button class="btn-print" onclick="window.print()">🖨️ Guardar PDF / Imprimir</button>
     </div>
     ${htmlBody}

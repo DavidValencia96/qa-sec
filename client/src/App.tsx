@@ -14,6 +14,7 @@ import type { TargetInput } from './components/dashboard/dashboard.types';
 import { CveRadarTab } from './components/cve/CveRadarTab';
 import { SastAuditTab } from './components/sast/SastAuditTab';
 import { LoadTestTab } from './components/loadTest/LoadTestTab';
+import { DastAuditTab } from './components/dast/DastAuditTab';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<TabType>('scanner');
@@ -272,9 +273,13 @@ export function App() {
       {/* PESTAÑA 5: Auditoría SAST & Secret Scanning */}
       {activeTab === 'sast' && <SastAuditTab />}
 
+      {/* PESTAÑA 6: Pruebas de Carga & DoS */}
       {activeTab === 'load-test' && <LoadTestTab />}
 
-      {/* PESTAÑA 6: HISTORIAL Y BUSCADOR */}
+      {/* PESTAÑA 7: DAST & OpenAPI Fuzzer */}
+      {activeTab === 'dast' && <DastAuditTab />}
+
+      {/* PESTAÑA 8: HISTORIAL Y BUSCADOR */}
       {activeTab === 'history' && <ReportHistory />}
     </div>
   );

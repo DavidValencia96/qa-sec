@@ -19,6 +19,14 @@ import type { LoadTestConfigDTO, LoadTestMetrics } from '../modules/loadTest/loa
 import { buildLoadTestAnalysisPrompt } from './gemini/loadTestAnalysis.prompt.js';
 import type { ConsolidatedReportInputDTO, ConsolidatedExecutiveSummary } from '../modules/report/consolidatedReport.types.js';
 import { buildConsolidatedReportPrompt } from './gemini/consolidatedReport.prompt.js';
+import { buildDastAnalysisPrompt } from './gemini/dastAnalysis.prompt.js';
+import type { DastFinding } from '../modules/dast/dast.types.js';
+
+export interface DastAiAnalysisResult {
+  summary: string;
+  riskLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  recommendations: string[];
+}
 
 export class GeminiAIService {
   private ai: GoogleGenAI;
@@ -313,6 +321,39 @@ export class GeminiAIService {
       };
     } catch (error) {
       console.error('[!] Error en generateConsolidatedExecutiveSummary:', (error as Error).message);
+      return fallback;
+    }
+  }
+
+  public async analyzeDastResultsWithAi(
+    targetBaseUrl: string,
+    totalTestedEndpoints: number,
+    findings: ReadonlyArray<DastFinding>
+  ): Promise<DastAiAnalysisResult> {
+    const fallback: DastAiAnalysisResult = {
+      summary: 'Auditoría DAST realizada. Se identificaron puntos de evaluación dinámica en la API.',
+      riskLevel: findings.some((f) => f.severity === 'CRITICAL') ? 'CRITICAL' : 'HIGH',
+      recommendations: [
+        'Implementar validación estricta de autorización a nivel de objeto (BOLA/IDOR).',
+        'Sanitizar encabezados HTTP y configurar una lista blanca de Hosts en el Proxy/WAF.',
+      ],
+    };
+
+    try {
+      console.log(`🤖 [Gemini AI] Analizando resultados DAST para ${targetBaseUrl}...`);
+      const prompt = buildDastAnalysisPrompt(targetBaseUrl, totalTestedEndpoints, findings);
+      const text = await this.executeWithFallback('', prompt, 800);
+
+      const parsed = this.parseJsonResponse<any>(text, null);
+      if (!parsed) return fallback;
+
+      return {
+        summary: parsed.summary || fallback.summary,
+        riskLevel: parsed.riskLevel || fallback.riskLevel,
+        recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : fallback.recommendations,
+      };
+    } catch (error) {
+      console.error('[!] Error en analyzeDastResultsWithAi:', (error as Error).message);
       return fallback;
     }
   }
