@@ -3,7 +3,9 @@ export type LocatorType = 'id' | 'name' | 'xpath' | 'css';
 export interface TargetInput {
   id: string; 
   type: LocatorType;
-  value: string; 
+  value: string;
+  name: string; 
+  selector: string;
 }
 
-export type TabType = 'scanner' | 'injection' | 'network' | 'cve' | 'sast' | 'load-test' | 'dast' | 'history';
+export type TabType = 'scanner' | 'injection' | 'network' | 'cve' | 'sast' | 'load-test' | 'dast' | 'sca' | 'history';

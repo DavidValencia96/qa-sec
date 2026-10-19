@@ -22,6 +22,7 @@ import { getLoadTestHistoryHandler } from '../controllers/loadTest/loadTestHisto
 import { exportConsolidatedReportHandler } from '../controllers/report/consolidatedReport.controller.js';
 import { exportSingleRecordHandler } from '../controllers/report/singleReportExport.controller.js';
 import { runDastAuditHandler } from '../controllers/dast/dast.controller.js';
+import { runScaAuditHandler } from '../controllers/sca/sca.controller.js';
 
 const router = Router();
 
@@ -60,6 +61,7 @@ router.post('/reports/consolidated/export', exportConsolidatedReportHandler);
 router.post('/reports/single/export', exportSingleRecordHandler);
 
 router.post('/dast/run', runDastAuditHandler);
+router.post('/sca/run', runScaAuditHandler);
 
 export const apiRouter = router;
 export default router;

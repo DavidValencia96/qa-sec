@@ -1,6 +1,7 @@
 import { getDbPool } from '../config/database.js';
 import { randomUUID } from 'crypto';
 import { UNIFIED_HISTORY_QUERY } from './history/history.queries.js';
+import { fetchScaHistoryRows, type ScaHistoryRow } from './history/scaHistory.service.js';
 
 export const saveNetworkAuditRun = async (
   targetHost: string,
@@ -28,4 +29,8 @@ export const saveNetworkAuditRun = async (
 export const fetchAllTestRuns = async (): Promise<any[]> => {
   const [rows] = await getDbPool().execute(UNIFIED_HISTORY_QUERY);
   return rows as any[];
+};
+
+export const fetchScaTestRuns = async (): Promise<ScaHistoryRow[]> => {
+  return await fetchScaHistoryRows();
 };

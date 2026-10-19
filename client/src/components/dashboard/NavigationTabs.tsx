@@ -156,6 +156,25 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({ activeTab, onTab
 
       <button
         type="button"
+        onClick={() => onTabChange('sca')}
+        style={{
+          padding: '10px 18px',
+          borderRadius: '6px',
+          border: 'none',
+          fontSize: '0.9rem',
+          fontWeight: '600',
+          cursor: 'pointer',
+          backgroundColor: activeTab === 'sca' ? '#2563eb' : '#27272a',
+          color: '#ffffff',
+          boxShadow: activeTab === 'sca' ? '0 0 12px rgba(37, 99, 235, 0.4)' : 'none',
+          transition: 'all 0.2s ease',
+        }}
+      >
+        🔐 SCA & Supply Chain Sec
+      </button>
+
+      <button
+        type="button"
         onClick={() => onTabChange('history')}
         style={{
           padding: '10px 18px',

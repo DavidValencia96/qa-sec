@@ -1,6 +1,7 @@
 import type { TargetInput } from '../components/dashboard/dashboard.types';
 import type { LoadTestConfig, LoadTestResult, LoadTestMetrics } from '../components/loadTest/loadTest.types';
 import type { ConsolidatedReportOptions } from '../components/report/ConsolidatedReportExportModal';
+export type DependencyManifestType = 'package_json' | 'requirements_txt' | 'pom_xml';
 
 const BASE_URL = 'http://localhost:3000/api';
 
@@ -320,7 +321,7 @@ export const exportConsolidatedReportApi = async (options: ConsolidatedReportOpt
 };
 
 export const exportSingleRecordApi = async (payload: {
-  moduleType: 'web' | 'sast' | 'load-test' | 'dast';
+  moduleType: 'web' | 'sast' | 'load-test' | 'dast' | 'sca';
   recordData: unknown;
   format?: 'html' | 'markdown';
 }): Promise<void> => {
@@ -385,6 +386,54 @@ export const runDastAuditApi = async (data: {
   enableHeaderInjectionTesting: boolean;
 }): Promise<DastAuditResponse> => {
   const response = await fetch(`${BASE_URL}/dast/run`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return response.json();
+};
+
+export interface ScaVulnerabilityItem {
+  packageName: string;
+  currentVersion: string;
+  cveId?: string;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  description: string;
+  patchedVersion?: string;
+  isLicenseIncompatible: boolean;
+}
+
+export interface GitSecretFindingItem {
+  commitHash: string;
+  author: string;
+  date: string;
+  filePath: string;
+  secretType: 'API_KEY' | 'PRIVATE_KEY' | 'DATABASE_URL' | 'TOKEN';
+  matchedPattern: string;
+  severity: 'CRITICAL' | 'HIGH';
+}
+
+export interface ScaAuditResponse {
+  success: boolean;
+  runId: string;
+  totalDependenciesAudited: number;
+  vulnerabilities: ScaVulnerabilityItem[];
+  gitSecrets: GitSecretFindingItem[];
+  aiSummary?: {
+    summary: string;
+    riskLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+    recommendations: string[];
+  };
+  error?: string;
+}
+
+export const runScaAuditApi = async (data: {
+  manifestType?: DependencyManifestType;
+  manifestContent: string;
+  enableDependencyScan: boolean;
+  enableGitHistoryScan: boolean;
+}): Promise<ScaAuditResponse> => {
+  const response = await fetch(`${BASE_URL}/sca/run`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),

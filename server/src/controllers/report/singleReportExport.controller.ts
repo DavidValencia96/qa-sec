@@ -222,6 +222,91 @@ export const exportSingleRecordHandler = async (req: Request, res: Response): Pr
           </ul>
         </div>
       `;
+    } else if (moduleType === 'sca') {
+      const vulnerabilities = recordData.vulnerabilities || [];
+      const gitSecrets = recordData.gitSecrets || [];
+      const aiSummary = recordData.aiSummary || {};
+
+      htmlBody = `
+        <div style="border-bottom: 2px solid #334155; padding-bottom: 16px; margin-bottom: 24px;">
+          <h2 style="margin: 0 0 8px 0; color: #38bdf8;">🔐 Reporte Técnico - SCA & Supply Chain Security</h2>
+          <span style="color: #94a3b8; font-size: 0.9rem;">
+            ID de Auditoría: <strong>${recordData.id || 'N/A'}</strong> | Fecha: ${dateStr}
+          </span>
+        </div>
+
+        <!-- PARAMETRIZACIÓN SCA -->
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 16px 0; color: #38bdf8; font-size: 1.05rem;">⚙️ Resumen de Análisis de Cadena de Suministro</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; font-size: 0.9rem;">
+            <div>
+              <span style="color: #94a3b8; display: block; font-size: 0.8rem;">Tipo de Manifest:</span>
+              <strong style="color: #f8fafc;">${recordData.manifestType || 'package_json'}</strong>
+            </div>
+            <div>
+              <span style="color: #94a3b8; display: block; font-size: 0.8rem;">Líneas / Dependencias Auditadas:</span>
+              <strong style="color: #38bdf8;">${recordData.totalDependenciesAudited || 0}</strong>
+            </div>
+            <div>
+              <span style="color: #94a3b8; display: block; font-size: 0.8rem;">Vulnerabilidades Encontradas:</span>
+              <strong style="color: ${vulnerabilities.length > 0 ? '#ef4444' : '#22c55e'};">${vulnerabilities.length}</strong>
+            </div>
+            <div>
+              <span style="color: #94a3b8; display: block; font-size: 0.8rem;">Secretos Expuestos:</span>
+              <strong style="color: ${gitSecrets.length > 0 ? '#ef4444' : '#22c55e'};">${gitSecrets.length}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- SÍNTESIS GEMINI IA -->
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border-left: 4px solid #38bdf8; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 8px 0; color: #38bdf8; font-size: 1.05rem;">🤖 Diagnóstico Ejecutivo SCA (Gemini AI)</h3>
+          <p style="margin: 0; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+            ${aiSummary.summary || 'Análisis de dependencias y secretos Git completado.'}
+          </p>
+        </div>
+
+        <!-- VULNERABILIDADES DE DEPENDENCIAS -->
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 16px 0; color: #f8fafc; font-size: 1rem;">📦 Vulnerabilidades en Dependencias (${vulnerabilities.length})</h3>
+          ${vulnerabilities.length === 0 ? `
+            <p style="color: #4ade80; margin: 0;">✅ No se detectaron vulnerabilidades conocidas en las dependencias.</p>
+          ` : vulnerabilities.map((v: any) => `
+            <div style="background: #1e293b; padding: 14px; border-radius: 6px; border-left: 4px solid ${v.severity === 'CRITICAL' ? '#ef4444' : '#f97316'}; margin-bottom: 12px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <strong style="color: #f8fafc;">${v.packageName} (v${v.currentVersion})${v.cveId ? `— ${v.cveId}` : ''}</strong>
+                <span style="background: #0f172a; color: ${v.severity === 'CRITICAL' ? '#ef4444' : '#f97316'}; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem;">
+                  ${v.severity}
+                </span>
+              </div>
+              <p style="color: #cbd5e1; font-size: 0.88rem; margin: 0 0 8px 0;">${v.description}</p>${v.patchedVersion ? `<div style="color: #4ade80; font-size: 0.85rem; font-weight: bold;">💡 Versión Sugerida: ${v.patchedVersion}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+
+        <!-- SECRETOS Y CREDENCIALES -->
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 16px 0; color: #f8fafc; font-size: 1rem;">🔑 Secretos & Credenciales Expuestas (${gitSecrets.length})</h3>
+          ${gitSecrets.length === 0 ? `
+            <p style="color: #4ade80; margin: 0;">✅ No se detectaron tokens ni claves expuestas.</p>
+          ` : gitSecrets.map((s: any) => `
+            <div style="background: #1e293b; padding: 14px; border-radius: 6px; border-left: 4px solid #ef4444; margin-bottom: 12px;">
+              <strong style="color: #f8fafc;">[${s.secretType}]${s.filePath}</strong>
+              <div style="background: #020617; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 0.8rem; color: #fca5a5; word-break: break-all; margin-top: 6px;">
+                Patrón: ${s.matchedPattern}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
+        <!-- RECOMENDACIONES -->
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155;">
+          <h3 style="margin: 0 0 12px 0; color: #38bdf8; font-size: 1rem;">💡 Acciones Correctivas Recomendadas</h3>
+          <ul style="margin: 0; padding-left: 20px; color: #cbd5e1; font-size: 0.9rem; line-height: 1.6;">
+            ${(aiSummary.recommendations || []).map((r: string) => `<li style="margin-bottom: 6px;">${r}</li>`).join('')}
+          </ul>
+        </div>
+      `;
     } else {
       htmlBody = `<h2>Reporte de auditoría estándar</h2>`;
     }

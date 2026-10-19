@@ -15,6 +15,7 @@ import { CveRadarTab } from './components/cve/CveRadarTab';
 import { SastAuditTab } from './components/sast/SastAuditTab';
 import { LoadTestTab } from './components/loadTest/LoadTestTab';
 import { DastAuditTab } from './components/dast/DastAuditTab';
+import { ScaAuditTab } from './components/sca/ScaAuditTab';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<TabType>('scanner');
@@ -279,7 +280,10 @@ export function App() {
       {/* PESTAÑA 7: DAST & OpenAPI Fuzzer */}
       {activeTab === 'dast' && <DastAuditTab />}
 
-      {/* PESTAÑA 8: HISTORIAL Y BUSCADOR */}
+      {/* PESTAÑA 8: SCA & Supply Chain Security */}
+      {activeTab === 'sca' && <ScaAuditTab />}
+
+      {/* PESTAÑA 9: HISTORIAL Y BUSCADOR */}
       {activeTab === 'history' && <ReportHistory />}
     </div>
   );

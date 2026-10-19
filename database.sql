@@ -287,3 +287,13 @@ CREATE TABLE IF NOT EXISTS dast_history (
   ai_summary_json LONGTEXT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS sca_history (
+  id VARCHAR(64) PRIMARY KEY,
+  manifest_type VARCHAR(50) NULL,
+  total_deps_audited INT NOT NULL DEFAULT 0,
+  vulnerabilities_json LONGTEXT NULL,
+  git_secrets_json LONGTEXT NULL,
+  ai_summary_json LONGTEXT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -15,6 +15,7 @@ import { HistoryTable } from './history/HistoryTable';
 import { ReportModal } from './history/ReportModal';
 import { SastHistoryTable } from './history/SastHistoryTable';
 import { LoadTestHistoryTable } from './history/LoadTestHistoryTable';
+import { ScaHistoryTable } from './history/ScaHistoryTable';
 import { SastDiffModal } from './sast/SastDiffModal';
 import { SastFindingsTable } from './sast/SastFindingsTable';
 import { LoadTestMetricsCard } from './loadTest/LoadTestMetricsCard';
@@ -26,27 +27,52 @@ import type { SastFinding } from './sast/sast.types';
 
 export type { HistoryItem };
 
-export const ReportHistory: React.FC = () => {
-  // Estado para la pestaña de historial activa ('web' | 'sast' | 'load')
-  const [activeSubTab, setActiveSubTab] = useState<'web' | 'sast' | 'load'>('web');
+export interface DastHistoryItem {
+  id: string;
+  targetBaseUrl: string;
+  totalEndpointsTested: number;
+  findingsJson?: string;
+  aiSummaryJson?: string;
+  createdAt: string;
+}
 
-  // Estados del Historial Web Dinámico (Existentes)
+export interface ScaHistoryItem {
+  id: string;
+  manifestType: string;
+  totalDepsAudited: number;
+  vulnerabilitiesJson?: string;
+  gitSecretsJson?: string;
+  aiSummaryJson?: string;
+  createdAt: string;
+}
+
+type SubTabType = 'web' | 'sast' | 'load' | 'dast' | 'sca';
+
+export const ReportHistory: React.FC = () => {
+  // Estado para la pestaña de historial activa ('web' | 'sast' | 'load' | 'dast' | 'sca')
+  const [activeSubTab, setActiveSubTab] = useState<SubTabType>('web');
+
+  // Estados del Historial Web Dinámico
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // Estados para el Modal del Reporte Web (Existentes)
+  // Estados fuertemente tipados para DAST y SCA (reemplazan a any[])
+  const [dastItems, setDastItems] = useState<DastHistoryItem[]>([]);
+  const [scaItems, setScaItems] = useState<ScaHistoryItem[]>([]);
+
+  // Estados para el Modal del Reporte Web
   const [selectedReport, setSelectedReport] = useState<ReportData | null>(null);
   const [selectedTargetUrl, setSelectedTargetUrl] = useState<string>('');
   const [loadingReport, setLoadingReport] = useState(false);
 
-  // Estados para el Historial SAST (Existentes)
+  // Estados para el Historial SAST
   const [sastItems, setSastItems] = useState<SastHistoryItem[]>([]);
   const [loadingSast, setLoadingSast] = useState<boolean>(false);
   const [selectedSastAudit, setSelectedSastAudit] = useState<SastHistoryItem | null>(null);
   const [showDiffModal, setShowDiffModal] = useState<boolean>(false);
 
-  // Estados para el Historial de Pruebas de Carga (Existentes)
+  // Estados para el Historial de Pruebas de Carga
   const [loadTestItems, setLoadTestItems] = useState<LoadTestHistoryItem[]>([]);
   const [loadingLoadTest, setLoadingLoadTest] = useState<boolean>(false);
   const [selectedLoadTest, setSelectedLoadTest] = useState<LoadTestHistoryItem | null>(null);
@@ -81,18 +107,20 @@ export const ReportHistory: React.FC = () => {
     }
   };
 
-  // Cargar Historial Web al montar
+  // Cargar Historiales al montar
   useEffect(() => {
     let isMounted = true;
 
     const loadData = async () => {
       try {
         const data = await getHistoryApi();
-        if (isMounted && data.success && Array.isArray(data.history)) {
-          setItems(data.history);
+        if (isMounted && data.success) {
+          if (Array.isArray(data.history)) setItems(data.history);
+          if (Array.isArray(data.dastHistory)) setDastItems(data.dastHistory);
+          if (Array.isArray(data.scaHistory)) setScaItems(data.scaHistory);
         }
       } catch (err) {
-        console.error('Error al cargar historial web:', err);
+        console.error('Error al cargar historial centralizado:', err);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -105,8 +133,7 @@ export const ReportHistory: React.FC = () => {
     };
   }, []);
 
-  // Handler para cambiar de pestaña sin disparar cascading renders en useEffect
-  const handleTabChange = (tab: 'web' | 'sast' | 'load') => {
+  const handleTabChange = (tab: SubTabType) => {
     setActiveSubTab(tab);
     if (tab === 'sast' && sastItems.length === 0) {
       loadSastHistory();
@@ -140,7 +167,6 @@ export const ReportHistory: React.FC = () => {
     }
   };
 
-  // Handler simplificado utilizando el objeto completo directamente
   const handleExportSingleLoadTest = async (item: LoadTestHistoryItem) => {
     try {
       await exportSingleRecordApi({
@@ -166,7 +192,6 @@ export const ReportHistory: React.FC = () => {
 
   const filteredItems = items.filter((i) => filterItem(i, searchTerm));
 
-  // Mapear hallazgos garantizando compatibilidad exacta de tipos (no undefined)
   const mappedSastFindings: SastFinding[] = selectedSastAudit
     ? selectedSastAudit.findings.map((f, idx) => ({
         id: `finding-hist-${idx}`,
@@ -182,7 +207,7 @@ export const ReportHistory: React.FC = () => {
 
   return (
     <div style={{ background: '#1e1e1e', padding: '20px', borderRadius: '8px', marginTop: '20px' }}>
-      {/* CABECERA CON TÍTULO Y BOTÓN DE EXPORTACIÓN CONSOLIDADA */}
+      {/* CABECERA */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
         <h2 style={{ color: '#fff', margin: 0, fontSize: '20px' }}>
           📜 Historial Centralizado de Seguridad
@@ -212,7 +237,7 @@ export const ReportHistory: React.FC = () => {
       </div>
 
       {/* BOTONES PESTAÑA SUB-NAVEGACIÓN */}
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
         <button
           type="button"
           onClick={() => handleTabChange('web')}
@@ -226,7 +251,6 @@ export const ReportHistory: React.FC = () => {
             backgroundColor: activeSubTab === 'web' ? '#2563eb' : '#27272a',
             color: '#ffffff',
             boxShadow: activeSubTab === 'web' ? '0 0 10px rgba(37, 99, 235, 0.4)' : 'none',
-            transition: 'all 0.2s ease',
           }}
         >
           🌐 Escáneres & Pruebas Web
@@ -245,7 +269,6 @@ export const ReportHistory: React.FC = () => {
             backgroundColor: activeSubTab === 'sast' ? '#2563eb' : '#27272a',
             color: '#ffffff',
             boxShadow: activeSubTab === 'sast' ? '0 0 10px rgba(37, 99, 235, 0.4)' : 'none',
-            transition: 'all 0.2s ease',
           }}
         >
           🔍 Auditorías SAST & Código
@@ -264,14 +287,49 @@ export const ReportHistory: React.FC = () => {
             backgroundColor: activeSubTab === 'load' ? '#2563eb' : '#27272a',
             color: '#ffffff',
             boxShadow: activeSubTab === 'load' ? '0 0 10px rgba(37, 99, 235, 0.4)' : 'none',
-            transition: 'all 0.2s ease',
           }}
         >
           🎯 Pruebas de Carga & DoS
         </button>
+
+        <button
+          type="button"
+          onClick={() => handleTabChange('dast')}
+          style={{
+            padding: '8px 16px',
+            borderRadius: '6px',
+            border: 'none',
+            fontSize: '0.85rem',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            backgroundColor: activeSubTab === 'dast' ? '#2563eb' : '#27272a',
+            color: '#ffffff',
+            boxShadow: activeSubTab === 'dast' ? '0 0 10px rgba(37, 99, 235, 0.4)' : 'none',
+          }}
+        >
+          🛡️ DAST & OpenAPI
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleTabChange('sca')}
+          style={{
+            padding: '8px 16px',
+            borderRadius: '6px',
+            border: 'none',
+            fontSize: '0.85rem',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            backgroundColor: activeSubTab === 'sca' ? '#2563eb' : '#27272a',
+            color: '#ffffff',
+            boxShadow: activeSubTab === 'sca' ? '0 0 10px rgba(37, 99, 235, 0.4)' : 'none',
+          }}
+        >
+          🔐 SCA & Supply Chain
+        </button>
       </div>
 
-      {/* CONTENIDO 1: HISTORIAL WEB (PLAYWRIGHT / INPUTS / RED) */}
+      {/* CONTENIDO 1: HISTORIAL WEB */}
       {activeSubTab === 'web' && (
         <>
           {loading ? (
@@ -310,7 +368,7 @@ export const ReportHistory: React.FC = () => {
         </>
       )}
 
-      {/* CONTENIDO 2: HISTORIAL SAST & SECRET SCANNING */}
+      {/* CONTENIDO 2: HISTORIAL SAST */}
       {activeSubTab === 'sast' && (
         <>
           {loadingSast ? (
@@ -319,7 +377,6 @@ export const ReportHistory: React.FC = () => {
             <>
               <SastHistoryTable items={sastItems} onSelectAudit={(item) => setSelectedSastAudit(item)} />
 
-              {/* Vista expandida de hallazgos para una auditoría SAST seleccionada */}
               {selectedSastAudit && (
                 <div style={{ marginTop: '24px', background: '#09090b', padding: '20px', borderRadius: '8px', border: '1px solid #38bdf8' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
@@ -362,7 +419,7 @@ export const ReportHistory: React.FC = () => {
         </>
       )}
 
-      {/* CONTENIDO 3: HISTORIAL PRUEBAS DE CARGA & DOS */}
+      {/* CONTENIDO 3: HISTORIAL PRUEBAS DE CARGA */}
       {activeSubTab === 'load' && (
         <>
           {loadingLoadTest ? (
@@ -375,7 +432,6 @@ export const ReportHistory: React.FC = () => {
                 onExportSingleRecord={handleExportSingleLoadTest}
               />
 
-              {/* Vista expandida con la tarjeta completa de métricas para la prueba seleccionada */}
               {selectedLoadTest && (
                 <div style={{ marginTop: '24px', background: '#09090b', padding: '20px', borderRadius: '8px', border: '1px solid #38bdf8' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
@@ -410,6 +466,52 @@ export const ReportHistory: React.FC = () => {
           )}
         </>
       )}
+
+      {/* CONTENIDO 4: HISTORIAL DAST */}
+      {activeSubTab === 'dast' && (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', color: '#f4f4f5', fontSize: '0.9rem' }}>
+            <thead>
+              <tr style={{ background: '#09090b', borderBottom: '1px solid #27272a', textAlign: 'left' }}>
+                <th style={{ padding: '12px' }}>ID Ejecución</th>
+                <th style={{ padding: '12px' }}>URL Base Target</th>
+                <th style={{ padding: '12px' }}>Endpoints Probados</th>
+                <th style={{ padding: '12px' }}>Hallazgos</th>
+                <th style={{ padding: '12px' }}>Fecha</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dastItems.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ padding: '20px', textAlign: 'center', color: '#a1a1aa' }}>
+                    No se registran auditorías DAST en el historial.
+                  </td>
+                </tr>
+              ) : (
+                dastItems.map((item) => {
+                  const findings = item.findingsJson ? JSON.parse(item.findingsJson) : [];
+                  return (
+                    <tr key={item.id} style={{ borderBottom: '1px solid #27272a' }}>
+                      <td style={{ padding: '12px', fontFamily: 'monospace', color: '#38bdf8' }}>{item.id}</td>
+                      <td style={{ padding: '12px' }}>{item.targetBaseUrl}</td>
+                      <td style={{ padding: '12px' }}>{item.totalEndpointsTested}</td>
+                      <td style={{ padding: '12px', color: findings.length > 0 ? '#ef4444' : '#22c55e', fontWeight: 'bold' }}>
+                        {findings.length} Hallazgos
+                      </td>
+                      <td style={{ padding: '12px', color: '#a1a1aa' }}>
+                        {new Date(item.createdAt).toLocaleString('es-ES')}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* CONTENIDO 5: HISTORIAL SCA */}
+      {activeSubTab === 'sca' && <ScaHistoryTable items={scaItems} />}
 
       {/* MODAL DE EXPORTACIÓN CONSOLIDADA */}
       <ConsolidatedReportExportModal
