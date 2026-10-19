@@ -1,5 +1,7 @@
 import type { SastFinding } from '../sast/sast.types.js';
 import type { LoadTestMetrics } from '../loadTest/loadTest.types.js';
+import type { DastFinding } from '../dast/dast.types.js';
+import type { ScaVulnerability, GitSecretFinding } from '../sca/sca.types.js';
 
 export interface ConsolidatedReportInputDTO {
   title: string;
@@ -10,6 +12,8 @@ export interface ConsolidatedReportInputDTO {
     networkScan?: boolean;
     sastAudit?: boolean;
     loadTest?: boolean;
+    dastAudit?: boolean;
+    scaAudit?: boolean;
   };
   webFindings?: Array<{
     title: string;
@@ -32,6 +36,27 @@ export interface ConsolidatedReportInputDTO {
     rps: number;
     avgLatencyMs: number;
     metrics: LoadTestMetrics;
+  };
+  dastData?: {
+    targetBaseUrl: string;
+    totalTestedEndpoints: number;
+    findings: DastFinding[];
+    aiSummary?: {
+      summary: string;
+      riskLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+      recommendations: string[];
+    };
+  };
+  scaData?: {
+    manifestType: string;
+    totalDependenciesAudited: number;
+    vulnerabilities: ScaVulnerability[];
+    gitSecrets: GitSecretFinding[];
+    aiSummary?: {
+      summary: string;
+      riskLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+      recommendations: string[];
+    };
   };
   format: 'html' | 'markdown';
 }

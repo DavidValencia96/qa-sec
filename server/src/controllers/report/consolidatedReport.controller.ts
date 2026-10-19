@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { GeminiAIService } from '../../services/gemini.service.js';
 import { ConsolidatedReportFormatterService } from '../../services/report/consolidatedReportFormatter.service.js';
 import type { ConsolidatedReportInputDTO } from '../../modules/report/consolidatedReport.types.js';
+import { getDbPool } from '../../config/database.js';
 
 const geminiService = new GeminiAIService();
 const formatterService = new ConsolidatedReportFormatterService();
@@ -13,6 +14,41 @@ export const exportConsolidatedReportHandler = async (req: Request, res: Respons
     if (!data.projectName) {
       res.status(400).json({ success: false, error: 'El nombre del proyecto (projectName) es requerido.' });
       return;
+    }
+
+    const pool = getDbPool();
+
+    // Consultar últimos datos de DAST si está activado
+    if (data.includedModules?.dastAudit) {
+      const [dastRows]: any = await pool.query(
+        'SELECT * FROM dast_history ORDER BY created_at DESC LIMIT 1'
+      );
+      if (dastRows.length > 0) {
+        const lastDast = dastRows[0];
+        (data as any).dastData = {
+          targetBaseUrl: lastDast.target_base_url,
+          totalTestedEndpoints: lastDast.total_endpoints_tested,
+          findings: lastDast.findings_json ? JSON.parse(lastDast.findings_json) : [],
+          aiSummary: lastDast.ai_summary_json ? JSON.parse(lastDast.ai_summary_json) : {},
+        };
+      }
+    }
+
+    // Consultar últimos datos de SCA si está activado
+    if (data.includedModules?.scaAudit) {
+      const [scaRows]: any = await pool.query(
+        'SELECT * FROM sca_history ORDER BY created_at DESC LIMIT 1'
+      );
+      if (scaRows.length > 0) {
+        const lastSca = scaRows[0];
+        (data as any).scaData = {
+          manifestType: lastSca.manifest_type,
+          totalDependenciesAudited: lastSca.total_deps_audited,
+          vulnerabilities: lastSca.vulnerabilities_json ? JSON.parse(lastSca.vulnerabilities_json) : [],
+          gitSecrets: lastSca.git_secrets_json ? JSON.parse(lastSca.git_secrets_json) : [],
+          aiSummary: lastSca.ai_summary_json ? JSON.parse(lastSca.ai_summary_json) : {},
+        };
+      }
     }
 
     // 1. Diagnóstico Global con Gemini AI

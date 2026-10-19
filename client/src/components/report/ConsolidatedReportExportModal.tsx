@@ -9,6 +9,8 @@ export interface ConsolidatedReportOptions {
     networkScan: boolean;
     sastAudit: boolean;
     loadTest: boolean;
+    dastAudit: boolean;
+    scaAudit: boolean;
   };
 }
 
@@ -33,6 +35,8 @@ export const ConsolidatedReportExportModal: React.FC<ConsolidatedReportExportMod
     networkScan: true,
     sastAudit: true,
     loadTest: true,
+    dastAudit: true,
+    scaAudit: true,
   });
 
   if (!isOpen) return null;
@@ -77,7 +81,7 @@ export const ConsolidatedReportExportModal: React.FC<ConsolidatedReportExportMod
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h3 style={{ margin: 0, color: '#38bdf8', fontSize: '1.2rem' }}>
-            📄 Exportar Informe Consolidado Ejecuto
+            📄 Exportar Informe Consolidado Ejecutivo
           </h3>
           <button
             type="button"
@@ -145,6 +149,7 @@ export const ConsolidatedReportExportModal: React.FC<ConsolidatedReportExportMod
                 />{' '}
                 🌐 Auditoría Web & Inyección de Inputs (Playwright)
               </label>
+
               <label style={{ color: '#f4f4f5', fontSize: '0.85rem', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
@@ -153,6 +158,7 @@ export const ConsolidatedReportExportModal: React.FC<ConsolidatedReportExportMod
                 />{' '}
                 🛡️ Superficie & Configuración de Red
               </label>
+
               <label style={{ color: '#f4f4f5', fontSize: '0.85rem', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
@@ -161,6 +167,7 @@ export const ConsolidatedReportExportModal: React.FC<ConsolidatedReportExportMod
                 />{' '}
                 🔍 Auditoría Estática de Código (SAST)
               </label>
+
               <label style={{ color: '#f4f4f5', fontSize: '0.85rem', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
@@ -168,6 +175,24 @@ export const ConsolidatedReportExportModal: React.FC<ConsolidatedReportExportMod
                   onChange={(e) => setModules({ ...modules, loadTest: e.target.checked })}
                 />{' '}
                 💥 Pruebas de Carga & Resiliencia DoS
+              </label>
+
+              <label style={{ color: '#f4f4f5', fontSize: '0.85rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={modules.dastAudit}
+                  onChange={(e) => setModules({ ...modules, dastAudit: e.target.checked })}
+                />{' '}
+                🛡️ DAST & OpenAPI Dynamic Fuzzing
+              </label>
+
+              <label style={{ color: '#f4f4f5', fontSize: '0.85rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={modules.scaAudit}
+                  onChange={(e) => setModules({ ...modules, scaAudit: e.target.checked })}
+                />{' '}
+                🔐 SCA & Supply Chain Security (Dependencias y Secretos)
               </label>
             </div>
           </div>
