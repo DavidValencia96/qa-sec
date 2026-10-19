@@ -34,3 +34,8 @@ export const fetchAllTestRuns = async (): Promise<any[]> => {
 export const fetchScaTestRuns = async (): Promise<ScaHistoryRow[]> => {
   return await fetchScaHistoryRows();
 };
+
+export const fetchRedTeamTestRuns = async (): Promise<any[]> => {
+  const [rows] = await getDbPool().execute('SELECT * FROM redteam_history ORDER BY created_at DESC LIMIT 50');
+  return rows as any[];
+};

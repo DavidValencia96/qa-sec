@@ -3,6 +3,7 @@ import { GeminiAIService } from '../../services/gemini.service.js';
 import { ConsolidatedReportFormatterService } from '../../services/report/consolidatedReportFormatter.service.js';
 import type { ConsolidatedReportInputDTO } from '../../modules/report/consolidatedReport.types.js';
 import type { DastFinding } from '../../modules/dast/dast.types.js';
+import type { JwtFinding, CorsFinding } from '../../modules/redteam/redteam.types.js';
 import { getDbPool } from '../../config/database.js';
 
 const geminiService = new GeminiAIService();
@@ -64,10 +65,25 @@ export const exportConsolidatedReportHandler = async (req: Request, res: Respons
       }
     }
 
-    // 4. Diagnóstico Global con Gemini AI
+    // 4. Consultar datos de Red Team si está activado
+    if (data.includedModules?.redTeamAudit) {
+      const [redTeamRows]: any = await pool.query('SELECT * FROM redteam_history ORDER BY created_at DESC LIMIT 1');
+      if (redTeamRows.length > 0) {
+        const lastRedTeam = redTeamRows[0];
+        (data as any).redTeamData = {
+          targetUrl: lastRedTeam.target_url,
+          jwtFindings: lastRedTeam.jwt_findings_json ? JSON.parse(lastRedTeam.jwt_findings_json) : [],
+          corsFindings: lastRedTeam.cors_findings_json ? JSON.parse(lastRedTeam.cors_findings_json) : [],
+          phishingSimulatedCount: lastRedTeam.phishing_count || 0,
+          aiSummary: lastRedTeam.ai_summary_json ? JSON.parse(lastRedTeam.ai_summary_json) : {},
+        };
+      }
+    }
+
+    // 5. Diagnóstico Global con Gemini AI
     const aiSummary = await geminiService.generateConsolidatedExecutiveSummary(data);
 
-    // 5. Generar informe en el formato solicitado
+    // 6. Generar informe en el formato solicitado
     if (data.format === 'markdown') {
       const markdownContent = formatterService.generateMarkdownReport(data, aiSummary);
       res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
@@ -128,10 +144,7 @@ export const exportSingleRecordHandler = async (req: Request, res: Response): Pr
 
         <!-- ⚙️ CONFIGURACIÓN Y PARÁMETROS DE EJECUCIÓN -->
         <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 24px;">
-          <h3 style="margin: 0 0 16px 0; color: #38bdf8; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
-            ⚙️ Parametrización de la Carga Simulada
-          </h3>
-          
+          <h3 style="margin: 0 0 16px 0; color: #38bdf8; font-size: 1.05rem;">⚙️ Parametrización de la Carga Simulada</h3>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; font-size: 0.9rem; margin-bottom: 16px;">
             <div>
               <span style="color: #94a3b8; display: block; font-size: 0.8rem;">URL Objetivo Endpoint:</span>
@@ -501,6 +514,110 @@ export const exportSingleRecordHandler = async (req: Request, res: Response): Pr
               ${subdomainsRowsHtml}
             </tbody>
           </table>
+        </div>
+      `;
+    } else if (moduleType === 'redteam') {
+      const jwtFindings: JwtFinding[] = recordData.jwtFindings || [];
+      const corsFindings: CorsFinding[] = recordData.corsFindings || [];
+      const aiSummary = recordData.aiSummary || {};
+      const targetUrl = recordData.targetUrl || 'No especificada';
+      const jwtToken = recordData.jwtToken || null;
+
+      htmlBody = `
+        <div style="border-bottom: 2px solid #334155; padding-bottom: 16px; margin-bottom: 24px;">
+          <h2 style="margin: 0 0 8px 0; color: #38bdf8;">⚔️ Reporte Técnico - Red Team & Explotación Activa</h2>
+          <span style="color: #94a3b8; font-size: 0.9rem;">
+            ID de Auditoría: <strong>${recordData.id || recordData.runId || 'N/A'}</strong> | Fecha: ${dateStr}
+          </span>
+        </div>
+
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 16px 0; color: #38bdf8; font-size: 1.05rem;">🎯 Objetivo Evaluado & Configuración</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; font-size: 0.9rem; margin-bottom: 16px;">
+            <div>
+              <span style="color: #94a3b8; display: block; font-size: 0.8rem;">URL Endpoint Objetivo:</span>
+              <strong style="color: #f8fafc; word-break: break-all;">${targetUrl}</strong>
+            </div>
+            <div>
+              <span style="color: #94a3b8; display: block; font-size: 0.8rem;">Vulnerabilidades JWT:</span>
+              <strong style="color: ${jwtFindings.length > 0 ? '#ef4444' : '#22c55e'};">${jwtFindings.length} hallazgos</strong>
+            </div>
+            <div>
+              <span style="color: #94a3b8; display: block; font-size: 0.8rem;">Vulnerabilidades CORS:</span>
+              <strong style="color: ${corsFindings.length > 0 ? '#ef4444' : '#22c55e'};">${corsFindings.length} hallazgos</strong>
+            </div>
+            <div>
+              <span style="color: #94a3b8; display: block; font-size: 0.8rem;">Simulaciones Phishing:</span>
+              <strong style="color: #38bdf8;">${recordData.phishingSimulatedCount || 0} envíos</strong>
+            </div>
+          </div>
+
+          <div style="padding-top: 12px; border-top: 1px solid #1e293b;">
+            <span style="color: #94a3b8; display: block; font-size: 0.8rem; margin-bottom: 6px;">
+              🔑 Token JWT Evaluado Durante la Auditoría:
+            </span>
+            ${jwtToken ? `
+              <pre style="background: #020617; color: #f97316; padding: 10px 12px; border-radius: 6px; border: 1px solid #1e293b; font-family: monospace; font-size: 0.8rem; margin: 0; overflow-x: auto; word-break: break-all; white-space: pre-wrap;">${jwtToken}</pre>
+            ` : `
+              <div style="background: #020617; color: #64748b; padding: 8px 12px; border-radius: 6px; border: 1px dashed #334155; font-size: 0.85rem; font-style: italic;">
+                Prueba ejecutada sin token JWT adjunto.
+              </div>
+            `}
+          </div>
+        </div>
+
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border-left: 4px solid #38bdf8; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 8px 0; color: #38bdf8; font-size: 1.05rem;">🤖 Diagnóstico Ejecutivo Red Team (Gemini AI)</h3>
+          <p style="margin: 0; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+            ${aiSummary.summary || 'Pruebas de explotación de firmas JWT y políticas CORS completadas.'}
+          </p>
+        </div>
+
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 16px 0; color: #f8fafc; font-size: 1rem;">🔑 Vulnerabilidades de Autenticación JWT (${jwtFindings.length})</h3>
+          ${jwtFindings.length === 0 ? `
+            <p style="color: #4ade80; margin: 0;">✅ La verificación de firmas JWT es estricta. No se detectaron vulnerabilidades explotables de algoritmo "none", secretos débiles ni Key Confusion.</p>
+          ` : jwtFindings.map((f) => `
+            <div style="background: #1e293b; padding: 14px; border-radius: 6px; border-left: 4px solid ${f.severity === 'CRITICAL' ? '#ef4444' : '#f97316'}; margin-bottom: 12px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <strong style="color: #f8fafc;">[${f.vulnerabilityType}]</strong>
+                <span style="background: #0f172a; color: ${f.severity === 'CRITICAL' ? '#ef4444' : '#f97316'}; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem;">
+                  ${f.severity}
+                </span>
+              </div>
+              <p style="color: #cbd5e1; font-size: 0.88rem; margin: 0 0 8px 0;">${f.description}</p>${f.evidenceToken ? `
+                <div style="background: #020617; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 0.8rem; color: #38bdf8; word-break: break-all; margin-bottom: 6px;">
+                  Token de Evidencia Explotado: ${f.evidenceToken}
+                </div>
+              ` : ''}
+              <div style="color: #a1a1aa; font-size: 0.85rem;"><strong>Remediación:</strong> ${f.remediation}</div>
+            </div>
+          `).join('')}
+        </div>
+
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 16px 0; color: #f8fafc; font-size: 1rem;">🌐 Malas Configuraciones CORS Explotables (${corsFindings.length})</h3>
+          ${corsFindings.length === 0 ? `
+            <p style="color: #4ade80; margin: 0;">✅ Las políticas Cross-Origin Resource Sharing (CORS) son estrictas y seguras.</p>
+          ` : corsFindings.map((f) => `
+            <div style="background: #1e293b; padding: 14px; border-radius: 6px; border-left: 4px solid #f97316; margin-bottom: 12px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <strong style="color: #f8fafc;">[${f.vulnerabilityType}] Origen Explotado:${f.testedOrigin}</strong>
+                <span style="background: #0f172a; color: #f97316; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem;">
+                  ${f.severity}
+                </span>
+              </div>
+              <p style="color: #cbd5e1; font-size: 0.88rem; margin: 0 0 8px 0;">${f.description}</p>
+              <div style="color: #a1a1aa; font-size: 0.85rem;"><strong>Remediación:</strong> ${f.remediation}</div>
+            </div>
+          `).join('')}
+        </div>
+
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155;">
+          <h3 style="margin: 0 0 12px 0; color: #38bdf8; font-size: 1rem;">💡 Acciones Defensivas Sugeridas</h3>
+          <ul style="margin: 0; padding-left: 20px; color: #cbd5e1; font-size: 0.9rem; line-height: 1.6;">
+            ${(aiSummary.recommendations || []).map((r: string) => `<li style="margin-bottom: 6px;">${r}</li>`).join('')}
+          </ul>
         </div>
       `;
     } else {

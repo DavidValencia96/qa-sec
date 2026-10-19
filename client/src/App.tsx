@@ -17,6 +17,7 @@ import { LoadTestTab } from './components/loadTest/LoadTestTab';
 import { DastAuditTab } from './components/dast/DastAuditTab';
 import { ScaAuditTab } from './components/sca/ScaAuditTab';
 import { EasmAuditTab } from './components/EasmAuditTab';
+import { RedTeamAuditTab } from './components/redteam/RedTeamAuditTab';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<TabType>('scanner');
@@ -72,7 +73,6 @@ export function App() {
     }
   };
 
-  // Ejecución para la Pestaña 1 (Escáner General)
   const handleRunScanner = async () => {
     if (!suiteId) return alert('Debes generar o seleccionar una suite primero.');
     setProgress(5);
@@ -100,7 +100,6 @@ export function App() {
     }
   };
 
-  // Ejecución para la Pestaña 2 (Inyección & Inputs Sec)
   const handleRunScannerWithInputs = async () => {
     if (!suiteId) return alert('Debes generar o seleccionar una suite primero.');
     if (targetInputs.length === 0) {
@@ -283,10 +282,14 @@ export function App() {
 
       {/* PESTAÑA 8: SCA & Supply Chain Security */}
       {activeTab === 'sca' && <ScaAuditTab />}
-      
+
+      {/* PESTAÑA 9: EASM & OSINT */}
       {activeTab === 'easm' && <EasmAuditTab />}
 
-      {/* PESTAÑA 9: HISTORIAL Y BUSCADOR */}
+      {/* PESTAÑA 10: Red Team & Explotación */}
+      {activeTab === 'redteam' && <RedTeamAuditTab />}
+
+      {/* PESTAÑA 11: HISTORIAL Y BUSCADOR */}
       {activeTab === 'history' && <ReportHistory />}
     </div>
   );

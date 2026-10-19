@@ -321,7 +321,7 @@ export const exportConsolidatedReportApi = async (options: ConsolidatedReportOpt
 };
 
 export const exportSingleRecordApi = async (payload: {
-  moduleType: 'web' | 'sast' | 'load-test' | 'dast' | 'sca' | 'easm';
+  moduleType: 'web' | 'sast' | 'load-test' | 'dast' | 'sca' | 'easm' | 'redteam';
   recordData: unknown;
   format?: 'html' | 'markdown';
 }): Promise<void> => {
@@ -458,5 +458,30 @@ export const runEasmAuditApi = async (payload: EasmAuditPayload) => {
     const errorData = await response.json();
     throw new Error(errorData.error || 'Error al ejecutar la auditoría EASM.');
   }
+  return response.json();
+};
+
+export interface RedTeamAuditPayload {
+  targetUrl: string;
+  jwtToken?: string;
+  publicKeyPem?: string;
+  enableJwtScanner: boolean;
+  enableCorsExploiter: boolean;
+  enablePhishingSimulator: boolean;
+  phishingTargetEmails?: string[];
+}
+
+export const runRedTeamAuditApi = async (payload: RedTeamAuditPayload) => {
+  const response = await fetch(`${BASE_URL}/redteam/audit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Error al ejecutar la auditoría de Red Team.');
+  }
+
   return response.json();
 };

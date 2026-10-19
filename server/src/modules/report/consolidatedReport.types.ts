@@ -3,6 +3,7 @@ import type { LoadTestMetrics } from '../loadTest/loadTest.types.js';
 import type { DastFinding } from '../dast/dast.types.js';
 import type { ScaVulnerability, GitSecretFinding } from '../sca/sca.types.js';
 import type { DnsRecordItem, SubdomainItem, WafTechnologyDetails, SslCertificateDetails } from '../easm/easm.types.js';
+import type { JwtFinding, CorsFinding } from '../redteam/redteam.types.js';
 
 export interface ConsolidatedReportInputDTO {
   title: string;
@@ -16,6 +17,7 @@ export interface ConsolidatedReportInputDTO {
     dastAudit?: boolean;
     scaAudit?: boolean;
     easmAudit?: boolean;
+    redTeamAudit?: boolean;
   };
   webFindings?: Array<{
     title: string;
@@ -66,6 +68,18 @@ export interface ConsolidatedReportInputDTO {
     subdomains: SubdomainItem[];
     wafAndTech: WafTechnologyDetails;
     sslDetails: SslCertificateDetails;
+    aiSummary?: {
+      summary: string;
+      riskLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+      recommendations: string[];
+    };
+  };
+  redTeamData?: {
+    targetUrl: string;
+    jwtToken?: string;
+    jwtFindings: JwtFinding[];
+    corsFindings: CorsFinding[];
+    phishingSimulatedCount: number;
     aiSummary?: {
       summary: string;
       riskLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';

@@ -22,6 +22,8 @@ import { buildConsolidatedReportPrompt } from './gemini/consolidatedReport.promp
 import { buildDastAnalysisPrompt } from './gemini/dastAnalysis.prompt.js';
 import type { DastFinding } from '../modules/dast/dast.types.js';
 import { buildEasmAnalysisPrompt } from './gemini/easmAnalysis.prompt.js';
+import type { JwtFinding, CorsFinding } from '../modules/redteam/redteam.types.js';
+import { buildRedTeamAnalysisPrompt } from './gemini/redTeamAnalysis.prompt.js';
 
 export interface DastAiAnalysisResult {
   summary: string;
@@ -30,6 +32,12 @@ export interface DastAiAnalysisResult {
 }
 
 export interface EasmAiAnalysisResult {
+  summary: string;
+  riskLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  recommendations: string[];
+}
+
+export interface RedTeamAiAnalysisResult {
   summary: string;
   riskLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
   recommendations: string[];
@@ -391,6 +399,37 @@ export class GeminiAIService {
       };
     } catch (error) {
       console.error('[!] Error en generateEasmSummary:', (error as Error).message);
+      return fallback;
+    }
+  }
+
+  public async analyzeRedTeamFindings(
+    targetUrl: string,
+    jwtFindings: JwtFinding[],
+    corsFindings: CorsFinding[],
+    phishingCount: number
+  ): Promise<RedTeamAiAnalysisResult> {
+    const fallback: RedTeamAiAnalysisResult = {
+      summary: 'Análisis de Red Team completado.',
+      riskLevel: jwtFindings.length > 0 || corsFindings.length > 0 ? 'HIGH' : 'LOW',
+      recommendations: ['Revisar la configuración de firmas JWT y políticas CORS.'],
+    };
+
+    try {
+      console.log(`🤖 [Gemini AI] Analizando hallazgos de Red Team para ${targetUrl}...`);
+      const prompt = buildRedTeamAnalysisPrompt(targetUrl, jwtFindings, corsFindings, phishingCount);
+      const text = await this.executeWithFallback('', prompt, 800);
+
+      const parsed = this.parseJsonResponse<RedTeamAiAnalysisResult>(text, null as any);
+      if (!parsed) return fallback;
+
+      return {
+        summary: parsed.summary || fallback.summary,
+        riskLevel: parsed.riskLevel || fallback.riskLevel,
+        recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : fallback.recommendations,
+      };
+    } catch (error) {
+      console.error('[!] Error en analyzeRedTeamFindings:', (error as Error).message);
       return fallback;
     }
   }

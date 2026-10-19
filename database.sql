@@ -308,3 +308,14 @@ CREATE TABLE IF NOT EXISTS easm_history (
   ai_summary_json JSON NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS redteam_history (
+  id VARCHAR(64) PRIMARY KEY,
+  target_url VARCHAR(255) NOT NULL,
+  jwt_token TEXT NULL,
+  jwt_findings_json LONGTEXT,
+  cors_findings_json LONGTEXT,
+  phishing_count INT DEFAULT 0,
+  ai_summary_json LONGTEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

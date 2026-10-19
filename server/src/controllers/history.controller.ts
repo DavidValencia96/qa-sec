@@ -42,12 +42,28 @@ export const getTestRunsHistory = async (_req: Request, res: Response): Promise<
       ORDER BY created_at DESC
     `);
 
+    // 5. Historial Red Team
+    const [redteamRows] = await pool.query(`
+      SELECT 
+        id,
+        target_url AS targetUrl,
+        jwt_token AS jwtToken,
+        jwt_findings_json AS jwtFindingsJson,
+        cors_findings_json AS corsFindingsJson,
+        phishing_count AS phishingCount,
+        ai_summary_json AS aiSummaryJson,
+        created_at AS createdAt
+      FROM redteam_history
+      ORDER BY created_at DESC
+    `);
+
     res.status(200).json({
       success: true,
       history,
       dastHistory: dastRows,
       scaHistory,
       easmHistory: easmRows,
+      redteamHistory: redteamRows,
     });
   } catch (error) {
     console.error('[!] Error consultando historial centralizado:', error);

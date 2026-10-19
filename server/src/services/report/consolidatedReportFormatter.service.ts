@@ -85,6 +85,25 @@ export class ConsolidatedReportFormatterService {
       `;
     }
 
+    // Preparación de datos Red Team
+    let redTeamHtmlSection = '';
+    if (data.includedModules.redTeamAudit && data.redTeamData) {
+      const red = data.redTeamData;
+      const jwtFindings = red.jwtFindings || [];
+      const corsFindings = red.corsFindings || [];
+
+      redTeamHtmlSection = `
+        <h2>⚔️ Módulo 8: Red Team & Explotación Activa</h2>
+        <div class="card" style="margin-bottom: 20px;">
+          <p><strong>URL Endpoint Objetivo:</strong> <code>${red.targetUrl}</code></p>
+          <p><strong>Hallazgos JWT:</strong> <strong style="color: ${jwtFindings.length > 0 ? '#ef4444' : '#22c55e'};">${jwtFindings.length}</strong></p>
+          <p><strong>Hallazgos CORS:</strong> <strong style="color: ${corsFindings.length > 0 ? '#ef4444' : '#22c55e'};">${corsFindings.length}</strong></p>
+          <p><strong>Simulaciones de Phishing:</strong> <strong style="color: #38bdf8;">${red.phishingSimulatedCount}</strong></p>
+          ${red.aiSummary?.summary ? `<p><strong>Diagnóstico Red Team IA:</strong> ${red.aiSummary.summary}</p>` : ''}
+        </div>
+      `;
+    }
+
     return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -299,6 +318,9 @@ export class ConsolidatedReportFormatterService {
     <!-- MÓDULO 7: EASM SECCIÓN COMPLETA -->
     ${easmHtmlSection}
 
+    <!-- MÓDULO 8: RED TEAM SECCIÓN COMPLETA -->
+    ${redTeamHtmlSection}
+
   </div>
 </body>
 </html>`;
@@ -365,6 +387,16 @@ ${dnsList || 'Sin registros obtenidos.'}
 
 ### Subdominios (${subs.length}):
 ${subsList || 'Sin subdominios detectados.'}
+`;
+    }
+
+    if (data.includedModules.redTeamAudit && data.redTeamData) {
+      const red = data.redTeamData;
+      markdown += `\n## ⚔️ Módulo 8: Red Team & Explotación Activa
+**Target:** ${red.targetUrl}
+**Hallazgos JWT:** ${red.jwtFindings.length}
+**Hallazgos CORS:** ${red.corsFindings.length}
+**Envíos Phishing:** ${red.phishingSimulatedCount}
 `;
     }
 

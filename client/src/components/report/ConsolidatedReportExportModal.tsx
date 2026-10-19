@@ -12,6 +12,7 @@ export interface ConsolidatedReportOptions {
     dastAudit: boolean;
     scaAudit: boolean;
     easmAudit: boolean;
+    redTeamAudit: boolean;
   };
 }
 
@@ -39,6 +40,7 @@ export const ConsolidatedReportExportModal: React.FC<ConsolidatedReportExportMod
     dastAudit: true,
     scaAudit: true,
     easmAudit: true,
+    redTeamAudit: true,
   });
 
   if (!isOpen) return null;
@@ -204,6 +206,15 @@ export const ConsolidatedReportExportModal: React.FC<ConsolidatedReportExportMod
                   onChange={(e) => setModules({ ...modules, easmAudit: e.target.checked })}
                 />{' '}
                 🕸️ External Attack Surface Management (EASM & OSINT)
+              </label>
+
+              <label style={{ color: '#f4f4f5', fontSize: '0.85rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={modules.redTeamAudit}
+                  onChange={(e) => setModules({ ...modules, redTeamAudit: e.target.checked })}
+                />{' '}
+                ⚔️ Red Team & Simulación de Infiltración
               </label>
             </div>
           </div>

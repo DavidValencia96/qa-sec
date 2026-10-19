@@ -18,4 +18,5 @@ export type TabType =
   | 'dast'
   | 'sca'
   | 'easm'
+  | 'redteam'
   | 'history';

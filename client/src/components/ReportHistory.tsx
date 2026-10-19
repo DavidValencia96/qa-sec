@@ -57,7 +57,18 @@ export interface EasmHistoryItem {
   createdAt: string;
 }
 
-type SubTabType = 'web' | 'sast' | 'load' | 'dast' | 'sca' | 'easm';
+export interface RedTeamHistoryItem {
+  id: string;
+  targetUrl: string;
+  jwtToken?: string;
+  jwtFindingsJson?: string;
+  corsFindingsJson?: string;
+  phishingCount?: number;
+  aiSummaryJson?: string;
+  createdAt: string;
+}
+
+type SubTabType = 'web' | 'sast' | 'load' | 'dast' | 'sca' | 'easm' | 'redteam';
 
 export const ReportHistory: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<SubTabType>('web');
@@ -67,10 +78,11 @@ export const ReportHistory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // Estados fuertemente tipados para DAST, SCA y EASM
+  // Estados fuertemente tipados
   const [dastItems, setDastItems] = useState<DastHistoryItem[]>([]);
   const [scaItems, setScaItems] = useState<ScaHistoryItem[]>([]);
   const [easmItems, setEasmItems] = useState<EasmHistoryItem[]>([]);
+  const [redteamItems, setRedteamItems] = useState<RedTeamHistoryItem[]>([]);
 
   // Estados para el Modal del Reporte Web
   const [selectedReport, setSelectedReport] = useState<ReportData | null>(null);
@@ -130,6 +142,7 @@ export const ReportHistory: React.FC = () => {
           if (Array.isArray(data.dastHistory)) setDastItems(data.dastHistory);
           if (Array.isArray(data.scaHistory)) setScaItems(data.scaHistory);
           if (Array.isArray(data.easmHistory)) setEasmItems(data.easmHistory);
+          if (Array.isArray(data.redteamHistory)) setRedteamItems(data.redteamHistory);
         }
       } catch (err) {
         console.error('Error al cargar historial centralizado:', err);
@@ -215,6 +228,31 @@ export const ReportHistory: React.FC = () => {
       });
     } catch (err) {
       alert(`Error al exportar reporte EASM: ${(err as Error).message}`);
+    }
+  };
+
+const handleExportSingleRedTeam = async (item: RedTeamHistoryItem) => {
+    try {
+      const jwtFindings = item.jwtFindingsJson ? JSON.parse(item.jwtFindingsJson) : [];
+      const corsFindings = item.corsFindingsJson ? JSON.parse(item.corsFindingsJson) : [];
+      const aiSummary = item.aiSummaryJson ? JSON.parse(item.aiSummaryJson) : {};
+
+      await exportSingleRecordApi({
+        moduleType: 'redteam',
+        recordData: {
+          id: item.id,
+          targetUrl: item.targetUrl,
+          jwtToken: item.jwtToken || null,
+          jwtFindings,
+          corsFindings,
+          phishingSimulatedCount: item.phishingCount || 0,
+          aiSummary,
+          createdAt: item.createdAt,
+        },
+        format: 'html',
+      });
+    } catch (err) {
+      alert(`Error al exportar reporte Red Team: ${(err as Error).message}`);
     }
   };
 
@@ -383,6 +421,25 @@ export const ReportHistory: React.FC = () => {
           }}
         >
           🕸️ EASM & OSINT
+        </button>
+
+        {/* SUB-PESTAÑA NUEVA RED TEAM */}
+        <button
+          type="button"
+          onClick={() => handleTabChange('redteam')}
+          style={{
+            padding: '8px 16px',
+            borderRadius: '6px',
+            border: 'none',
+            fontSize: '0.85rem',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            backgroundColor: activeSubTab === 'redteam' ? '#2563eb' : '#27272a',
+            color: '#ffffff',
+            boxShadow: activeSubTab === 'redteam' ? '0 0 10px rgba(37, 99, 235, 0.4)' : 'none',
+          }}
+        >
+          ⚔️ Red Team & Explotación
         </button>
       </div>
 
@@ -610,6 +667,71 @@ export const ReportHistory: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleExportSingleEasm(item)}
+                          style={{
+                            background: '#0284c7',
+                            color: '#ffffff',
+                            border: 'none',
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            fontSize: '0.8rem',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          📥 Exportar PDF / HTML
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* CONTENIDO 7: HISTORIAL RED TEAM */}
+      {activeSubTab === 'redteam' && (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', color: '#f4f4f5', fontSize: '0.9rem' }}>
+            <thead>
+              <tr style={{ background: '#09090b', borderBottom: '1px solid #27272a', textAlign: 'left' }}>
+                <th style={{ padding: '12px' }}>ID Ejecución</th>
+                <th style={{ padding: '12px' }}>URL Objetivo</th>
+                <th style={{ padding: '12px' }}>Hallazgos JWT</th>
+                <th style={{ padding: '12px' }}>Hallazgos CORS</th>
+                <th style={{ padding: '12px' }}>Fecha</th>
+                <th style={{ padding: '12px', textAlign: 'right' }}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {redteamItems.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ padding: '20px', textAlign: 'center', color: '#a1a1aa' }}>
+                    No se registran ejecuciones de Red Team en el historial.
+                  </td>
+                </tr>
+              ) : (
+                redteamItems.map((item) => {
+                  const jwtFindings = item.jwtFindingsJson ? JSON.parse(item.jwtFindingsJson) : [];
+                  const corsFindings = item.corsFindingsJson ? JSON.parse(item.corsFindingsJson) : [];
+                  return (
+                    <tr key={item.id} style={{ borderBottom: '1px solid #27272a' }}>
+                      <td style={{ padding: '12px', fontFamily: 'monospace', color: '#38bdf8' }}>{item.id}</td>
+                      <td style={{ padding: '12px', fontWeight: 'bold' }}>{item.targetUrl}</td>
+                      <td style={{ padding: '12px', color: jwtFindings.length > 0 ? '#ef4444' : '#22c55e', fontWeight: 'bold' }}>
+                        {jwtFindings.length} vulnerabilidades
+                      </td>
+                      <td style={{ padding: '12px', color: corsFindings.length > 0 ? '#ef4444' : '#22c55e', fontWeight: 'bold' }}>
+                        {corsFindings.length} vulnerabilidades
+                      </td>
+                      <td style={{ padding: '12px', color: '#a1a1aa' }}>
+                        {new Date(item.createdAt).toLocaleString('es-ES')}
+                      </td>
+                      <td style={{ padding: '12px', textAlign: 'right' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleExportSingleRedTeam(item)}
                           style={{
                             background: '#0284c7',
                             color: '#ffffff',

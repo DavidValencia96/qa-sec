@@ -193,6 +193,22 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({ activeTab, onTab
 
       <button
         type="button"
+        onClick={() => onTabChange('redteam')}
+        style={{
+          padding: '10px 18px',
+          borderRadius: '6px',
+          border: 'none',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+          backgroundColor: activeTab === 'redteam' ? '#2563eb' : '#27272a',
+          color: '#ffffff',
+        }}
+      >
+        ⚔️ Red Team & Explotación
+      </button>
+
+      <button
+        type="button"
         onClick={() => onTabChange('history')}
         style={{
           padding: '10px 18px',
