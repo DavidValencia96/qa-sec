@@ -5,6 +5,8 @@ import { InputSuiteGenerator } from './components/InputSuiteGenerator';
 import { ReportViewer, type ReportData } from './components/ReportViewer';
 import { ReportHistory } from './components/ReportHistory';
 import { NetworkConfigAuditor } from './components/NetworkConfigAuditor';
+import type { ServiceItem } from './components/network/NetworkPortsTable';
+import type { MitigationRule } from './components/network/NetworkAiDiagnosis';
 
 import { NavigationTabs, type TabType } from './components/dashboard/NavigationTabs';
 import { HomeTab } from './components/dashboard/HomeTab';
@@ -23,6 +25,12 @@ import { EmailSecAuditTab } from './components/EmailSecAuditTab';
 import { ComplianceRadarTab } from './components/compliance/ComplianceRadarTab';
 import { CyberBackground } from './components/ui/CyberBackground';
 
+// Tipado estricto para el diagnóstico de red generado por Gemini AI
+export interface NetworkAnalysis {
+  riskAssessment: string;
+  mitigations: MitigationRule[];
+}
+
 interface ModuleState {
   projectId: string | null;
   suiteId: string | null;
@@ -30,9 +38,12 @@ interface ModuleState {
   selectedPresetId: string;
   report: ReportData | null;
   running: boolean;
-  generatingSuite: boolean; // Estado para bloquear ejecuciones mientras la IA genera la suite
+  generatingSuite: boolean;
   progress: number;
   statusText: string;
+  // Memoria persistente para el módulo de Red (tipada estrictamente sin `any`)
+  services?: ServiceItem[];
+  analysis?: NetworkAnalysis | null;
 }
 
 const defaultModuleState: ModuleState = {
@@ -45,6 +56,8 @@ const defaultModuleState: ModuleState = {
   generatingSuite: false,
   progress: 0,
   statusText: '',
+  services: [],
+  analysis: null,
 };
 
 export function App() {
@@ -194,7 +207,6 @@ export function App() {
     setTargetInputs([]);
   };
 
-  // Variable de apoyo para deshabilitar botones si la IA o la prueba están activas
   const isExecutionDisabled = currentModuleState.running || currentModuleState.generatingSuite;
 
   return (
@@ -439,8 +451,25 @@ export function App() {
           </div>
         )}
 
+        {/* PESTAÑA 3: AUDITORÍA DEFENSIVA DE CONFIGURACIÓN DE RED */}
+        {activeTab === 'network' && (
+          <NetworkConfigAuditor
+            networkData={{
+              targetHost: currentModuleState.prompt || 'portquiz.net',
+              services: currentModuleState.services || [],
+              analysis: currentModuleState.analysis || null,
+            }}
+            onUpdateNetworkData={(data) => {
+              updateCurrentModule({
+                prompt: data.targetHost !== undefined ? data.targetHost : currentModuleState.prompt,
+                ...(data.services !== undefined ? { services: data.services } : {}),
+                ...(data.analysis !== undefined ? { analysis: data.analysis } : {}),
+              });
+            }}
+          />
+        )}
+
         {/* RESTO DE MÓDULOS */}
-        {activeTab === 'network' && <NetworkConfigAuditor />}
         {activeTab === 'cve' && <CveRadarTab />}
         {activeTab === 'sast' && <SastAuditTab />}
         {activeTab === 'load-test' && <LoadTestTab />}
