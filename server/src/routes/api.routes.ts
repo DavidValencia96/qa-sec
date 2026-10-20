@@ -26,6 +26,7 @@ import { runScaAuditHandler } from '../controllers/sca/sca.controller.js';
 import { runEasmAuditHandler } from '../controllers/easm/easm.controller.js';
 import { runRedTeamAuditHandler } from '../controllers/redteam/redteam.controller.js';
 import emailSecRoutes from './emailsec.routes.js';
+import complianceRoutes from './compliance.routes.js';
 
 const router = Router();
 
@@ -70,6 +71,7 @@ router.post('/easm/audit', runEasmAuditHandler);
 router.post('/redteam/audit', runRedTeamAuditHandler);
 
 router.use('/emailsec', emailSecRoutes);
+router.use('/compliance', complianceRoutes);
 
 export const apiRouter = router;
 export default router;

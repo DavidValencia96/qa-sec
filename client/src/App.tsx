@@ -19,6 +19,7 @@ import { ScaAuditTab } from './components/sca/ScaAuditTab';
 import { EasmAuditTab } from './components/EasmAuditTab';
 import { RedTeamAuditTab } from './components/redteam/RedTeamAuditTab';
 import { EmailSecAuditTab } from './components/EmailSecAuditTab';
+import { ComplianceRadarTab } from './components/compliance/ComplianceRadarTab';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<TabType>('scanner');
@@ -291,6 +292,8 @@ export function App() {
       {activeTab === 'redteam' && <RedTeamAuditTab />}
 
       {activeTab === 'emailsec' && <EmailSecAuditTab />}
+
+      {activeTab === 'compliance' && <ComplianceRadarTab />}
 
       {/* PESTAÑA 11: HISTORIAL Y BUSCADOR */}
       {activeTab === 'history' && <ReportHistory />}

@@ -24,6 +24,8 @@ import type { DastFinding } from '../modules/dast/dast.types.js';
 import { buildEasmAnalysisPrompt } from './gemini/easmAnalysis.prompt.js';
 import type { JwtFinding, CorsFinding } from '../modules/redteam/redteam.types.js';
 import { buildRedTeamAnalysisPrompt } from './gemini/redTeamAnalysis.prompt.js';
+import { buildComplianceAnalysisPrompt } from './gemini/complianceAnalysis.prompt.js';
+import { buildEmailSecAnalysisPrompt } from './gemini/emailSecAnalysis.prompt.js';
 
 export interface DastAiAnalysisResult {
   summary: string;
@@ -47,6 +49,11 @@ export interface EmailSecAiAnalysisResult {
   summary: string;
   riskLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
   recommendations: string[];
+}
+
+export interface ComplianceAiAnalysisResult {
+  summary: string;
+  priorityActionPlan: string[];
 }
 
 export class GeminiAIService {
@@ -440,6 +447,37 @@ export class GeminiAIService {
     }
   }
 
+  public async analyzeComplianceStatusWithAi(
+    score: number,
+    standards: unknown
+  ): Promise<ComplianceAiAnalysisResult> {
+    const fallback: ComplianceAiAnalysisResult = {
+      summary: `Nivel global de cumplimiento estimado en ${score}%. Se identificaron controles pendientes por resolver en los estándares evaluados.`,
+      priorityActionPlan: [
+        'Priorizar la corrección de fallas críticas en controles de OWASP Top 10.',
+        'Garantizar la rotación de credenciales y secretos expuestos.',
+        'Implementar políticas strictly de autenticación y encabezados de seguridad.',
+      ],
+    };
+
+    try {
+      console.log(`🤖 [Gemini AI] Evaluando postura global de cumplimiento normativo (${score}%)...`);
+      const prompt = buildComplianceAnalysisPrompt(score, standards);
+      const text = await this.executeWithFallback('', prompt, 800);
+
+      const parsed = this.parseJsonResponse<ComplianceAiAnalysisResult>(text, null as any);
+      if (!parsed) return fallback;
+
+      return {
+        summary: parsed.summary || fallback.summary,
+        priorityActionPlan: Array.isArray(parsed.priorityActionPlan) ? parsed.priorityActionPlan : fallback.priorityActionPlan,
+      };
+    } catch (error) {
+      console.error('[!] Error en analyzeComplianceStatusWithAi:', (error as Error).message);
+      return fallback;
+    }
+  }
+
   public async analyzeEmailSecFindings(
     domain: string,
     spf?: any,
@@ -458,31 +496,9 @@ export class GeminiAIService {
 
     try {
       console.log(`🤖 [Gemini AI] Analizando Email Security & OSINT para ${domain}...`);
-      const userPrompt = `
-Eres un experto auditor de ciberseguridad especializado en Email Security & Anti-Phishing (OSINT).
-Analiza los siguientes hallazgos técnicos recopilados para el objetivo: "${domain}".
+      const prompt = buildEmailSecAnalysisPrompt(domain, spf, dmarc, rbl, headerAnalysis);
+      const text = await this.executeWithFallback('', prompt, 800);
 
-=== RESULTADOS SPF ===
-${JSON.stringify(spf || 'No evaluado', null, 2)}
-
-=== RESULTADOS DMARC ===
-${JSON.stringify(dmarc || 'No evaluado', null, 2)}
-
-=== REPUTACIÓN RBL / LISTAS NEGRAS ===
-${JSON.stringify(rbl || 'No evaluado', null, 2)}
-
-=== ANÁLISIS DE ENCABEZADOS Y SPOOFING ===
-${JSON.stringify(headerAnalysis || 'No evaluado', null, 2)}
-
-Responde estrictamente con un JSON en este formato exacto:
-{
-  "summary": "Resumen ejecutivo en español detallando los riesgos y vulnerabilidades de suplantación.",
-  "riskLevel": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW",
-  "recommendations": ["Recomendación 1", "Recomendación 2"]
-}
-`;
-
-      const text = await this.executeWithFallback('', userPrompt, 800);
       const parsed = this.parseJsonResponse<EmailSecAiAnalysisResult>(text, null as any);
       if (!parsed) return fallback;
 

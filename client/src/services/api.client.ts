@@ -507,3 +507,62 @@ export const runEmailSecAuditApi = async (payload: EmailSecAuditPayload) => {
 
   return response.json();
 };
+
+export interface ComplianceControlStatus {
+  controlId: string;
+  title: string;
+  category: string;
+  status: 'PASSED' | 'FAILED' | 'PARTIAL';
+  failingFindingsCount: number;
+  mappedSources: string[];
+  findingsDetails: Array<{
+    sourceModule: string;
+    title: string;
+    severity: string;
+    recommendation?: string;
+  }>;
+}
+
+export interface StandardComplianceSummary {
+  standard: 'OWASP_2021' | 'ISO27001' | 'NIST_800_53';
+  standardName: string;
+  totalControls: number;
+  passedControls: number;
+  failedControls: number;
+  compliancePercentage: number;
+  controls: ComplianceControlStatus[];
+}
+
+export interface ComplianceRadarResponse {
+  success: boolean;
+  overallComplianceScore: number;
+  availableTargets: string[];
+  standards: Record<string, StandardComplianceSummary>;
+  aiExecutiveSummary: {
+    summary: string;
+    priorityActionPlan: string[];
+  };
+}
+
+export const getComplianceRadarApi = async (target?: string): Promise<ComplianceRadarResponse> => {
+  const url = new URL(`${BASE_URL}/compliance/radar`);
+  if (target && target.trim().length > 0) {
+    url.searchParams.append('target', target.trim());
+  }
+
+  const response = await fetch(url.toString());
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `HTTP ${response.status}: Error al obtener métricas de cumplimiento normativo.`);
+  }
+  return response.json();
+};
+
+export const getComplianceTargetsApi = async (): Promise<string[]> => {
+  const response = await fetch(`${BASE_URL}/compliance/targets`);
+  if (!response.ok) {
+    return [];
+  }
+  const data = await response.json();
+  return data.targets || [];
+};

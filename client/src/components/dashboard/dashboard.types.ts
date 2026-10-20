@@ -20,4 +20,5 @@ export type TabType =
   | 'easm'
   | 'redteam'
   | 'emailsec'
+  | 'compliance'
   | 'history';
