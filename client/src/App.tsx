@@ -272,21 +272,24 @@ export function App() {
             )}
 
             {suiteId && (
-              <div style={{ marginTop: '16px' }}>
+              <div style={{ marginTop: '20px' }}>
                 <button
                   onClick={handleRunScanner}
                   disabled={running}
                   style={{
                     width: '100%',
-                    background: running ? '#374151' : '#2563eb',
-                    color: '#fff',
-                    padding: '12px 20px',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '16px',
+                    background: running
+                      ? 'rgba(51, 65, 85, 0.6)'
+                      : 'linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%)',
+                    color: '#ffffff',
+                    padding: '14px 24px',
+                    border: '1px solid #38bdf8',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
                     fontWeight: 'bold',
                     cursor: running ? 'not-allowed' : 'pointer',
-                    opacity: running ? 0.7 : 1,
+                    boxShadow: running ? 'none' : '0 0 20px rgba(56, 189, 248, 0.35)',
+                    transition: 'all 0.2s ease',
                   }}
                 >
                   {running ? 'Escaneando en progreso...' : '🚀 Ejecutar Pruebas de Seguridad'}
@@ -325,21 +328,24 @@ export function App() {
             )}
 
             {suiteId && (
-              <div style={{ marginTop: '16px' }}>
+              <div style={{ marginTop: '20px' }}>
                 <button
                   onClick={handleRunScannerWithInputs}
                   disabled={running}
                   style={{
                     width: '100%',
-                    background: running ? '#374151' : '#2563eb',
-                    color: '#fff',
-                    padding: '12px 20px',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '16px',
+                    background: running
+                      ? 'rgba(51, 65, 85, 0.6)'
+                      : 'linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%)',
+                    color: '#ffffff',
+                    padding: '14px 24px',
+                    border: '1px solid #38bdf8',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
                     fontWeight: 'bold',
                     cursor: running ? 'not-allowed' : 'pointer',
-                    opacity: running ? 0.7 : 1,
+                    boxShadow: running ? 'none' : '0 0 20px rgba(56, 189, 248, 0.35)',
+                    transition: 'all 0.2s ease',
                   }}
                 >
                   {running ? 'Auditando Inputs...' : '🚀 Ejecutar Auditoría de Inputs'}

@@ -8,281 +8,70 @@ interface NavigationTabsProps {
 }
 
 export const NavigationTabs: React.FC<NavigationTabsProps> = ({ activeTab, onTabChange }) => {
+  const tabs: Array<{ id: TabType; label: string; icon: string }> = [
+    { id: 'home', label: 'Inicio', icon: '🏠' },
+    { id: 'scanner', label: 'Escáner Web', icon: '🚀' },
+    { id: 'injection', label: 'Inputs Sec', icon: '🎯' },
+    { id: 'network', label: 'Red & Puertos', icon: '🛡️' },
+    { id: 'cve', label: 'CVE Radar', icon: '📰' },
+    { id: 'sast', label: 'SAST & Code', icon: '🔍' },
+    { id: 'load-test', label: 'Carga & DoS', icon: '💥' },
+    { id: 'dast', label: 'DAST API', icon: '🛡️' },
+    { id: 'sca', label: 'SCA & Supply', icon: '🔐' },
+    { id: 'easm', label: 'EASM OSINT', icon: '🕸️' },
+    { id: 'redteam', label: 'Red Team', icon: '⚔️' },
+    { id: 'emailsec', label: 'Email Sec', icon: '📧' },
+    { id: 'compliance', label: 'Compliance', icon: '📊' },
+    { id: 'history', label: 'Historial', icon: '📜' },
+  ];
+
   return (
     <div
       style={{
         display: 'flex',
-        justifyContent: 'center',
         alignItems: 'center',
-        gap: '12px',
-        marginBottom: '24px',
+        gap: '8px',
+        marginBottom: '28px',
         width: '100%',
-        flexWrap: 'wrap',
+        overflowX: 'auto',
+        padding: '10px 14px',
+        background: 'rgba(15, 23, 42, 0.45)',
+        backdropFilter: 'blur(10px)',
+        borderRadius: '10px',
+        border: '1px solid rgba(56, 189, 248, 0.2)',
+        boxSizing: 'border-box',
+        scrollbarWidth: 'thin',
       }}
     >
-      <button
-        type="button"
-        onClick={() => onTabChange('home')}
-        style={{
-          padding: '10px 18px',
-          borderRadius: '6px',
-          border: 'none',
-          fontSize: '0.9rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          backgroundColor: activeTab === 'home' ? '#2563eb' : '#27272a',
-          color: '#ffffff',
-          boxShadow: activeTab === 'home' ? '0 0 12px rgba(37, 99, 235, 0.4)' : 'none',
-          transition: 'all 0.2s ease',
-        }}
-      >
-        🏠 Inicio
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onTabChange('scanner')}
-        style={{
-          padding: '10px 18px',
-          borderRadius: '6px',
-          border: 'none',
-          fontSize: '0.9rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          backgroundColor: activeTab === 'scanner' ? '#2563eb' : '#27272a',
-          color: '#ffffff',
-          boxShadow: activeTab === 'scanner' ? '0 0 12px rgba(37, 99, 235, 0.4)' : 'none',
-          transition: 'all 0.2s ease',
-        }}
-      >
-        🚀 Escáner & Diseñador IA
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onTabChange('injection')}
-        style={{
-          padding: '10px 18px',
-          borderRadius: '6px',
-          border: 'none',
-          fontSize: '0.9rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          backgroundColor: activeTab === 'injection' ? '#2563eb' : '#27272a',
-          color: '#ffffff',
-          boxShadow: activeTab === 'injection' ? '0 0 12px rgba(37, 99, 235, 0.4)' : 'none',
-          transition: 'all 0.2s ease',
-        }}
-      >
-        🎯 Inyección & Inputs Sec
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onTabChange('network')}
-        style={{
-          padding: '10px 18px',
-          borderRadius: '6px',
-          border: 'none',
-          fontSize: '0.9rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          backgroundColor: activeTab === 'network' ? '#2563eb' : '#27272a',
-          color: '#ffffff',
-          boxShadow: activeTab === 'network' ? '0 0 12px rgba(37, 99, 235, 0.4)' : 'none',
-          transition: 'all 0.2s ease',
-        }}
-      >
-        🛡️ Configuración de Red
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onTabChange('cve')}
-        style={{
-          padding: '10px 18px',
-          borderRadius: '6px',
-          border: 'none',
-          fontSize: '0.9rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          backgroundColor: activeTab === 'cve' ? '#2563eb' : '#27272a',
-          color: '#ffffff',
-          boxShadow: activeTab === 'cve' ? '0 0 12px rgba(37, 99, 235, 0.4)' : 'none',
-          transition: 'all 0.2s ease',
-        }}
-      >
-        📰 CiberThreat Feed & CVE Radar
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onTabChange('sast')}
-        style={{
-          padding: '10px 18px',
-          borderRadius: '6px',
-          border: 'none',
-          fontSize: '0.9rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          backgroundColor: activeTab === 'sast' ? '#2563eb' : '#27272a',
-          color: '#ffffff',
-          boxShadow: activeTab === 'sast' ? '0 0 12px rgba(37, 99, 235, 0.4)' : 'none',
-          transition: 'all 0.2s ease',
-        }}
-      >
-        🔍 Auditoría SAST & Secret Scanning
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onTabChange('load-test')}
-        style={{
-          padding: '10px 18px',
-          borderRadius: '6px',
-          border: 'none',
-          fontSize: '0.9rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          backgroundColor: activeTab === 'load-test' ? '#2563eb' : '#27272a',
-          color: '#ffffff',
-          boxShadow: activeTab === 'load-test' ? '0 0 12px rgba(37, 99, 235, 0.4)' : 'none',
-          transition: 'all 0.2s ease',
-        }}
-      >
-        💥 Pruebas de Carga & DoS
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onTabChange('dast')}
-        style={{
-          padding: '10px 18px',
-          borderRadius: '6px',
-          border: 'none',
-          fontSize: '0.9rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          backgroundColor: activeTab === 'dast' ? '#2563eb' : '#27272a',
-          color: '#ffffff',
-          boxShadow: activeTab === 'dast' ? '0 0 12px rgba(37, 99, 235, 0.4)' : 'none',
-          transition: 'all 0.2s ease',
-        }}
-      >
-        🛡️ DAST & OpenAPI Fuzzer
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onTabChange('sca')}
-        style={{
-          padding: '10px 18px',
-          borderRadius: '6px',
-          border: 'none',
-          fontSize: '0.9rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          backgroundColor: activeTab === 'sca' ? '#2563eb' : '#27272a',
-          color: '#ffffff',
-          boxShadow: activeTab === 'sca' ? '0 0 12px rgba(37, 99, 235, 0.4)' : 'none',
-          transition: 'all 0.2s ease',
-        }}
-      >
-        🔐 SCA & Supply Chain Sec
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onTabChange('easm')}
-        style={{
-          padding: '10px 18px',
-          borderRadius: '6px',
-          border: 'none',
-          fontSize: '0.9rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          backgroundColor: activeTab === 'easm' ? '#2563eb' : '#27272a',
-          color: '#ffffff',
-          boxShadow: activeTab === 'easm' ? '0 0 12px rgba(37, 99, 235, 0.4)' : 'none',
-          transition: 'all 0.2s ease',
-        }}
-      >
-        🕸️ EASM & Recon OSINT
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onTabChange('redteam')}
-        style={{
-          padding: '10px 18px',
-          borderRadius: '6px',
-          border: 'none',
-          fontSize: '0.9rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          backgroundColor: activeTab === 'redteam' ? '#2563eb' : '#27272a',
-          color: '#ffffff',
-        }}
-      >
-        ⚔️ Red Team & Explotación
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onTabChange('emailsec')}
-        style={{
-          padding: '10px 18px',
-          borderRadius: '6px',
-          border: 'none',
-          fontSize: '0.9rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          backgroundColor: activeTab === 'emailsec' ? '#2563eb' : '#27272a',
-          color: '#ffffff',
-          boxShadow: activeTab === 'emailsec' ? '0 0 12px rgba(37, 99, 235, 0.4)' : 'none',
-          transition: 'all 0.2s ease',
-        }}
-      >
-        📧 Email Sec & OSINT
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onTabChange('compliance')}
-        style={{
-          padding: '10px 18px',
-          borderRadius: '6px',
-          border: 'none',
-          fontSize: '0.9rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          backgroundColor: activeTab === 'compliance' ? '#2563eb' : '#27272a',
-          color: '#ffffff',
-          boxShadow: activeTab === 'compliance' ? '0 0 12px rgba(37, 99, 235, 0.4)' : 'none',
-          transition: 'all 0.2s ease',
-        }}
-      >
-        📊 Compliance Radar
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onTabChange('history')}
-        style={{
-          padding: '10px 18px',
-          borderRadius: '6px',
-          border: 'none',
-          fontSize: '0.9rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          backgroundColor: activeTab === 'history' ? '#2563eb' : '#27272a',
-          color: '#ffffff',
-          boxShadow: activeTab === 'history' ? '0 0 12px rgba(37, 99, 235, 0.4)' : 'none',
-          transition: 'all 0.2s ease',
-        }}
-      >
-        📜 Historial de Reportes
-      </button>
+      {tabs.map((tab) => {
+        const isActive = activeTab === tab.id;
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => onTabChange(tab.id)}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '6px',
+              border: isActive ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.08)',
+              fontSize: '0.82rem',
+              fontWeight: isActive ? '700' : '500',
+              cursor: 'pointer',
+              backgroundColor: isActive ? 'rgba(37, 99, 235, 0.4)' : 'rgba(15, 23, 42, 0.5)',
+              color: isActive ? '#ffffff' : '#94a3b8',
+              whiteSpace: 'nowrap',
+              boxShadow: isActive ? '0 0 12px rgba(56, 189, 248, 0.3)' : 'none',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <span>{tab.icon}</span>
+            <span>{tab.label}</span>
+          </button>
+        );
+      })}
     </div>
   );
 };
