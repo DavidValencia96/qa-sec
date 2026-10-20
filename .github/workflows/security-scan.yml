@@ -1,0 +1,38 @@
+name: QA-Sec Suite - Automated Security Pipeline
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  security-audit:
+    name: DevSecOps Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout del Código
+        uses: actions/checkout@v4
+
+      - name: 🟢 Configurar Node.js (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 📦 Instalar Dependencias del Backend
+        run: |
+          cd server
+          npm ci
+
+      - name: 🚀 Iniciar Servidor Vulnerable de Pruebas (Background)
+        run: |
+          cd server
+          node server-test.js &
+          sleep 3
+
+      - name: 🛡️ Ejecutar Escaneo de Seguridad con qa-sec-cli
+        run: |
+          cd server
+          npm run cli -- --target http://localhost:4000/api/users --module redteam --threshold HIGH --verbose

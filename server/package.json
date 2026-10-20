@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "cli": "tsx src/cli/index.ts"
   },
   "keywords": [
     "qa",
@@ -29,9 +30,13 @@
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
-    "@types/node": "^20.12.11",
+    "@types/node": "^20.19.43",
     "@types/uuid": "^10.0.0",
-    "tsx": "^4.9.3",
-    "typescript": "^5.4.5"
+    "ts-node": "^10.9.2",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  },
+  "bin": {
+    "qa-sec-cli": "./dist/cli/index.js"
   }
 }
