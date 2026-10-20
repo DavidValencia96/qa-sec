@@ -81,6 +81,7 @@ export const getTestRunsHistory = async (_req: Request, res: Response): Promise<
       scaHistory,
       easmHistory: easmRows,
       redteamHistory: redteamRows,
+      emailsecHistory: emailsecRows,
     });
   } catch (error) {
     console.error('[!] Error consultando historial centralizado:', error);
