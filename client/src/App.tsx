@@ -7,6 +7,7 @@ import { ReportHistory } from './components/ReportHistory';
 import { NetworkConfigAuditor } from './components/NetworkConfigAuditor';
 
 import { NavigationTabs, type TabType } from './components/dashboard/NavigationTabs';
+import { HomeTab } from './components/dashboard/HomeTab';
 import { ProjectForm } from './components/dashboard/ProjectForm';
 import { InputInjectionAuditor } from './components/dashboard/InputInjectionAuditor';
 import { ScanProgressBar } from './components/dashboard/ScanProgressBar';
@@ -20,9 +21,10 @@ import { EasmAuditTab } from './components/EasmAuditTab';
 import { RedTeamAuditTab } from './components/redteam/RedTeamAuditTab';
 import { EmailSecAuditTab } from './components/EmailSecAuditTab';
 import { ComplianceRadarTab } from './components/compliance/ComplianceRadarTab';
+import { CyberBackground } from './components/ui/CyberBackground';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<TabType>('scanner');
+  const [activeTab, setActiveTab] = useState<TabType>('home');
   const [targetUrl, setTargetUrl] = useState('https://www.google.com/');
   const [targetInputs, setTargetInputs] = useState<TargetInput[]>([]);
   const [projectId, setProjectId] = useState<string | null>(null);
@@ -146,157 +148,244 @@ export function App() {
   return (
     <div
       style={{
-        width: '92%',
-        margin: '20px auto',
-        padding: '24px',
-        fontFamily: 'sans-serif',
-        background: '#121212',
+        position: 'relative',
+        minHeight: '100vh',
+        width: '100%',
+        background: '#040406',
         color: '#fff',
-        borderRadius: '8px',
-        boxSizing: 'border-box',
+        overflowX: 'hidden',
+        paddingBottom: '40px',
       }}
     >
-      <h1 style={{ marginTop: 0, textAlign: 'center', marginBottom: '40px' }}>
-        🛡️ QA-Sec Suite Dashboard
-      </h1>
+      {/* FONDO DINÁMICO DE RED DE NODOS */}
+      <CyberBackground />
 
-      {/* MENÚ DE PESTAÑAS */}
-      <NavigationTabs activeTab={activeTab} onTabChange={setActiveTab} />
-
-      {/* PESTAÑA 1: ESCÁNER GENERAL Y DISEÑADOR IA */}
-      {activeTab === 'scanner' && (
-        <div>
-          <ProjectForm
-            targetUrl={targetUrl}
-            onTargetUrlChange={setTargetUrl}
-            onInitProject={handleInitProject}
-            onResetAnalysis={handleResetAnalysis}
-            isRunning={running}
-          />
-
-          {projectId && (
-            <AISuiteGenerator
-              projectId={projectId}
-              isScanRunning={running}
-              onSuiteCreated={(id: string) => {
-                setSuiteId(id);
-                alert('Suite configurada por Gemini AI y lista para ejecutar.');
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          width: '92%',
+          margin: '20px auto',
+          padding: '24px',
+          fontFamily: 'sans-serif',
+          background: 'rgba(6, 8, 15, 0.25)',
+          backdropFilter: 'blur(6px)',
+          borderRadius: '12px',
+          border: '1px solid rgba(56, 189, 248, 0.2)',
+          boxSizing: 'border-box',
+        }}
+      >
+        {/* HEADER CIBERNÉTICO FUTURISTA */}
+        <header
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '16px 24px',
+            marginBottom: activeTab === 'home' ? '24px' : '32px',
+            background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.5) 0%, rgba(9, 9, 11, 0.5) 100%)',
+            backdropFilter: 'blur(8px)',
+            borderRadius: '10px',
+            border: '1px solid rgba(56, 189, 248, 0.25)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+            flexWrap: 'wrap',
+            gap: '16px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div
+              style={{
+                background: 'radial-gradient(circle, #2563eb 0%, #0f172a 100%)',
+                padding: '10px',
+                borderRadius: '10px',
+                border: '1px solid #38bdf8',
+                boxShadow: '0 0 15px rgba(56, 189, 248, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
-            />
-          )}
+            >
+              <span style={{ fontSize: '1.6rem' }}>🛡️</span>
+            </div>
 
-          {suiteId && (
-            <div style={{ marginTop: '16px' }}>
-              <button
-                onClick={handleRunScanner}
-                disabled={running}
+            <div>
+              <h1
                 style={{
-                  width: '100%',
-                  background: running ? '#374151' : '#2563eb',
-                  color: '#fff',
-                  padding: '12px 20px',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  cursor: running ? 'not-allowed' : 'pointer',
-                  opacity: running ? 0.7 : 1,
+                  margin: 0,
+                  fontSize: '1.6rem',
+                  fontWeight: '800',
+                  letterSpacing: '-0.5px',
+                  background: 'linear-gradient(90deg, #ffffff 0%, #38bdf8 50%, #60a5fa 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
                 }}
               >
-                {running ? 'Escaneando en progreso...' : '🚀 Ejecutar Pruebas de Seguridad'}
-              </button>
-
-              {running && <ScanProgressBar progress={progress} statusText={statusText} />}
+                QA-SEC <span style={{ fontWeight: '300', color: '#94a3b8', WebkitTextFillColor: '#94a3b8' }}>SUITE</span>
+              </h1>
+              <span style={{ color: '#64748b', fontSize: '0.78rem', letterSpacing: '1px', fontWeight: '600', textTransform: 'uppercase' }}>
+                AI-Powered DevSecOps & Audit Platform
+              </span>
             </div>
-          )}
+          </div>
 
-          <ReportViewer report={report} currentTargetUrl={targetUrl} />
-        </div>
-      )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ background: '#0284c715', padding: '6px 12px', borderRadius: '6px', border: '1px solid #0284c740', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 6px #38bdf8' }} />
+              <span style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 'bold' }}>v3.x • Gemini Active</span>
+            </div>
 
-      {/* PESTAÑA 2: MÓDULO DE INYECCIÓN & INPUTS SEC */}
-      {activeTab === 'injection' && (
-        <div>
-          <InputInjectionAuditor
-            targetUrl={targetUrl}
-            onTargetUrlChange={setTargetUrl}
-            targetInputs={targetInputs}
-            onTargetInputsChange={setTargetInputs}
-            onInitProject={handleInitProject}
-            onResetAnalysis={handleResetAnalysis}
-            isRunning={running}
-          />
+            <div style={{ background: '#16653415', padding: '6px 12px', borderRadius: '6px', border: '1px solid #22c55e40', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 6px #22c55e' }} />
+              <span style={{ color: '#22c55e', fontSize: '0.75rem', fontWeight: 'bold' }}>Secured</span>
+            </div>
+          </div>
+        </header>
 
-          {projectId && (
-            <InputSuiteGenerator
-              projectId={projectId}
-              isScanRunning={running}
-              onSuiteCreated={(id: string) => {
-                setSuiteId(id);
-                alert('Suite de prueba de inputs configurada por Gemini AI.');
-              }}
+        {/* MENÚ DE PESTAÑAS (SÓLO VISIBLE FUERA DEL HOME) */}
+        {activeTab !== 'home' && (
+          <NavigationTabs activeTab={activeTab} onTabChange={setActiveTab} />
+        )}
+
+        {/* PESTAÑA INICIAL: HOME / LANDING PAGE */}
+        {activeTab === 'home' && <HomeTab onNavigate={(tab) => setActiveTab(tab)} />}
+
+        {/* PESTAÑA 1: ESCÁNER GENERAL Y DISEÑADOR IA */}
+        {activeTab === 'scanner' && (
+          <div>
+            <ProjectForm
+              targetUrl={targetUrl}
+              onTargetUrlChange={setTargetUrl}
+              onInitProject={handleInitProject}
+              onResetAnalysis={handleResetAnalysis}
+              isRunning={running}
             />
-          )}
 
-          {suiteId && (
-            <div style={{ marginTop: '16px' }}>
-              <button
-                onClick={handleRunScannerWithInputs}
-                disabled={running}
-                style={{
-                  width: '100%',
-                  background: running ? '#374151' : '#2563eb',
-                  color: '#fff',
-                  padding: '12px 20px',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  cursor: running ? 'not-allowed' : 'pointer',
-                  opacity: running ? 0.7 : 1,
+            {projectId && (
+              <AISuiteGenerator
+                projectId={projectId}
+                isScanRunning={running}
+                onSuiteCreated={(id: string) => {
+                  setSuiteId(id);
+                  alert('Suite configurada por Gemini AI y lista para ejecutar.');
                 }}
-              >
-                {running ? 'Auditando Inputs...' : '🚀 Ejecutar Auditoría de Inputs'}
-              </button>
+              />
+            )}
 
-              {running && <ScanProgressBar progress={progress} statusText={statusText} />}
-            </div>
-          )}
+            {suiteId && (
+              <div style={{ marginTop: '16px' }}>
+                <button
+                  onClick={handleRunScanner}
+                  disabled={running}
+                  style={{
+                    width: '100%',
+                    background: running ? '#374151' : '#2563eb',
+                    color: '#fff',
+                    padding: '12px 20px',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    cursor: running ? 'not-allowed' : 'pointer',
+                    opacity: running ? 0.7 : 1,
+                  }}
+                >
+                  {running ? 'Escaneando en progreso...' : '🚀 Ejecutar Pruebas de Seguridad'}
+                </button>
 
-          <ReportViewer report={report} currentTargetUrl={targetUrl} />
-        </div>
-      )}
+                {running && <ScanProgressBar progress={progress} statusText={statusText} />}
+              </div>
+            )}
 
-      {/* PESTAÑA 3: AUDITORÍA DEFENSIVA DE CONFIGURACIÓN DE RED */}
-      {activeTab === 'network' && <NetworkConfigAuditor />}
+            <ReportViewer report={report} currentTargetUrl={targetUrl} />
+          </div>
+        )}
 
-      {/* PESTAÑA 4: Vulnerabilidades actuales */}
-      {activeTab === 'cve' && <CveRadarTab />}
+        {/* PESTAÑA 2: MÓDULO DE INYECCIÓN & INPUTS SEC */}
+        {activeTab === 'injection' && (
+          <div>
+            <InputInjectionAuditor
+              targetUrl={targetUrl}
+              onTargetUrlChange={setTargetUrl}
+              targetInputs={targetInputs}
+              onTargetInputsChange={setTargetInputs}
+              onInitProject={handleInitProject}
+              onResetAnalysis={handleResetAnalysis}
+              isRunning={running}
+            />
 
-      {/* PESTAÑA 5: Auditoría SAST & Secret Scanning */}
-      {activeTab === 'sast' && <SastAuditTab />}
+            {projectId && (
+              <InputSuiteGenerator
+                projectId={projectId}
+                isScanRunning={running}
+                onSuiteCreated={(id: string) => {
+                  setSuiteId(id);
+                  alert('Suite de prueba de inputs configurada por Gemini AI.');
+                }}
+              />
+            )}
 
-      {/* PESTAÑA 6: Pruebas de Carga & DoS */}
-      {activeTab === 'load-test' && <LoadTestTab />}
+            {suiteId && (
+              <div style={{ marginTop: '16px' }}>
+                <button
+                  onClick={handleRunScannerWithInputs}
+                  disabled={running}
+                  style={{
+                    width: '100%',
+                    background: running ? '#374151' : '#2563eb',
+                    color: '#fff',
+                    padding: '12px 20px',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    cursor: running ? 'not-allowed' : 'pointer',
+                    opacity: running ? 0.7 : 1,
+                  }}
+                >
+                  {running ? 'Auditando Inputs...' : '🚀 Ejecutar Auditoría de Inputs'}
+                </button>
 
-      {/* PESTAÑA 7: DAST & OpenAPI Fuzzer */}
-      {activeTab === 'dast' && <DastAuditTab />}
+                {running && <ScanProgressBar progress={progress} statusText={statusText} />}
+              </div>
+            )}
 
-      {/* PESTAÑA 8: SCA & Supply Chain Security */}
-      {activeTab === 'sca' && <ScaAuditTab />}
+            <ReportViewer report={report} currentTargetUrl={targetUrl} />
+          </div>
+        )}
 
-      {/* PESTAÑA 9: EASM & OSINT */}
-      {activeTab === 'easm' && <EasmAuditTab />}
+        {/* PESTAÑA 3: AUDITORÍA DEFENSIVA DE CONFIGURACIÓN DE RED */}
+        {activeTab === 'network' && <NetworkConfigAuditor />}
 
-      {/* PESTAÑA 10: Red Team & Explotación */}
-      {activeTab === 'redteam' && <RedTeamAuditTab />}
+        {/* PESTAÑA 4: Vulnerabilidades actuales */}
+        {activeTab === 'cve' && <CveRadarTab />}
 
-      {activeTab === 'emailsec' && <EmailSecAuditTab />}
+        {/* PESTAÑA 5: Auditoría SAST & Secret Scanning */}
+        {activeTab === 'sast' && <SastAuditTab />}
 
-      {activeTab === 'compliance' && <ComplianceRadarTab />}
+        {/* PESTAÑA 6: Pruebas de Carga & DoS */}
+        {activeTab === 'load-test' && <LoadTestTab />}
 
-      {/* PESTAÑA 11: HISTORIAL Y BUSCADOR */}
-      {activeTab === 'history' && <ReportHistory />}
+        {/* PESTAÑA 7: DAST & OpenAPI Fuzzer */}
+        {activeTab === 'dast' && <DastAuditTab />}
+
+        {/* PESTAÑA 8: SCA & Supply Chain Security */}
+        {activeTab === 'sca' && <ScaAuditTab />}
+
+        {/* PESTAÑA 9: EASM & OSINT */}
+        {activeTab === 'easm' && <EasmAuditTab />}
+
+        {/* PESTAÑA 10: Red Team & Explotación */}
+        {activeTab === 'redteam' && <RedTeamAuditTab />}
+
+        {/* PESTAÑA 11: Email Security & OSINT */}
+        {activeTab === 'emailsec' && <EmailSecAuditTab />}
+
+        {/* PESTAÑA 12: Compliance Radar */}
+        {activeTab === 'compliance' && <ComplianceRadarTab />}
+
+        {/* PESTAÑA 13: HISTORIAL Y BUSCADOR */}
+        {activeTab === 'history' && <ReportHistory />}
+      </div>
     </div>
   );
 }

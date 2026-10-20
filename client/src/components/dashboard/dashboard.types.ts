@@ -9,6 +9,7 @@ export interface TargetInput {
 }
 
 export type TabType =
+  | 'home'
   | 'scanner'
   | 'injection'
   | 'network'

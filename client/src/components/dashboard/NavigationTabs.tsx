@@ -22,6 +22,25 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({ activeTab, onTab
     >
       <button
         type="button"
+        onClick={() => onTabChange('home')}
+        style={{
+          padding: '10px 18px',
+          borderRadius: '6px',
+          border: 'none',
+          fontSize: '0.9rem',
+          fontWeight: '600',
+          cursor: 'pointer',
+          backgroundColor: activeTab === 'home' ? '#2563eb' : '#27272a',
+          color: '#ffffff',
+          boxShadow: activeTab === 'home' ? '0 0 12px rgba(37, 99, 235, 0.4)' : 'none',
+          transition: 'all 0.2s ease',
+        }}
+      >
+        🏠 Inicio
+      </button>
+
+      <button
+        type="button"
         onClick={() => onTabChange('scanner')}
         style={{
           padding: '10px 18px',
@@ -134,7 +153,6 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({ activeTab, onTab
         💥 Pruebas de Carga & DoS
       </button>
 
-      {/* NUEVA PESTAÑA DAST & OPENAPI FUZZER */}
       <button
         type="button"
         onClick={() => onTabChange('dast')}
@@ -177,14 +195,15 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({ activeTab, onTab
         type="button"
         onClick={() => onTabChange('easm')}
         style={{
-          padding: '8px 16px',
+          padding: '10px 18px',
           borderRadius: '6px',
           border: 'none',
-          fontWeight: 'bold',
-          fontSize: '0.85rem',
+          fontSize: '0.9rem',
+          fontWeight: '600',
           cursor: 'pointer',
-          background: activeTab === 'easm' ? '#0284c7' : '#27272a',
-          color: '#fff',
+          backgroundColor: activeTab === 'easm' ? '#2563eb' : '#27272a',
+          color: '#ffffff',
+          boxShadow: activeTab === 'easm' ? '0 0 12px rgba(37, 99, 235, 0.4)' : 'none',
           transition: 'all 0.2s ease',
         }}
       >
@@ -198,7 +217,8 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({ activeTab, onTab
           padding: '10px 18px',
           borderRadius: '6px',
           border: 'none',
-          fontWeight: 'bold',
+          fontSize: '0.9rem',
+          fontWeight: '600',
           cursor: 'pointer',
           backgroundColor: activeTab === 'redteam' ? '#2563eb' : '#27272a',
           color: '#ffffff',
