@@ -80,10 +80,25 @@ export const exportConsolidatedReportHandler = async (req: Request, res: Respons
       }
     }
 
-    // 5. Diagnóstico Global con Gemini AI
+    // 5. Consultar datos de Email Security si está activado
+    if ((data.includedModules as any)?.emailSecAudit) {
+      const [emailsecRows]: any = await pool.query('SELECT * FROM emailsec_history ORDER BY created_at DESC LIMIT 1');
+      if (emailsecRows.length > 0) {
+        const lastEmailSec = emailsecRows[0];
+        (data as any).emailSecData = {
+          domain: lastEmailSec.target_domain || 'N/A',
+          spf: lastEmailSec.spf_json ? JSON.parse(lastEmailSec.spf_json) : null,
+          dmarc: lastEmailSec.dmarc_json ? JSON.parse(lastEmailSec.dmarc_json) : null,
+          rbl: lastEmailSec.rbl_json ? JSON.parse(lastEmailSec.rbl_json) : null,
+          aiSummary: lastEmailSec.ai_summary_json ? JSON.parse(lastEmailSec.ai_summary_json) : {},
+        };
+      }
+    }
+
+    // 6. Diagnóstico Global con Gemini AI
     const aiSummary = await geminiService.generateConsolidatedExecutiveSummary(data);
 
-    // 6. Generar informe en el formato solicitado
+    // 7. Generar informe en el formato solicitado
     if (data.format === 'markdown') {
       const markdownContent = formatterService.generateMarkdownReport(data, aiSummary);
       res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
@@ -299,7 +314,7 @@ export const exportSingleRecordHandler = async (req: Request, res: Response): Pr
           ` : findings.map((f) => `
             <div style="background: #1e293b; padding: 14px; border-radius: 6px; border-left: 4px solid ${f.severity === 'CRITICAL' ? '#ef4444' : '#f97316'}; margin-bottom: 12px;">
               <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                <strong style="color: #f8fafc;">[${f.vulnerabilityType}] ${f.httpMethod}${f.endpointPath}</strong>
+                <strong style="color: #f8fafc;">[${f.vulnerabilityType}] ${f.httpMethod} ${f.endpointPath}</strong>
                 <span style="background: #0f172a; color: ${f.severity === 'CRITICAL' ? '#ef4444' : '#f97316'}; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem;">
                   ${f.severity}
                 </span>
@@ -372,7 +387,7 @@ export const exportSingleRecordHandler = async (req: Request, res: Response): Pr
           ` : vulnerabilities.map((v: any) => `
             <div style="background: #1e293b; padding: 14px; border-radius: 6px; border-left: 4px solid ${v.severity === 'CRITICAL' ? '#ef4444' : '#f97316'}; margin-bottom: 12px;">
               <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                <strong style="color: #f8fafc;">${v.packageName} (v${v.currentVersion})${v.cveId ? `— ${v.cveId}` : ''}</strong>
+                <strong style="color: #f8fafc;">${v.packageName} (v${v.currentVersion})${v.cveId ? ` — ${v.cveId}` : ''}</strong>
                 <span style="background: #0f172a; color: ${v.severity === 'CRITICAL' ? '#ef4444' : '#f97316'}; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem;">
                   ${v.severity}
                 </span>
@@ -389,7 +404,7 @@ export const exportSingleRecordHandler = async (req: Request, res: Response): Pr
             <p style="color: #4ade80; margin: 0;">✅ No se detectaron tokens ni claves expuestas.</p>
           ` : gitSecrets.map((s: any) => `
             <div style="background: #1e293b; padding: 14px; border-radius: 6px; border-left: 4px solid #ef4444; margin-bottom: 12px;">
-              <strong style="color: #f8fafc;">[${s.secretType}]${s.filePath}</strong>
+              <strong style="color: #f8fafc;">[${s.secretType}] ${s.filePath}</strong>
               <div style="background: #020617; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 0.8rem; color: #fca5a5; word-break: break-all; margin-top: 6px;">
                 Patrón: ${s.matchedPattern}
               </div>
@@ -473,7 +488,7 @@ export const exportSingleRecordHandler = async (req: Request, res: Response): Pr
         <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 24px;">
           <h3 style="margin: 0 0 12px 0; color: #38bdf8; font-size: 1rem;">💡 Acciones Defensivas Recomendadas</h3>
           <ul style="margin: 0; padding-left: 20px; color: #cbd5e1; font-size: 0.9rem; line-height: 1.6;">
-            ${(aiSummary.recommendations || []).map((r: string) => `<li style="margin-bottom: 6px;">${r}</li>`).join('')}
+             ${(aiSummary.recommendations || []).map((r: string) => `<li style="margin-bottom: 6px;">${r}</li>`).join('')}
           </ul>
         </div>
 
@@ -598,11 +613,11 @@ export const exportSingleRecordHandler = async (req: Request, res: Response): Pr
         <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 24px;">
           <h3 style="margin: 0 0 16px 0; color: #f8fafc; font-size: 1rem;">🌐 Malas Configuraciones CORS Explotables (${corsFindings.length})</h3>
           ${corsFindings.length === 0 ? `
-            <p style="color: #4ade80; margin: 0;">✅ Las políticas Cross-Origin Resource Sharing (CORS) son estrictas y seguras.</p>
+            <p style="color: #4ade80; margin: 0;">✅ Las políticas Cross-Origin Resource Sharing (CORS) son strictly seguras.</p>
           ` : corsFindings.map((f) => `
             <div style="background: #1e293b; padding: 14px; border-radius: 6px; border-left: 4px solid #f97316; margin-bottom: 12px;">
               <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                <strong style="color: #f8fafc;">[${f.vulnerabilityType}] Origen Explotado:${f.testedOrigin}</strong>
+                <strong style="color: #f8fafc;">[${f.vulnerabilityType}] Origen Explotado: ${f.testedOrigin}</strong>
                 <span style="background: #0f172a; color: #f97316; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem;">
                   ${f.severity}
                 </span>
@@ -617,6 +632,79 @@ export const exportSingleRecordHandler = async (req: Request, res: Response): Pr
           <h3 style="margin: 0 0 12px 0; color: #38bdf8; font-size: 1rem;">💡 Acciones Defensivas Sugeridas</h3>
           <ul style="margin: 0; padding-left: 20px; color: #cbd5e1; font-size: 0.9rem; line-height: 1.6;">
             ${(aiSummary.recommendations || []).map((r: string) => `<li style="margin-bottom: 6px;">${r}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+    } else if (moduleType === 'emailsec') {
+      const spf = recordData.spfJson ? JSON.parse(recordData.spfJson) : (recordData.spf || null);
+      const dmarc = recordData.dmarcJson ? JSON.parse(recordData.dmarcJson) : (recordData.dmarc || null);
+      const rbl = recordData.rblJson ? JSON.parse(recordData.rblJson) : (recordData.rbl || null);
+      const aiSummary = recordData.aiSummaryJson ? JSON.parse(recordData.aiSummaryJson) : (recordData.aiSummary || {});
+      const targetDomain = recordData.target_domain || recordData.targetDomain || 'N/A';
+      const targetIp = recordData.target_ip || recordData.targetIp || 'N/A';
+
+      htmlBody = `
+        <div style="border-bottom: 2px solid #334155; padding-bottom: 16px; margin-bottom: 24px;">
+          <h2 style="margin: 0 0 8px 0; color: #38bdf8;">✉️ Reporte Técnico - Email Security & Defense (OSINT)</h2>
+          <span style="color: #94a3b8; font-size: 0.9rem;">
+            ID de Auditoría: <strong>${recordData.id || recordData.runId || 'N/A'}</strong> | Fecha: ${dateStr}
+          </span>
+        </div>
+
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 16px 0; color: #38bdf8; font-size: 1.05rem;">🎯 Objetivo Evaluado & Parámetros</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; font-size: 0.9rem;">
+            <div>
+              <span style="color: #94a3b8; display: block; font-size: 0.8rem;">Dominio Objetivo:</span>
+              <strong style="color: #f8fafc;">${targetDomain}</strong>
+            </div>
+            <div>
+              <span style="color: #94a3b8; display: block; font-size: 0.8rem;">IP Consultada RBL:</span>
+              <strong style="color: #38bdf8;">${targetIp}</strong>
+            </div>
+            <div>
+              <span style="color: #94a3b8; display: block; font-size: 0.8rem;">Estado SPF:</span>
+              <strong style="color: ${spf?.valid ? '#22c55e' : '#ef4444'};">${spf?.valid ? 'VÁLIDO' : 'INVÁLIDO / AUSENTE'}</strong>
+            </div>
+            <div>
+              <span style="color: #94a3b8; display: block; font-size: 0.8rem;">Política DMARC:</span>
+              <strong style="color: ${dmarc?.policy === 'reject' ? '#22c55e' : '#ef4444'};">${dmarc?.policy ? dmarc.policy.toUpperCase() : 'MISSING'}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border-left: 4px solid #38bdf8; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 8px 0; color: #38bdf8; font-size: 1.05rem;">🤖 Diagnóstico Ejecutivo Email Sec (Gemini AI)</h3>
+          <p style="margin: 0; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+            ${aiSummary.summary || 'Auditoría de autenticación de correo y listas negras completada.'}
+          </p>
+        </div>
+
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 12px 0; color: #f8fafc; font-size: 1rem;">📋 Registro SPF Detectado</h3>
+          <pre style="background: #020617; color: ${spf?.valid ? '#4ade80' : '#f87171'}; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 0.85rem; margin: 0; overflow-x: auto;">${spf?.raw || 'Sin registro SPF configurado'}</pre>
+          ${(spf?.warnings || []).map((w: string) => `<div style="color: #f97316; font-size: 0.8rem; margin-top: 4px;">⚠️ ${w}</div>`).join('')}
+        </div>
+
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 12px 0; color: #f8fafc; font-size: 1rem;">🛡️ Registro DMARC Detectado</h3>
+          <pre style="background: #020617; color: ${dmarc?.valid ? '#4ade80' : '#f87171'}; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 0.85rem; margin: 0; overflow-x: auto;">${dmarc?.raw || 'Sin registro DMARC configurado'}</pre>
+          ${(dmarc?.warnings || []).map((w: string) => `<div style="color: #f97316; font-size: 0.8rem; margin-top: 4px;">⚠️ ${w}</div>`).join('')}
+        </div>
+
+        ${rbl ? `
+          <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 24px;">
+            <h3 style="margin: 0 0 12px 0; color: #f8fafc; font-size: 1rem;">🛑 Reputación IP RBL (${rbl.ip})</h3>
+            <p style="color: ${rbl.blacklisted ? '#ef4444' : '#22c55e'}; font-weight: bold; margin: 0;">
+              ${rbl.blacklisted ? `🚨 Reportada en ${rbl.listedIn.length} lista(s) negra(s): ${rbl.listedIn.join(', ')}` : '✅ IP limpia en proveedores RBL'}
+            </p>
+          </div>
+        ` : ''}
+
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155;">
+          <h3 style="margin: 0 0 12px 0; color: #38bdf8; font-size: 1rem;">💡 Recomendaciones Defensivas</h3>
+          <ul style="margin: 0; padding-left: 20px; color: #cbd5e1; font-size: 0.9rem; line-height: 1.6;">
+             ${(aiSummary.recommendations || []).map((r: string) => `<li style="margin-bottom: 6px;">${r}</li>`).join('')}
           </ul>
         </div>
       `;

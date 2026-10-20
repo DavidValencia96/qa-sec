@@ -19,4 +19,5 @@ export type TabType =
   | 'sca'
   | 'easm'
   | 'redteam'
+  | 'emailsec'
   | 'history';

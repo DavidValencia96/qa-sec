@@ -43,6 +43,12 @@ export interface RedTeamAiAnalysisResult {
   recommendations: string[];
 }
 
+export interface EmailSecAiAnalysisResult {
+  summary: string;
+  riskLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  recommendations: string[];
+}
+
 export class GeminiAIService {
   private ai: GoogleGenAI;
   // Modelos ordenados por velocidad de respuesta y disponibilidad activa
@@ -430,6 +436,63 @@ export class GeminiAIService {
       };
     } catch (error) {
       console.error('[!] Error en analyzeRedTeamFindings:', (error as Error).message);
+      return fallback;
+    }
+  }
+
+  public async analyzeEmailSecFindings(
+    domain: string,
+    spf?: any,
+    dmarc?: any,
+    rbl?: any,
+    headerAnalysis?: any
+  ): Promise<EmailSecAiAnalysisResult> {
+    const fallback: EmailSecAiAnalysisResult = {
+      summary: `Auditoría de seguridad de correo realizada para el dominio/entorno "${domain}".`,
+      riskLevel: dmarc?.policy === 'MISSING' || spf?.policy === 'ALLOW_ALL' ? 'HIGH' : 'MEDIUM',
+      recommendations: [
+        'Configurar una política DMARC estricta (p=quarantine o p=reject).',
+        'Asegurar un registro SPF restrictivo terminado en -all o ~all.',
+      ],
+    };
+
+    try {
+      console.log(`🤖 [Gemini AI] Analizando Email Security & OSINT para ${domain}...`);
+      const userPrompt = `
+Eres un experto auditor de ciberseguridad especializado en Email Security & Anti-Phishing (OSINT).
+Analiza los siguientes hallazgos técnicos recopilados para el objetivo: "${domain}".
+
+=== RESULTADOS SPF ===
+${JSON.stringify(spf || 'No evaluado', null, 2)}
+
+=== RESULTADOS DMARC ===
+${JSON.stringify(dmarc || 'No evaluado', null, 2)}
+
+=== REPUTACIÓN RBL / LISTAS NEGRAS ===
+${JSON.stringify(rbl || 'No evaluado', null, 2)}
+
+=== ANÁLISIS DE ENCABEZADOS Y SPOOFING ===
+${JSON.stringify(headerAnalysis || 'No evaluado', null, 2)}
+
+Responde estrictamente con un JSON en este formato exacto:
+{
+  "summary": "Resumen ejecutivo en español detallando los riesgos y vulnerabilidades de suplantación.",
+  "riskLevel": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW",
+  "recommendations": ["Recomendación 1", "Recomendación 2"]
+}
+`;
+
+      const text = await this.executeWithFallback('', userPrompt, 800);
+      const parsed = this.parseJsonResponse<EmailSecAiAnalysisResult>(text, null as any);
+      if (!parsed) return fallback;
+
+      return {
+        summary: parsed.summary || fallback.summary,
+        riskLevel: parsed.riskLevel || fallback.riskLevel,
+        recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : fallback.recommendations,
+      };
+    } catch (error) {
+      console.error('[!] Error en analyzeEmailSecFindings:', (error as Error).message);
       return fallback;
     }
   }

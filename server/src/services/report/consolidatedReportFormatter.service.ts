@@ -104,6 +104,21 @@ export class ConsolidatedReportFormatterService {
       `;
     }
 
+    // Preparación de datos Email Security
+    let emailSecHtmlSection = '';
+    const emailSecData = (data as any).emailSecData;
+    if ((data.includedModules as any)?.emailSecAudit && emailSecData) {
+      emailSecHtmlSection = `
+        <h2>✉️ Módulo 9: Email Security & Anti-Phishing Defense</h2>
+        <div class="card" style="margin-bottom: 20px;">
+          <p><strong>Dominio Analizado:</strong> ${emailSecData.domain || 'N/A'}</p>
+          <p><strong>Estado Registro SPF:</strong> <strong style="color: ${emailSecData.spf?.valid ? '#22c55e' : '#ef4444'};">${emailSecData.spf?.valid ? 'VÁLIDO' : 'INVÁLIDO / AUSENTE'}</strong></p>
+          <p><strong>Política DMARC:</strong> <strong style="color: ${emailSecData.dmarc?.policy === 'reject' ? '#22c55e' : '#ef4444'};">${emailSecData.dmarc?.policy ? emailSecData.dmarc.policy.toUpperCase() : 'MISSING'}</strong></p>
+          <p><strong>Diagnóstico Email Sec IA:</strong> ${emailSecData.aiSummary?.summary || 'N/A'}</p>
+        </div>
+      `;
+    }
+
     return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -321,6 +336,9 @@ export class ConsolidatedReportFormatterService {
     <!-- MÓDULO 8: RED TEAM SECCIÓN COMPLETA -->
     ${redTeamHtmlSection}
 
+    <!-- MÓDULO 9: EMAIL SECURITY SECCIÓN COMPLETA -->
+    ${emailSecHtmlSection}
+
   </div>
 </body>
 </html>`;
@@ -342,7 +360,7 @@ export class ConsolidatedReportFormatterService {
 ${aiSummary.executiveOverview}
 
 ### 💡 Plan de Mitigación Prioritario
-${aiSummary.priorityRemediations.map((r, i) => `${i + 1}.${r}`).join('\n')}
+${aiSummary.priorityRemediations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
 ---
 `;
@@ -397,6 +415,15 @@ ${subsList || 'Sin subdominios detectados.'}
 **Hallazgos JWT:** ${red.jwtFindings.length}
 **Hallazgos CORS:** ${red.corsFindings.length}
 **Envíos Phishing:** ${red.phishingSimulatedCount}
+`;
+    }
+
+    const emailSecData = (data as any).emailSecData;
+    if ((data.includedModules as any)?.emailSecAudit && emailSecData) {
+      markdown += `\n## ✉️ Módulo 9: Email Security & Anti-Phishing
+**Dominio:** ${emailSecData.domain || 'N/A'}
+**SPF:** ${emailSecData.spf?.valid ? 'VÁLIDO' : 'INVÁLIDO / AUSENTE'}
+**DMARC:** ${emailSecData.dmarc?.policy ? emailSecData.dmarc.policy.toUpperCase() : 'MISSING'}
 `;
     }
 

@@ -321,7 +321,7 @@ export const exportConsolidatedReportApi = async (options: ConsolidatedReportOpt
 };
 
 export const exportSingleRecordApi = async (payload: {
-  moduleType: 'web' | 'sast' | 'load-test' | 'dast' | 'sca' | 'easm' | 'redteam';
+  moduleType: 'web' | 'sast' | 'load-test' | 'dast' | 'sca' | 'easm' | 'redteam' | 'emailsec';
   recordData: unknown;
   format?: 'html' | 'markdown';
 }): Promise<void> => {
@@ -481,6 +481,28 @@ export const runRedTeamAuditApi = async (payload: RedTeamAuditPayload) => {
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.error || 'Error al ejecutar la auditoría de Red Team.');
+  }
+
+  return response.json();
+};
+
+export interface EmailSecAuditPayload {
+  domain?: string;
+  targetIp?: string;
+  rawHeaders?: string;
+  dkimSelector?: string;
+}
+
+export const runEmailSecAuditApi = async (payload: EmailSecAuditPayload) => {
+  const response = await fetch(`${BASE_URL}/emailsec/audit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Error al ejecutar la auditoría de Email Security');
   }
 
   return response.json();

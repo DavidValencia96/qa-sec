@@ -319,3 +319,16 @@ CREATE TABLE IF NOT EXISTS redteam_history (
   ai_summary_json LONGTEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS emailsec_history (
+  id VARCHAR(64) PRIMARY KEY,
+  target_domain VARCHAR(255) NULL,
+  target_ip VARCHAR(64) NULL,
+  spf_json LONGTEXT NULL,
+  dmarc_json LONGTEXT NULL,
+  dkim_json LONGTEXT NULL,
+  rbl_json LONGTEXT NULL,
+  headers_json LONGTEXT NULL,
+  ai_summary_json LONGTEXT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
