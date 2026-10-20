@@ -17,7 +17,6 @@ export const ReportModals: React.FC<ReportModalsProps> = ({
   onCloseEvidenceModal,
   onCloseFindingModal,
 }) => {
-  // Bloquear el scroll del body cuando el modal está activo
   useEffect(() => {
     if (selectedEvidenceModal || selectedFinding) {
       document.body.style.overflow = 'hidden';
@@ -159,7 +158,7 @@ export const ReportModals: React.FC<ReportModalsProps> = ({
         </div>
       )}
 
-      {/* MODAL DE INSPECCIÓN PROFUNDA / INFORME TÉCNICO EXTENDIDO */}
+      {/* MODAL DE INSPECCIÓN PROFUNDA */}
       {selectedFinding && (
         <div
           style={{
@@ -221,7 +220,6 @@ export const ReportModals: React.FC<ReportModalsProps> = ({
               ✕
             </button>
 
-            {/* HEADER DEL MODAL */}
             <div style={{ marginBottom: '20px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '14px' }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(56, 189, 248, 0.1)', padding: '4px 10px', borderRadius: '12px', border: '1px solid rgba(56, 189, 248, 0.3)', marginBottom: '8px' }}>
                 <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: 'bold' }}>AUDIT DIAGNOSTIC PANEL</span>
@@ -245,9 +243,7 @@ export const ReportModals: React.FC<ReportModalsProps> = ({
               </h2>
             </div>
 
-            {/* GRID METRICAS Y DATOS DEL HALLAZGO */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '12px', marginBottom: '16px' }}>
-              {/* Tasa/Hora del Test */}
               <div style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '12px 16px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
                 <span style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
                   🕒 Hora de Ejecución
@@ -257,7 +253,6 @@ export const ReportModals: React.FC<ReportModalsProps> = ({
                 </span>
               </div>
 
-              {/* Módulo Ejecutado */}
               <div style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '12px 16px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
                 <span style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
                   🛡️ Módulo Ejecutado
@@ -267,7 +262,6 @@ export const ReportModals: React.FC<ReportModalsProps> = ({
                 </span>
               </div>
 
-              {/* Estado de Ejecución */}
               <div style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '12px 16px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
                 <span style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
                   ⚡ Estado de Ejecución
@@ -279,7 +273,6 @@ export const ReportModals: React.FC<ReportModalsProps> = ({
               </div>
             </div>
 
-            {/* URL Y NOMBRE DE SUITE */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
               <div style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '14px 16px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
                 <span style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
@@ -305,7 +298,6 @@ export const ReportModals: React.FC<ReportModalsProps> = ({
               </div>
             </div>
 
-            {/* CONSOLA DE PROMPT GEMINI AI */}
             <div style={{ background: 'rgba(15, 23, 42, 0.8)', padding: '14px 16px', borderRadius: '8px', border: '1px solid rgba(250, 204, 21, 0.3)', marginBottom: '16px' }}>
               <span style={{ color: '#facc15', fontSize: '0.78rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
                 🤖 Prompt Gemini AI Aplicado:
@@ -315,7 +307,6 @@ export const ReportModals: React.FC<ReportModalsProps> = ({
               </p>
             </div>
 
-            {/* RAW PAYLOAD (SI EXISTE) */}
             {Boolean(selectedFinding.rawPayload) && (
               <div style={{ marginBottom: '20px' }}>
                 <strong style={{ color: '#94a3b8', fontSize: '0.8rem', display: 'block', marginBottom: '6px' }}>
@@ -342,7 +333,6 @@ export const ReportModals: React.FC<ReportModalsProps> = ({
               </div>
             )}
 
-            {/* ACCIONES Y CIERRE */}
             <div style={{ marginTop: '24px', textAlign: 'right', borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '16px' }}>
               <button
                 type="button"

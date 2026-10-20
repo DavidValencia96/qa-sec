@@ -149,7 +149,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
             opacity: isRunning ? 0.5 : 1,
           }}
         >
-          1. Inicializar Proyecto
+          Inicializar Proyecto
         </button>
 
         {isRunning && (

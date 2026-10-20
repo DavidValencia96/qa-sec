@@ -22,6 +22,10 @@ interface AISuiteGeneratorProps {
   onSuiteGenerated?: (suiteData: GeneratedSuiteResponse) => void;
   onSuiteCreated?: (suiteId: string) => void;
   isScanRunning?: boolean;
+  promptValue?: string;
+  selectedPresetValue?: string;
+  onPromptChange?: (promptText: string, presetId: string) => void;
+  onGeneratingChange?: (isGenerating: boolean) => void;
 }
 
 export const AISuiteGenerator: React.FC<AISuiteGeneratorProps> = ({
@@ -29,10 +33,28 @@ export const AISuiteGenerator: React.FC<AISuiteGeneratorProps> = ({
   onSuiteGenerated,
   onSuiteCreated,
   isScanRunning = false,
+  promptValue = '',
+  selectedPresetValue = '',
+  onPromptChange,
+  onGeneratingChange,
 }) => {
-  const [prompt, setPrompt] = useState<string>('');
+  const [prompt, setPrompt] = useState<string>(promptValue);
+  const [selectedPresetId, setSelectedPresetId] = useState<string>(selectedPresetValue);
+
+  const [prevPromptValue, setPrevPromptValue] = useState(promptValue);
+  const [prevPresetValue, setPrevPresetValue] = useState(selectedPresetValue);
+
+  if (promptValue !== prevPromptValue) {
+    setPrevPromptValue(promptValue);
+    setPrompt(promptValue);
+  }
+
+  if (selectedPresetValue !== prevPresetValue) {
+    setPrevPresetValue(selectedPresetValue);
+    setSelectedPresetId(selectedPresetValue);
+  }
+
   const [presets, setPresets] = useState<PromptPreset[]>([]);
-  const [selectedPresetId, setSelectedPresetId] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [fetchingPresets, setFetchingPresets] = useState<boolean>(true);
   const [errorPresets, setErrorPresets] = useState<string | null>(null);
@@ -83,24 +105,30 @@ export const AISuiteGenerator: React.FC<AISuiteGeneratorProps> = ({
 
     if (!presetId) {
       setPrompt('');
+      if (onPromptChange) onPromptChange('', '');
       return;
     }
 
     const foundPreset = presets.find((p) => String(p.id) === presetId);
     if (foundPreset) {
       setPrompt(foundPreset.prompt_text);
+      if (onPromptChange) onPromptChange(foundPreset.prompt_text, presetId);
     }
   };
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setPrompt(e.target.value);
+    const newText = e.target.value;
+    setPrompt(newText);
     setSelectedPresetId('');
+    if (onPromptChange) onPromptChange(newText, '');
   };
 
   const handleGenerateSuite = async () => {
     if (!prompt.trim() || !projectId || loading || isScanRunning) return;
 
     setLoading(true);
+    if (onGeneratingChange) onGeneratingChange(true);
+
     try {
       const result = await generateSuiteAIApi(projectId, prompt);
       if (result.success) {
@@ -118,16 +146,61 @@ export const AISuiteGenerator: React.FC<AISuiteGeneratorProps> = ({
       alert('Error de conexión con el servidor al generar la suite.');
     } finally {
       setLoading(false);
+      if (onGeneratingChange) onGeneratingChange(false);
     }
   };
 
   const isDisabled = loading || isScanRunning || !prompt.trim() || !projectId || fetchingPresets;
 
   return (
-    <div className="card prompt-designer-card" style={{ marginTop: '16px' }}>
-      <h3 style={{ marginTop: 0, color: '#38bdf8' }}>🤖 Diseñador de Pruebas con Gemini AI</h3>
+    <div
+      style={{
+        background: 'rgba(15, 23, 42, 0.35)',
+        backdropFilter: 'blur(10px)',
+        padding: '24px',
+        borderRadius: '10px',
+        border: '1px solid rgba(56, 189, 248, 0.25)',
+        marginTop: '20px',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '16px',
+          flexWrap: 'wrap',
+          gap: '12px',
+        }}
+      >
+        <h3
+          style={{
+            margin: 0,
+            color: '#38bdf8',
+            fontSize: '1.15rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          🤖 Diseñador de Pruebas con Gemini AI
+        </h3>
+        <span
+          style={{
+            background: 'rgba(56, 189, 248, 0.15)',
+            color: '#38bdf8',
+            padding: '3px 10px',
+            borderRadius: '12px',
+            fontSize: '0.75rem',
+            fontWeight: 'bold',
+            border: '1px solid rgba(56, 189, 248, 0.3)',
+          }}
+        >
+          Gemini Active
+        </span>
+      </div>
 
-      {/* Selector de Plantillas Predefinidas */}
       <div style={{ marginBottom: '12px' }}>
         <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '6px', color: '#a0aec0' }}>
           Plantillas de Prompts Recomendados:
@@ -161,15 +234,15 @@ export const AISuiteGenerator: React.FC<AISuiteGeneratorProps> = ({
             disabled={loading || isScanRunning}
             style={{
               width: '100%',
-              padding: '10px 14px',
-              backgroundColor: '#1a202c',
-              color: '#e2e8f0',
-              border: '1px solid #4a5568',
+              padding: '12px 16px',
               borderRadius: '6px',
+              background: 'rgba(15, 23, 42, 0.7)',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
+              color: '#ffffff',
               fontSize: '0.9rem',
+              outline: 'none',
               cursor: loading || isScanRunning ? 'not-allowed' : 'pointer',
               opacity: loading || isScanRunning ? 0.5 : 1,
-              outline: 'none',
             }}
           >
             <option value="">
@@ -184,7 +257,6 @@ export const AISuiteGenerator: React.FC<AISuiteGeneratorProps> = ({
         )}
       </div>
 
-      {/* Textarea para Prompt Editable */}
       <textarea
         value={prompt}
         onChange={handleTextareaChange}
@@ -194,9 +266,9 @@ export const AISuiteGenerator: React.FC<AISuiteGeneratorProps> = ({
         style={{
           width: '100%',
           padding: '12px',
-          backgroundColor: '#171923',
+          backgroundColor: 'rgba(9, 9, 11, 0.6)',
           color: '#ffffff',
-          border: '1px solid #2d3748',
+          border: '1px solid rgba(56, 189, 248, 0.25)',
           borderRadius: '6px',
           fontSize: '0.9rem',
           lineHeight: '1.5',
@@ -204,11 +276,12 @@ export const AISuiteGenerator: React.FC<AISuiteGeneratorProps> = ({
           opacity: loading || isScanRunning ? 0.5 : 1,
           outline: 'none',
           boxSizing: 'border-box',
+          fontFamily: 'monospace',
         }}
       />
 
-      {/* Botón Estilizado */}
       <button
+        type="button"
         onClick={handleGenerateSuite}
         disabled={isDisabled}
         onMouseEnter={() => setIsHovered(true)}
@@ -222,18 +295,18 @@ export const AISuiteGenerator: React.FC<AISuiteGeneratorProps> = ({
           letterSpacing: '0.5px',
           color: '#ffffff',
           background: isDisabled
-            ? '#2d3748'
+            ? 'rgba(45, 55, 72, 0.6)'
             : isHovered
-            ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
-            : 'linear-gradient(135deg, #047857 0%, #059669 100%)',
-          border: isDisabled ? '1px solid #4a5568' : '1px solid #34d399',
+            ? 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)'
+            : 'linear-gradient(135deg, #0369a1 0%, #1d4ed8 100%)',
+          border: isDisabled ? '1px solid #4a5568' : '1px solid #38bdf8',
           borderRadius: '8px',
           cursor: isDisabled ? 'not-allowed' : 'pointer',
           boxShadow: isDisabled
             ? 'none'
             : isHovered
-            ? '0 0 18px rgba(16, 185, 129, 0.55)'
-            : '0 0 10px rgba(16, 185, 129, 0.3)',
+            ? '0 0 18px rgba(56, 189, 248, 0.55)'
+            : '0 0 10px rgba(56, 189, 248, 0.3)',
           transform: !isDisabled && isHovered ? 'translateY(-1px)' : 'translateY(0)',
           transition: 'all 0.25s ease-in-out',
           display: 'flex',

@@ -3,8 +3,12 @@ import { generateSuiteAIApi, getPromptsApi } from '../services/api.client';
 
 interface InputSuiteGeneratorProps {
   projectId: string;
-  isScanRunning: boolean;
+  isScanRunning?: boolean;
   onSuiteCreated: (suiteId: string) => void;
+  promptValue?: string;
+  selectedPresetValue?: string;
+  onPromptChange?: (promptText: string, presetId: string) => void;
+  onGeneratingChange?: (isGenerating: boolean) => void;
 }
 
 interface PromptPreset {
@@ -15,16 +19,34 @@ interface PromptPreset {
 
 export const InputSuiteGenerator: React.FC<InputSuiteGeneratorProps> = ({
   projectId,
-  isScanRunning,
+  isScanRunning = false,
   onSuiteCreated,
+  promptValue = '',
+  selectedPresetValue = '',
+  onPromptChange,
+  onGeneratingChange,
 }) => {
   const [prompts, setPrompts] = useState<PromptPreset[]>([]);
-  const [selectedPromptId, setSelectedPromptId] = useState<string>('');
-  const [customPrompt, setCustomPrompt] = useState<string>('');
+  const [selectedPromptId, setSelectedPromptId] = useState<string>(selectedPresetValue);
+  const [customPrompt, setCustomPrompt] = useState<string>(promptValue);
   const [loading, setLoading] = useState<boolean>(false);
   const [fetchingPrompts, setFetchingPrompts] = useState<boolean>(true);
   const [errorPrompts, setErrorPrompts] = useState<string | null>(null);
   const [reloadTrigger, setReloadTrigger] = useState<number>(0);
+
+  // Sincronización derivando estado de props durante la navegación entre pestañas
+  const [prevPromptValue, setPrevPromptValue] = useState(promptValue);
+  const [prevPresetValue, setPrevPresetValue] = useState(selectedPresetValue);
+
+  if (promptValue !== prevPromptValue) {
+    setPrevPromptValue(promptValue);
+    setCustomPrompt(promptValue);
+  }
+
+  if (selectedPresetValue !== prevPresetValue) {
+    setPrevPresetValue(selectedPresetValue);
+    setSelectedPromptId(selectedPresetValue);
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -67,7 +89,16 @@ export const InputSuiteGenerator: React.FC<InputSuiteGeneratorProps> = ({
     const selectedId = e.target.value;
     setSelectedPromptId(selectedId);
     const preset = prompts.find((p) => p.id === selectedId);
-    setCustomPrompt(preset ? preset.prompt_text : '');
+    const newText = preset ? preset.prompt_text : '';
+    setCustomPrompt(newText);
+    if (onPromptChange) onPromptChange(newText, selectedId);
+  };
+
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newText = e.target.value;
+    setCustomPrompt(newText);
+    setSelectedPromptId('');
+    if (onPromptChange) onPromptChange(newText, '');
   };
 
   const handleGenerateSuite = async () => {
@@ -75,8 +106,9 @@ export const InputSuiteGenerator: React.FC<InputSuiteGeneratorProps> = ({
     if (!finalPrompt) return alert('Por favor selecciona o escribe una regla de auditoría.');
 
     setLoading(true);
+    if (onGeneratingChange) onGeneratingChange(true);
+
     try {
-      // Se transmite selectedPromptId hacia el backend
       const data = await generateSuiteAIApi(projectId, finalPrompt, selectedPromptId);
       if (data.success) {
         onSuiteCreated(data.suiteId);
@@ -87,12 +119,61 @@ export const InputSuiteGenerator: React.FC<InputSuiteGeneratorProps> = ({
       alert(`Error de conexión: ${(err as Error).message}`);
     } finally {
       setLoading(false);
+      if (onGeneratingChange) onGeneratingChange(false);
     }
   };
 
+  const isDisabled = isScanRunning || loading || fetchingPrompts || !customPrompt.trim();
+
   return (
-    <div style={{ background: '#18181b', padding: '20px', borderRadius: '8px', border: '1px solid #27272a', marginTop: '20px' }}>
-      <h3 style={{ marginTop: 0, color: '#38bdf8' }}>🤖 Diseñador de Pruebas de Inputs con Gemini AI</h3>
+    <div
+      style={{
+        background: 'rgba(15, 23, 42, 0.35)',
+        backdropFilter: 'blur(10px)',
+        padding: '24px',
+        borderRadius: '10px',
+        border: '1px solid rgba(56, 189, 248, 0.25)',
+        marginTop: '20px',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '16px',
+          flexWrap: 'wrap',
+          gap: '12px',
+        }}
+      >
+        <h3
+          style={{
+            margin: 0,
+            color: '#38bdf8',
+            fontSize: '1.15rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          🤖 Diseñador de Pruebas de Inputs con Gemini AI
+        </h3>
+        <span
+          style={{
+            background: 'rgba(56, 189, 248, 0.15)',
+            color: '#38bdf8',
+            padding: '3px 10px',
+            borderRadius: '12px',
+            fontSize: '0.75rem',
+            fontWeight: 'bold',
+            border: '1px solid rgba(56, 189, 248, 0.3)',
+          }}
+        >
+          Gemini Active
+        </span>
+      </div>
+
       <p style={{ color: '#9ca3af', fontSize: '0.85rem', marginBottom: '16px' }}>
         Selecciona una regla de auditoría almacenada en MySQL:
       </p>
@@ -103,8 +184,17 @@ export const InputSuiteGenerator: React.FC<InputSuiteGeneratorProps> = ({
         <div style={{ marginBottom: '12px' }}>
           <p style={{ color: '#f87171', fontSize: '0.85rem', margin: '0 0 6px 0' }}>⚠️ {errorPrompts}</p>
           <button
+            type="button"
             onClick={handleRetryFetch}
-            style={{ background: '#374151', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px 10px', fontSize: '0.8rem', cursor: 'pointer' }}
+            style={{
+              background: '#374151',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '4px',
+              padding: '4px 10px',
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+            }}
           >
             Reintentar carga DB
           </button>
@@ -116,56 +206,87 @@ export const InputSuiteGenerator: React.FC<InputSuiteGeneratorProps> = ({
           disabled={isScanRunning || loading}
           style={{
             width: '100%',
-            padding: '10px',
-            background: '#09090b',
-            color: '#fff',
-            border: '1px solid #3f3f46',
+            padding: '12px 16px',
             borderRadius: '6px',
+            background: 'rgba(15, 23, 42, 0.7)',
+            border: '1px solid rgba(56, 189, 248, 0.3)',
+            color: '#ffffff',
+            fontSize: '0.9rem',
+            outline: 'none',
+            cursor: isScanRunning || loading ? 'not-allowed' : 'pointer',
+            opacity: isScanRunning || loading ? 0.5 : 1,
             marginBottom: '12px',
           }}
         >
           <option value="">-- Selecciona una Regla desde la Base de Datos ({prompts.length} disponibles) --</option>
           {prompts.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.name}
+              🔑 {p.name}
             </option>
           ))}
         </select>
       )}
 
       <textarea
-        rows={3}
+        rows={4}
         value={customPrompt}
-        onChange={(e) => setCustomPrompt(e.target.value)}
+        onChange={handleTextareaChange}
         disabled={isScanRunning || loading}
         placeholder="Regla de auditoría que se enviará al backend/IA..."
         style={{
           width: '100%',
-          padding: '10px',
-          background: '#09090b',
-          color: '#fff',
-          border: '1px solid #3f3f46',
+          padding: '12px',
+          backgroundColor: 'rgba(9, 9, 11, 0.6)',
+          color: '#ffffff',
+          border: '1px solid rgba(56, 189, 248, 0.25)',
           borderRadius: '6px',
+          fontSize: '0.9rem',
+          lineHeight: '1.5',
+          resize: 'vertical',
+          opacity: isScanRunning || loading ? 0.5 : 1,
+          outline: 'none',
           boxSizing: 'border-box',
           marginBottom: '16px',
+          fontFamily: 'monospace',
         }}
       />
 
       <button
+        type="button"
         onClick={handleGenerateSuite}
-        disabled={isScanRunning || loading || fetchingPrompts}
+        disabled={isDisabled}
         style={{
           width: '100%',
-          padding: '12px',
-          background: loading ? '#374151' : '#2563eb',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '6px',
-          fontWeight: 'bold',
-          cursor: loading ? 'not-allowed' : 'pointer',
+          padding: '12px 24px',
+          fontSize: '1rem',
+          fontWeight: '700',
+          color: '#ffffff',
+          background: isDisabled
+            ? 'rgba(45, 55, 72, 0.6)'
+            : 'linear-gradient(135deg, #0369a1 0%, #1d4ed8 100%)',
+          border: isDisabled ? '1px solid #4a5568' : '1px solid #38bdf8',
+          borderRadius: '8px',
+          cursor: isDisabled ? 'not-allowed' : 'pointer',
+          boxShadow: isDisabled ? 'none' : '0 0 12px rgba(56, 189, 248, 0.3)',
+          transition: 'all 0.2s ease-in-out',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          opacity: isDisabled ? 0.5 : 1,
         }}
       >
-        {loading ? 'Configurando Suite...' : '✨ Configurar Suite de Sanitización'}
+        {loading ? (
+          <>
+            <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⏳</span>
+            <span>Configurando Suite...</span>
+          </>
+        ) : (
+          <>
+            <span>✨</span>
+            <span>Configurar Suite de Sanitización</span>
+          </>
+        )}
       </button>
     </div>
   );
