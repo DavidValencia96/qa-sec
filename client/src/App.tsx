@@ -1,5 +1,12 @@
 import { useState, useEffect } from 'react';
-import { createProjectApi, runTestApi, getReportApi } from './services/api.client';
+import {
+  createProjectApi,
+  runTestApi,
+  getReportApi,
+  type DastAuditResponse,
+  type ScaAuditResponse,
+  type DependencyManifestType,
+} from './services/api.client';
 import { AISuiteGenerator } from './components/AISuiteGenerator';
 import { InputSuiteGenerator } from './components/InputSuiteGenerator';
 import { ReportViewer, type ReportData } from './components/ReportViewer';
@@ -19,13 +26,15 @@ import { SastAuditTab } from './components/sast/SastAuditTab';
 import { LoadTestTab } from './components/loadTest/LoadTestTab';
 import { DastAuditTab } from './components/dast/DastAuditTab';
 import { ScaAuditTab } from './components/sca/ScaAuditTab';
-import { EasmAuditTab } from './components/EasmAuditTab';
-import { RedTeamAuditTab } from './components/redteam/RedTeamAuditTab';
-import { EmailSecAuditTab } from './components/EmailSecAuditTab';
-import { ComplianceRadarTab } from './components/compliance/ComplianceRadarTab';
+import { EasmAuditTab, type EasmAuditResult } from './components/EasmAuditTab';
+import { RedTeamAuditTab, type RedTeamAuditResult } from './components/redteam/RedTeamAuditTab';
+import { EmailSecAuditTab, type EmailSecResultState } from './components/EmailSecAuditTab';
+import { ComplianceRadarTab, type ComplianceModuleData } from './components/compliance/ComplianceRadarTab';
 import { CyberBackground } from './components/ui/CyberBackground';
+import type { CveItem, CveAiAnalysis } from './components/cve/cve.types';
+import type { SastAnalysisResponse } from './components/sast/sast.types';
+import type { LoadTestResult, LoadTestConfig } from './components/loadTest/loadTest.types';
 
-// Tipado estricto para el diagnóstico de red generado por Gemini AI
 export interface NetworkAnalysis {
   riskAssessment: string;
   mitigations: MitigationRule[];
@@ -41,9 +50,61 @@ interface ModuleState {
   generatingSuite: boolean;
   progress: number;
   statusText: string;
-  // Memoria persistente para el módulo de Red (tipada estrictamente sin `any`)
+  // Memoria Red
   services?: ServiceItem[];
   analysis?: NetworkAnalysis | null;
+  // Memoria CVE Radar
+  vulnerabilities?: CveItem[];
+  activeCveId?: string;
+  aiAnalysis?: CveAiAnalysis | null;
+  startDate?: string;
+  endDate?: string;
+  // Memoria SAST & Code
+  sastResult?: SastAnalysisResponse | null;
+  sastCodeSnippet?: string;
+  sastFileName?: string;
+  sastLanguage?: string;
+  sastShowDiffModal?: boolean;
+  // Memoria Carga & DoS
+  loadTestResult?: LoadTestResult | null;
+  loadTestConfig?: LoadTestConfig;
+  // Memoria DAST API
+  dastTargetBaseUrl?: string;
+  dastOpenApiSpecJson?: string;
+  dastPrimaryAuthHeader?: string;
+  dastSecondaryAuthHeader?: string;
+  dastEnableBolaTesting?: boolean;
+  dastEnableHeaderInjectionTesting?: boolean;
+  dastAuditResult?: DastAuditResponse | null;
+  // Memoria SCA & Supply Chain
+  scaManifestType?: DependencyManifestType;
+  scaManifestContent?: string;
+  scaEnableDependencyScan?: boolean;
+  scaEnableGitHistoryScan?: boolean;
+  scaAuditResult?: ScaAuditResponse | null;
+  // Memoria EASM
+  easmTargetDomain?: string;
+  easmEnableSubdomainDiscovery?: boolean;
+  easmEnableWafTechDetection?: boolean;
+  easmEnableSslAudit?: boolean;
+  easmResult?: EasmAuditResult | null;
+  // Memoria Red Team
+  redTeamTargetUrl?: string;
+  redTeamJwtToken?: string;
+  redTeamEnableJwt?: boolean;
+  redTeamEnableCors?: boolean;
+  redTeamResult?: RedTeamAuditResult | null;
+  // Memoria Email Security
+  emailSecActiveSubTab?: 'domain' | 'ip' | 'headers';
+  emailSecDomain?: string;
+  emailSecDkimSelector?: string;
+  emailSecTargetIp?: string;
+  emailSecRawHeaders?: string;
+  emailSecResult?: EmailSecResultState | null;
+  // Memoria Compliance Radar
+  complianceSelectedTarget?: string;
+  complianceCustomTargetInput?: string;
+  complianceRadarDataResponse?: ComplianceModuleData['radarDataResponse'];
 }
 
 const defaultModuleState: ModuleState = {
@@ -58,6 +119,48 @@ const defaultModuleState: ModuleState = {
   statusText: '',
   services: [],
   analysis: null,
+  vulnerabilities: [],
+  activeCveId: '',
+  aiAnalysis: null,
+  startDate: '',
+  endDate: '',
+  sastResult: null,
+  sastCodeSnippet: '',
+  sastFileName: 'snippet.ts',
+  sastLanguage: 'typescript',
+  sastShowDiffModal: false,
+  loadTestResult: null,
+  dastTargetBaseUrl: 'http://localhost:3000/api',
+  dastOpenApiSpecJson: '',
+  dastPrimaryAuthHeader: '',
+  dastSecondaryAuthHeader: '',
+  dastEnableBolaTesting: true,
+  dastEnableHeaderInjectionTesting: true,
+  dastAuditResult: null,
+  scaManifestType: 'package_json',
+  scaManifestContent: '',
+  scaEnableDependencyScan: true,
+  scaEnableGitHistoryScan: true,
+  scaAuditResult: null,
+  easmTargetDomain: 'google.com',
+  easmEnableSubdomainDiscovery: true,
+  easmEnableWafTechDetection: true,
+  easmEnableSslAudit: true,
+  easmResult: null,
+  redTeamTargetUrl: 'http://localhost:3000/api/users',
+  redTeamJwtToken: '',
+  redTeamEnableJwt: true,
+  redTeamEnableCors: true,
+  redTeamResult: null,
+  emailSecActiveSubTab: 'domain',
+  emailSecDomain: 'google.com',
+  emailSecDkimSelector: 'google',
+  emailSecTargetIp: '',
+  emailSecRawHeaders: '',
+  emailSecResult: null,
+  complianceSelectedTarget: '',
+  complianceCustomTargetInput: '',
+  complianceRadarDataResponse: null,
 };
 
 export function App() {
@@ -469,16 +572,203 @@ export function App() {
           />
         )}
 
+        {/* PESTAÑA 4: CVE RADAR */}
+        {activeTab === 'cve' && (
+          <CveRadarTab
+            cveData={{
+              vulnerabilities: currentModuleState.vulnerabilities || [],
+              selectedKeyword: currentModuleState.prompt || '',
+              selectedStartDate: currentModuleState.startDate,
+              selectedEndDate: currentModuleState.endDate,
+              activeCveId: currentModuleState.activeCveId || '',
+              aiAnalysis: currentModuleState.aiAnalysis || null,
+            }}
+            onUpdateCveData={(data) => {
+              updateCurrentModule({
+                prompt: data.selectedKeyword !== undefined ? data.selectedKeyword : currentModuleState.prompt,
+                vulnerabilities: data.vulnerabilities !== undefined ? data.vulnerabilities : currentModuleState.vulnerabilities,
+                startDate: data.selectedStartDate !== undefined ? data.selectedStartDate : currentModuleState.startDate,
+                endDate: data.selectedEndDate !== undefined ? data.selectedEndDate : currentModuleState.endDate,
+                activeCveId: data.activeCveId !== undefined ? data.activeCveId : currentModuleState.activeCveId,
+                aiAnalysis: data.aiAnalysis !== undefined ? data.aiAnalysis : currentModuleState.aiAnalysis,
+              });
+            }}
+          />
+        )}
+
+        {/* PESTAÑA 5: SAST & CODE AUDIT */}
+        {activeTab === 'sast' && (
+          <SastAuditTab
+            sastData={{
+              fileName: currentModuleState.sastFileName || 'snippet.ts',
+              result: currentModuleState.sastResult || null,
+              codeSnippet: currentModuleState.sastCodeSnippet || '',
+              language: currentModuleState.sastLanguage || 'typescript',
+              showDiffModal: currentModuleState.sastShowDiffModal || false,
+            }}
+            onUpdateSastData={(data) => {
+              updateCurrentModule({
+                ...(data.fileName !== undefined ? { sastFileName: data.fileName } : {}),
+                ...(data.result !== undefined ? { sastResult: data.result } : {}),
+                ...(data.codeSnippet !== undefined ? { sastCodeSnippet: data.codeSnippet } : {}),
+                ...(data.language !== undefined ? { sastLanguage: data.language } : {}),
+                ...(data.showDiffModal !== undefined ? { sastShowDiffModal: data.showDiffModal } : {}),
+              });
+            }}
+          />
+        )}
+
+        {/* PESTAÑA 6: CARGA & DOS */}
+        {activeTab === 'load-test' && (
+          <LoadTestTab
+            loadTestData={{
+              config: currentModuleState.loadTestConfig,
+              result: currentModuleState.loadTestResult || null,
+            }}
+            onUpdateLoadTestData={(data) => {
+              updateCurrentModule({
+                ...(data.config !== undefined ? { loadTestConfig: data.config } : {}),
+                ...(data.result !== undefined ? { loadTestResult: data.result } : {}),
+              });
+            }}
+          />
+        )}
+
+        {/* PESTAÑA 7: DAST API */}
+        {activeTab === 'dast' && (
+          <DastAuditTab
+            dastData={{
+              targetBaseUrl: currentModuleState.dastTargetBaseUrl || 'http://localhost:3000/api',
+              openApiSpecJson: currentModuleState.dastOpenApiSpecJson || '',
+              primaryAuthHeader: currentModuleState.dastPrimaryAuthHeader || '',
+              secondaryAuthHeader: currentModuleState.dastSecondaryAuthHeader || '',
+              enableBolaTesting: currentModuleState.dastEnableBolaTesting ?? true,
+              enableHeaderInjectionTesting: currentModuleState.dastEnableHeaderInjectionTesting ?? true,
+              auditResult: currentModuleState.dastAuditResult || null,
+            }}
+            onUpdateDastData={(data) => {
+              updateCurrentModule({
+                ...(data.targetBaseUrl !== undefined ? { dastTargetBaseUrl: data.targetBaseUrl } : {}),
+                ...(data.openApiSpecJson !== undefined ? { dastOpenApiSpecJson: data.openApiSpecJson } : {}),
+                ...(data.primaryAuthHeader !== undefined ? { dastPrimaryAuthHeader: data.primaryAuthHeader } : {}),
+                ...(data.secondaryAuthHeader !== undefined ? { dastSecondaryAuthHeader: data.secondaryAuthHeader } : {}),
+                ...(data.enableBolaTesting !== undefined ? { dastEnableBolaTesting: data.enableBolaTesting } : {}),
+                ...(data.enableHeaderInjectionTesting !== undefined ? { dastEnableHeaderInjectionTesting: data.enableHeaderInjectionTesting } : {}),
+                ...(data.auditResult !== undefined ? { dastAuditResult: data.auditResult } : {}),
+              });
+            }}
+          />
+        )}
+
+        {/* PESTAÑA 8: SCA & SUPPLY CHAIN */}
+        {activeTab === 'sca' && (
+          <ScaAuditTab
+            scaData={{
+              manifestType: currentModuleState.scaManifestType || 'package_json',
+              manifestContent: currentModuleState.scaManifestContent || '',
+              enableDependencyScan: currentModuleState.scaEnableDependencyScan ?? true,
+              enableGitHistoryScan: currentModuleState.scaEnableGitHistoryScan ?? true,
+              auditResult: currentModuleState.scaAuditResult || null,
+            }}
+            onUpdateScaData={(data) => {
+              updateCurrentModule({
+                ...(data.manifestType !== undefined ? { scaManifestType: data.manifestType } : {}),
+                ...(data.manifestContent !== undefined ? { scaManifestContent: data.manifestContent } : {}),
+                ...(data.enableDependencyScan !== undefined ? { scaEnableDependencyScan: data.enableDependencyScan } : {}),
+                ...(data.enableGitHistoryScan !== undefined ? { scaEnableGitHistoryScan: data.enableGitHistoryScan } : {}),
+                ...(data.auditResult !== undefined ? { scaAuditResult: data.auditResult } : {}),
+              });
+            }}
+          />
+        )}
+
+        {/* PESTAÑA 9: EASM OSINT */}
+        {activeTab === 'easm' && (
+          <EasmAuditTab
+            easmData={{
+              targetDomain: currentModuleState.easmTargetDomain || 'google.com',
+              enableSubdomainDiscovery: currentModuleState.easmEnableSubdomainDiscovery ?? true,
+              enableWafTechDetection: currentModuleState.easmEnableWafTechDetection ?? true,
+              enableSslAudit: currentModuleState.easmEnableSslAudit ?? true,
+              result: currentModuleState.easmResult || null,
+            }}
+            onUpdateEasmData={(data) => {
+              updateCurrentModule({
+                ...(data.targetDomain !== undefined ? { easmTargetDomain: data.targetDomain } : {}),
+                ...(data.enableSubdomainDiscovery !== undefined ? { easmEnableSubdomainDiscovery: data.enableSubdomainDiscovery } : {}),
+                ...(data.enableWafTechDetection !== undefined ? { easmEnableWafTechDetection: data.enableWafTechDetection } : {}),
+                ...(data.enableSslAudit !== undefined ? { easmEnableSslAudit: data.enableSslAudit } : {}),
+                ...(data.result !== undefined ? { easmResult: data.result } : {}),
+              });
+            }}
+          />
+        )}
+
+        {/* PESTAÑA 10: RED TEAM */}
+        {activeTab === 'redteam' && (
+          <RedTeamAuditTab
+            redTeamData={{
+              targetUrl: currentModuleState.redTeamTargetUrl || 'http://localhost:3000/api/users',
+              jwtToken: currentModuleState.redTeamJwtToken || '',
+              enableJwt: currentModuleState.redTeamEnableJwt ?? true,
+              enableCors: currentModuleState.redTeamEnableCors ?? true,
+              result: currentModuleState.redTeamResult || null,
+            }}
+            onUpdateRedTeamData={(data) => {
+              updateCurrentModule({
+                ...(data.targetUrl !== undefined ? { redTeamTargetUrl: data.targetUrl } : {}),
+                ...(data.jwtToken !== undefined ? { redTeamJwtToken: data.jwtToken } : {}),
+                ...(data.enableJwt !== undefined ? { redTeamEnableJwt: data.enableJwt } : {}),
+                ...(data.enableCors !== undefined ? { redTeamEnableCors: data.enableCors } : {}),
+                ...(data.result !== undefined ? { redTeamResult: data.result } : {}),
+              });
+            }}
+          />
+        )}
+
+        {/* PESTAÑA 11: EMAIL SECURITY */}
+        {activeTab === 'emailsec' && (
+          <EmailSecAuditTab
+            emailSecData={{
+              activeSubTab: currentModuleState.emailSecActiveSubTab || 'domain',
+              domain: currentModuleState.emailSecDomain || 'google.com',
+              dkimSelector: currentModuleState.emailSecDkimSelector || 'google',
+              targetIp: currentModuleState.emailSecTargetIp || '',
+              rawHeaders: currentModuleState.emailSecRawHeaders || '',
+              result: currentModuleState.emailSecResult || null,
+            }}
+            onUpdateEmailSecData={(data) => {
+              updateCurrentModule({
+                ...(data.activeSubTab !== undefined ? { emailSecActiveSubTab: data.activeSubTab } : {}),
+                ...(data.domain !== undefined ? { emailSecDomain: data.domain } : {}),
+                ...(data.dkimSelector !== undefined ? { emailSecDkimSelector: data.dkimSelector } : {}),
+                ...(data.targetIp !== undefined ? { emailSecTargetIp: data.targetIp } : {}),
+                ...(data.rawHeaders !== undefined ? { emailSecRawHeaders: data.rawHeaders } : {}),
+                ...(data.result !== undefined ? { emailSecResult: data.result } : {}),
+              });
+            }}
+          />
+        )}
+
+        {/* PESTAÑA 12: COMPLIANCE RADAR */}
+        {activeTab === 'compliance' && (
+          <ComplianceRadarTab
+            complianceData={{
+              selectedTarget: currentModuleState.complianceSelectedTarget || '',
+              customTargetInput: currentModuleState.complianceCustomTargetInput || '',
+              radarDataResponse: currentModuleState.complianceRadarDataResponse || null,
+            }}
+            onUpdateComplianceData={(data) => {
+              updateCurrentModule({
+                ...(data.selectedTarget !== undefined ? { complianceSelectedTarget: data.selectedTarget } : {}),
+                ...(data.customTargetInput !== undefined ? { complianceCustomTargetInput: data.customTargetInput } : {}),
+                ...(data.radarDataResponse !== undefined ? { complianceRadarDataResponse: data.radarDataResponse } : {}),
+              });
+            }}
+          />
+        )}
+
         {/* RESTO DE MÓDULOS */}
-        {activeTab === 'cve' && <CveRadarTab />}
-        {activeTab === 'sast' && <SastAuditTab />}
-        {activeTab === 'load-test' && <LoadTestTab />}
-        {activeTab === 'dast' && <DastAuditTab />}
-        {activeTab === 'sca' && <ScaAuditTab />}
-        {activeTab === 'easm' && <EasmAuditTab />}
-        {activeTab === 'redteam' && <RedTeamAuditTab />}
-        {activeTab === 'emailsec' && <EmailSecAuditTab />}
-        {activeTab === 'compliance' && <ComplianceRadarTab />}
         {activeTab === 'history' && <ReportHistory />}
       </div>
     </div>

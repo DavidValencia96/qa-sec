@@ -27,7 +27,6 @@ export const StackFilterBar: React.FC<StackFilterBarProps> = ({
 
   const handleCustomSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Requisito estricto: El input debe tener al menos 1 carácter válido
     if (customInput.trim().length >= 1) {
       onFilterSubmit(customInput.trim().toLowerCase(), startDate || undefined, endDate || undefined);
     }
@@ -51,15 +50,18 @@ export const StackFilterBar: React.FC<StackFilterBarProps> = ({
               onClick={() => handleQuickSelect(opt.value)}
               disabled={disabled}
               style={{
-                padding: '6px 12px',
+                padding: '8px 16px',
                 borderRadius: '20px',
-                border: isActive ? '1px solid #38bdf8' : '1px solid #3f3f46',
-                background: isActive ? '#0284c7' : '#18181b',
-                color: '#fff',
                 fontSize: '0.85rem',
                 fontWeight: isActive ? 'bold' : 'normal',
                 cursor: disabled ? 'not-allowed' : 'pointer',
                 transition: 'all 0.2s ease',
+                background: isActive
+                  ? 'linear-gradient(90deg, #0284c7 0%, #2563eb 100%)'
+                  : 'rgba(15, 23, 42, 0.6)',
+                color: isActive ? '#ffffff' : '#94a3b8',
+                border: isActive ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.1)',
+                boxShadow: isActive ? '0 0 12px rgba(56, 189, 248, 0.35)' : 'none',
               }}
             >
               {opt.label}
@@ -68,22 +70,22 @@ export const StackFilterBar: React.FC<StackFilterBarProps> = ({
         })}
       </div>
 
-      {/* Formulario de búsqueda personalizada con rango de fechas opcional */}
+      {/* Formulario de búsqueda personalizada */}
       <form
         onSubmit={handleCustomSearch}
         style={{
           display: 'flex',
-          gap: '10px',
+          gap: '12px',
           flexWrap: 'wrap',
-          alignItems: 'center',
-          background: '#18181b',
-          padding: '12px',
-          borderRadius: '8px',
-          border: '1px solid #27272a',
+          alignItems: 'flex-end',
+          background: 'rgba(9, 9, 11, 0.6)',
+          padding: '16px',
+          borderRadius: '10px',
+          border: '1px solid rgba(56, 189, 248, 0.2)',
         }}
       >
-        <div style={{ flex: '1 1 240px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <label style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Tecnología (Mínimo 1 carácter):</label>
+        <div style={{ flex: '1 1 240px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <label style={{ fontSize: '0.78rem', color: '#cbd5e1', fontWeight: 'bold' }}>Tecnología (Mínimo 1 carácter):</label>
           <input
             type="text"
             placeholder="Ej. wordpress, php, java, docker..."
@@ -91,53 +93,55 @@ export const StackFilterBar: React.FC<StackFilterBarProps> = ({
             onChange={(e) => setCustomInput(e.target.value)}
             disabled={disabled}
             style={{
-              padding: '8px 12px',
+              padding: '10px 14px',
               borderRadius: '6px',
-              border: '1px solid #3f3f46',
-              background: '#09090b',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
+              background: 'rgba(15, 23, 42, 0.7)',
               color: '#fff',
-              fontSize: '0.85rem',
+              fontSize: '0.88rem',
               outline: 'none',
             }}
           />
         </div>
 
-        {/* Fecha Inicio (Opcional) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <label style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Desde (Opcional):</label>
+        {/* Fecha Inicio */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <label style={{ fontSize: '0.78rem', color: '#cbd5e1', fontWeight: 'bold' }}>Desde (Opcional):</label>
           <input
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             disabled={disabled}
             style={{
-              padding: '7px 10px',
+              padding: '9px 12px',
               borderRadius: '6px',
-              border: '1px solid #3f3f46',
-              background: '#09090b',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
+              background: 'rgba(15, 23, 42, 0.7)',
               color: '#fff',
-              fontSize: '0.85rem',
+              fontSize: '0.88rem',
               colorScheme: 'dark',
+              outline: 'none',
             }}
           />
         </div>
 
-        {/* Fecha Fin (Opcional) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <label style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Hasta (Opcional):</label>
+        {/* Fecha Fin */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <label style={{ fontSize: '0.78rem', color: '#cbd5e1', fontWeight: 'bold' }}>Hasta (Opcional):</label>
           <input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             disabled={disabled}
             style={{
-              padding: '7px 10px',
+              padding: '9px 12px',
               borderRadius: '6px',
-              border: '1px solid #3f3f46',
-              background: '#09090b',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
+              background: 'rgba(15, 23, 42, 0.7)',
               color: '#fff',
-              fontSize: '0.85rem',
+              fontSize: '0.88rem',
               colorScheme: 'dark',
+              outline: 'none',
             }}
           />
         </div>
@@ -146,16 +150,16 @@ export const StackFilterBar: React.FC<StackFilterBarProps> = ({
           type="submit"
           disabled={disabled || customInput.trim().length === 0}
           style={{
-            alignSelf: 'flex-end',
-            padding: '8px 18px',
-            height: '35px',
+            padding: '10px 20px',
             borderRadius: '6px',
-            border: 'none',
-            background: disabled || customInput.trim().length === 0 ? '#27272a' : '#0284c7',
+            border: '1px solid #38bdf8',
+            background: disabled || customInput.trim().length === 0 ? 'rgba(51, 65, 85, 0.6)' : 'linear-gradient(90deg, #0284c7 0%, #2563eb 100%)',
             color: '#fff',
-            fontSize: '0.85rem',
+            fontSize: '0.88rem',
             fontWeight: 'bold',
             cursor: disabled || customInput.trim().length === 0 ? 'not-allowed' : 'pointer',
+            boxShadow: disabled || customInput.trim().length === 0 ? 'none' : '0 0 12px rgba(56, 189, 248, 0.3)',
+            transition: 'all 0.2s ease',
           }}
         >
           🔎 Buscar
@@ -164,10 +168,10 @@ export const StackFilterBar: React.FC<StackFilterBarProps> = ({
 
       {/* Badge informativo de filtros activos */}
       {selectedKeyword && (
-        <div style={{ fontSize: '0.85rem', color: '#38bdf8' }}>
-          Filtrando activamente por: <strong>"{selectedKeyword}"</strong>
+        <div style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 'bold' }}>
+          Filtrando activamente por: <strong style={{ color: '#ffffff' }}>"{selectedKeyword}"</strong>
           {startDate && endDate && (
-            <span> | Rango: <strong>{startDate}</strong> a <strong>{endDate}</strong></span>
+            <span> | Rango: <strong style={{ color: '#ffffff' }}>{startDate}</strong> a <strong style={{ color: '#ffffff' }}>{endDate}</strong></span>
           )}
         </div>
       )}

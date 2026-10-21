@@ -4,51 +4,93 @@ import { StackFilterBar } from './StackFilterBar';
 import { CveAiSummaryModal } from './CveAiSummaryModal';
 import { getLatestThreatsApi, analyzeCveWithAiApi } from '../../services/api.client';
 
-export const CveRadarTab: React.FC = () => {
-  const [vulnerabilities, setVulnerabilities] = useState<CveItem[]>([]);
-  const [selectedKeyword, setSelectedKeyword] = useState<string>('');
-  const [selectedStartDate, setSelectedStartDate] = useState<string | undefined>();
-  const [selectedEndDate, setSelectedEndDate] = useState<string | undefined>();
-  const [loading, setLoading] = useState<boolean>(true);
+export interface CveModuleData {
+  vulnerabilities: CveItem[];
+  selectedKeyword: string;
+  selectedStartDate?: string;
+  selectedEndDate?: string;
+  activeCveId: string;
+  aiAnalysis: CveAiAnalysis | null;
+}
+
+interface CveRadarTabProps {
+  cveData?: CveModuleData;
+  onUpdateCveData?: (data: Partial<CveModuleData>) => void;
+}
+
+export const CveRadarTab: React.FC<CveRadarTabProps> = ({ cveData, onUpdateCveData }) => {
+  const [vulnerabilities, setVulnerabilities] = useState<CveItem[]>(cveData?.vulnerabilities || []);
+  const [selectedKeyword, setSelectedKeyword] = useState<string>(cveData?.selectedKeyword || '');
+  const [selectedStartDate, setSelectedStartDate] = useState<string | undefined>(cveData?.selectedStartDate);
+  const [selectedEndDate, setSelectedEndDate] = useState<string | undefined>(cveData?.selectedEndDate);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [activeCveId, setActiveCveId] = useState<string>('');
-  const [aiAnalysis, setAiAnalysis] = useState<CveAiAnalysis | null>(null);
+  const [activeCveId, setActiveCveId] = useState<string>(cveData?.activeCveId || '');
+  const [aiAnalysis, setAiAnalysis] = useState<CveAiAnalysis | null>(cveData?.aiAnalysis || null);
   const [loadingAi, setLoadingAi] = useState<boolean>(false);
 
-  useEffect(() => {
-    let isMounted = true;
-    const loadThreats = async () => {
-      setLoading(true);
-      try {
-        const data = await getLatestThreatsApi(selectedKeyword, 40, selectedStartDate, selectedEndDate);
-        if (isMounted && data.success) {
-          setVulnerabilities(data.vulnerabilities || []);
-          setError(null);
-        }
-      } catch (err) {
-        if (isMounted) setError((err as Error).message);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
+  // Derivación segura de estado al cambiar pestañas
+  const [prevCveData, setPrevCveData] = useState(cveData);
+  if (cveData !== prevCveData) {
+    setPrevCveData(cveData);
+    if (cveData?.vulnerabilities) setVulnerabilities(cveData.vulnerabilities);
+    if (cveData?.selectedKeyword !== undefined) setSelectedKeyword(cveData.selectedKeyword);
+    if (cveData?.selectedStartDate !== undefined) setSelectedStartDate(cveData.selectedStartDate);
+    if (cveData?.selectedEndDate !== undefined) setSelectedEndDate(cveData.selectedEndDate);
+    if (cveData?.activeCveId !== undefined) setActiveCveId(cveData.activeCveId);
+    if (cveData?.aiAnalysis !== undefined) setAiAnalysis(cveData.aiAnalysis);
+  }
 
-    loadThreats();
-    return () => {
-      isMounted = false;
-    };
-  }, [selectedKeyword, selectedStartDate, selectedEndDate]);
+  const loadThreats = async (kw: string, start?: string, end?: string) => {
+    setLoading(true);
+    try {
+      const data = await getLatestThreatsApi(kw, 40, start, end);
+      if (data && data.success) {
+        const fetchedVulns = data.vulnerabilities || [];
+        setVulnerabilities(fetchedVulns);
+        setError(null);
+        if (onUpdateCveData) {
+          onUpdateCveData({
+            vulnerabilities: fetchedVulns,
+            selectedKeyword: kw,
+            selectedStartDate: start,
+            selectedEndDate: end,
+          });
+        }
+      }
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!cveData?.vulnerabilities || cveData.vulnerabilities.length === 0) {
+      const timer = setTimeout(() => {
+        loadThreats(selectedKeyword, selectedStartDate, selectedEndDate);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleFilterSubmit = (keyword: string, startDate?: string, endDate?: string) => {
     setSelectedKeyword(keyword);
     setSelectedStartDate(startDate);
     setSelectedEndDate(endDate);
+    loadThreats(keyword, startDate, endDate);
   };
 
   const handleAnalyzeWithAi = async (item: CveItem) => {
     setActiveCveId(item.id);
     setAiAnalysis(null);
     setLoadingAi(true);
+
+    if (onUpdateCveData) {
+      onUpdateCveData({ activeCveId: item.id, aiAnalysis: null });
+    }
 
     try {
       const data = await analyzeCveWithAiApi({
@@ -58,32 +100,122 @@ export const CveRadarTab: React.FC = () => {
         description: item.description,
         targetStack: selectedKeyword || 'General',
       });
-      if (data.success) {
-        setAiAnalysis(data.analysis);
+
+      if (data && (data.success || data.analysis)) {
+        const analysisResult = data.analysis || data.summary;
+        setAiAnalysis(analysisResult);
+        if (onUpdateCveData) {
+          onUpdateCveData({ activeCveId: item.id, aiAnalysis: analysisResult });
+        }
+      } else {
+        alert(`No se pudo obtener el diagnóstico: ${data?.error || 'Sin respuesta'}`);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error al consultar IA para CVE:', err);
+      alert('Error de comunicación con la API de Gemini AI.');
     } finally {
       setLoadingAi(false);
     }
   };
 
+  const handleCloseModal = () => {
+    setActiveCveId('');
+    setAiAnalysis(null);
+    if (onUpdateCveData) {
+      onUpdateCveData({ activeCveId: '', aiAnalysis: null });
+    }
+  };
+
   const getSeverityBadge = (severity: string) => {
-    const colors: Record<string, string> = {
-      CRITICAL: '#ef4444',
-      HIGH: '#f97316',
-      MEDIUM: '#eab308',
-      LOW: '#22c55e',
-    };
-    return colors[severity] || '#6b7280';
+    const sev = (severity || 'UNKNOWN').toUpperCase();
+    let bg = 'rgba(100, 116, 139, 0.2)';
+    let color = '#94a3b8';
+    let border = '#64748b';
+
+    if (sev === 'CRITICAL') {
+      bg = 'rgba(220, 38, 38, 0.25)';
+      color = '#f87171';
+      border = '#ef4444';
+    } else if (sev === 'HIGH') {
+      bg = 'rgba(234, 88, 12, 0.25)';
+      color = '#fb923c';
+      border = '#f97316';
+    } else if (sev === 'MEDIUM') {
+      bg = 'rgba(202, 138, 4, 0.25)';
+      color = '#facc15';
+      border = '#eab308';
+    } else if (sev === 'LOW') {
+      bg = 'rgba(22, 101, 52, 0.25)';
+      color = '#4ade80';
+      border = '#22c55e';
+    }
+
+    return (
+      <span
+        style={{
+          background: bg,
+          color,
+          border: `1px solid ${border}`,
+          padding: '3px 10px',
+          borderRadius: '6px',
+          fontSize: '0.78rem',
+          fontWeight: 'bold',
+        }}
+      >
+        {sev}
+      </span>
+    );
   };
 
   return (
-    <div style={{ background: '#09090b', padding: '24px', borderRadius: '8px', border: '1px solid #27272a' }}>
-      <h2 style={{ marginTop: 0, color: '#38bdf8' }}>📰 CiberThreat Feed & CVE Radar</h2>
-      <p style={{ color: '#9ca3af', fontSize: '0.9rem', marginBottom: '16px' }}>
-        Monitoreo en tiempo real de vulnerabilidades reportadas en la NVD/NIST. Filtra por stack tecnológico o rango de fechas y analiza su impacto con Gemini AI.
-      </p>
+    <div
+      style={{
+        background: 'rgba(15, 23, 42, 0.35)',
+        backdropFilter: 'blur(10px)',
+        padding: '28px',
+        borderRadius: '12px',
+        border: '1px solid rgba(56, 189, 248, 0.25)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+        marginBottom: '28px',
+      }}
+    >
+      {/* CABECERA CON BADGE DE CATEGORÍA */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '20px',
+          flexWrap: 'wrap',
+          gap: '12px',
+        }}
+      >
+        <div>
+          <h2 style={{ margin: 0, color: '#ffffff', fontSize: '1.3rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            📰 CiberThreat Feed & CVE Radar
+          </h2>
+          <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: '4px 0 0 0' }}>
+            Monitoreo en tiempo real de vulnerabilidades reportadas en la NVD/NIST. Filtra por stack tecnológico o rango de fechas y analiza su impacto con Gemini AI.
+          </p>
+        </div>
+
+        {/* BADGE CATEGORÍA ENTERPRISE */}
+        <span
+          style={{
+            background: 'rgba(56, 189, 248, 0.15)',
+            color: '#38bdf8',
+            padding: '4px 12px',
+            borderRadius: '20px',
+            border: '1px solid #38bdf8',
+            fontSize: '0.75rem',
+            fontWeight: 'bold',
+            letterSpacing: '0.5px',
+            boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)',
+          }}
+        >
+          Threat Intelligence
+        </span>
+      </div>
 
       <StackFilterBar
         selectedKeyword={selectedKeyword}
@@ -92,25 +224,32 @@ export const CveRadarTab: React.FC = () => {
       />
 
       {loading ? (
-        <p style={{ color: '#60a5fa' }}>🔄 Consultando vulnerabilidades con los criterios seleccionados...</p>
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <span style={{ fontSize: '2rem', display: 'inline-block', animation: 'spin 1s linear infinite' }}>🔄</span>
+          <p style={{ color: '#38bdf8', fontWeight: 'bold', marginTop: '12px' }}>
+            Consultando vulnerabilidades con los criterios seleccionados...
+          </p>
+        </div>
       ) : error ? (
-        <p style={{ color: '#f87171' }}>⚠️ Error al conectar con el Radar: {error}</p>
+        <p style={{ color: '#f87171', padding: '16px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', border: '1px solid #ef4444' }}>
+          ⚠️ Error al conectar con el Radar: {error}
+        </p>
       ) : vulnerabilities.length === 0 ? (
         <div
           style={{
-            background: '#18181b',
+            background: 'rgba(15, 23, 42, 0.6)',
             padding: '28px',
-            borderRadius: '8px',
+            borderRadius: '10px',
             border: '1px solid #ef4444',
             textAlign: 'center',
             marginTop: '20px',
-            boxShadow: '0 0 10px rgba(239, 68, 68, 0.1)',
+            boxShadow: '0 0 15px rgba(239, 68, 68, 0.15)',
           }}
         >
           <p style={{ color: '#fca5a5', fontSize: '1.05rem', fontWeight: 'bold', margin: 0 }}>
             ⚠️ No se encontró información para la tecnología y fechas seleccionadas
           </p>
-          <div style={{ color: '#9ca3af', fontSize: '0.9rem', marginTop: '10px' }}>
+          <div style={{ color: '#94a3b8', fontSize: '0.88rem', marginTop: '10px' }}>
             <span>Tecnología: <strong style={{ color: '#38bdf8' }}>"{selectedKeyword || 'Todas'}"</strong></span>
             {selectedStartDate && selectedEndDate && (
               <span style={{ marginLeft: '12px' }}>
@@ -120,52 +259,55 @@ export const CveRadarTab: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gap: '12px' }}>
+        <div style={{ display: 'grid', gap: '14px' }}>
           {vulnerabilities.map((item) => (
             <div
               key={item.id}
               style={{
-                background: '#18181b',
-                padding: '16px',
-                borderRadius: '8px',
-                border: '1px solid #27272a',
+                background: 'rgba(15, 23, 42, 0.5)',
+                padding: '20px',
+                borderRadius: '10px',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'flex-start',
+                gap: '16px',
+                flexWrap: 'wrap',
+                transition: 'all 0.2s ease',
               }}
             >
-              <div style={{ flex: 1, paddingRight: '16px' }}>
+              <div style={{ flex: 1, minWidth: '280px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                  <span style={{ fontWeight: 'bold', color: '#f4f4f5', fontSize: '1rem' }}>{item.id}</span>
-                  <span
-                    style={{
-                      background: getSeverityBadge(item.severity),
-                      color: '#fff',
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                      fontSize: '0.75rem',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    {item.severity} ({item.cvssScore})
+                  <span style={{ fontWeight: 'bold', color: '#f4f4f5', fontSize: '1rem', fontFamily: 'monospace' }}>
+                    {item.id}
+                  </span>
+                  {getSeverityBadge(item.severity)}
+                  <span style={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                    CVSS: {item.cvssScore}
                   </span>
                 </div>
-                <p style={{ color: '#a1a1aa', fontSize: '0.85rem', margin: '0 0 8px 0' }}>{item.description}</p>
-                <small style={{ color: '#71717a' }}>Publicado: {new Date(item.publishedAt).toLocaleDateString()}</small>
+                <p style={{ color: '#cbd5e1', fontSize: '0.88rem', margin: '0 0 10px 0', lineHeight: '1.5' }}>
+                  {item.description}
+                </p>
+                <small style={{ color: '#64748b', fontWeight: '600' }}>
+                  Publicado: {new Date(item.publishedAt).toLocaleDateString()}
+                </small>
               </div>
 
               <button
+                type="button"
                 onClick={() => handleAnalyzeWithAi(item)}
                 style={{
-                  background: '#0284c7',
+                  background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)',
                   color: '#fff',
-                  border: 'none',
+                  border: '1px solid #38bdf8',
                   borderRadius: '6px',
-                  padding: '8px 12px',
+                  padding: '9px 16px',
                   fontSize: '0.85rem',
                   fontWeight: 'bold',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
+                  boxShadow: '0 0 10px rgba(56, 189, 248, 0.25)',
                 }}
               >
                 ✨ Analizar con IA
@@ -175,12 +317,12 @@ export const CveRadarTab: React.FC = () => {
         </div>
       )}
 
-      {activeCveId && (
+      {Boolean(activeCveId) && (
         <CveAiSummaryModal
           cveId={activeCveId}
           analysis={aiAnalysis}
           loading={loadingAi}
-          onClose={() => setActiveCveId('')}
+          onClose={handleCloseModal}
         />
       )}
     </div>
