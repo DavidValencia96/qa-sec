@@ -9,6 +9,7 @@ export interface AppConfig {
   dbUser: string;
   dbPass: string;
   dbName: string;
+  viteApiUrl: string;
 }
 
 const getEnvNumber = (key: string, defaultValue: number): number => {
@@ -24,4 +25,5 @@ export const config: AppConfig = {
   dbUser: process.env.DB_USER || 'root',
   dbPass: process.env.DB_PASSWORD || '',
   dbName: process.env.DB_NAME || 'qa_sec_db',
+  viteApiUrl: process.env.VITE_API_URL || 'http://localhost:3000/api',
 };
