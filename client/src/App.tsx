@@ -355,9 +355,26 @@ export function App() {
             boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
             flexWrap: 'wrap',
             gap: '16px',
+            width: '100%',
+            boxSizing: 'border-box',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          {/* LOGO E INFORMACIÓN (A LA IZQUIERDA) */}
+          <div
+            onClick={() => setActiveTab('home')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '14px',
+              cursor: 'pointer',
+              userSelect: 'none',
+              transition: 'opacity 0.15s ease',
+              flex: 1, // Empuja el contenido restante hacia la derecha
+            }}
+            title="Ir a Inicio"
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.85')}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+          >
             <div
               style={{
                 background: 'radial-gradient(circle, #2563eb 0%, #0f172a 100%)',
@@ -393,7 +410,8 @@ export function App() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* INSIGNIAS (AL EXTREMO DERECHO) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
             <div style={{ background: '#0284c715', padding: '6px 12px', borderRadius: '6px', border: '1px solid #0284c740', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 6px #38bdf8' }} />
               <span style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 'bold' }}>v3.x • Gemini Active</span>
