@@ -8,66 +8,133 @@ interface SastHistoryTableProps {
 }
 
 export const SastHistoryTable: React.FC<SastHistoryTableProps> = ({ items, onSelectAudit }) => {
-  if (items.length === 0) {
+  if (!items || items.length === 0) {
     return (
-      <div style={{ padding: '24px', textAlign: 'center', color: '#9ca3af', background: '#18181b', borderRadius: '8px', border: '1px solid #27272a' }}>
+      <div
+        style={{
+          padding: '32px',
+          textAlign: 'center',
+          color: '#94a3b8',
+          backgroundColor: 'rgba(2, 6, 23, 0.8)',
+          borderRadius: '12px',
+          border: '1px solid rgba(30, 41, 59, 0.8)',
+          fontSize: '13px',
+        }}
+      >
         📜 No hay registros de auditorías SAST guardados en MySQL.
       </div>
     );
   }
 
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: '#18181b', borderRadius: '8px', overflow: 'hidden', border: '1px solid #27272a' }}>
+    <div style={{ overflowX: 'auto', width: '100%' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: '#f8fafc', fontSize: '13px' }}>
         <thead>
-          <tr style={{ background: '#27272a', color: '#38bdf8', fontSize: '0.85rem' }}>
-            <th style={{ padding: '12px 16px' }}>Archivo Auditado</th>
-            <th style={{ padding: '12px 16px' }}>Tipo</th>
-            <th style={{ padding: '12px 16px' }}>Salud</th>
-            <th style={{ padding: '12px 16px' }}>Hallazgos</th>
-            <th style={{ padding: '12px 16px' }}>Fecha</th>
-            <th style={{ padding: '12px 16px', textAlign: 'right' }}>Acciones</th>
+          <tr style={{ backgroundColor: 'rgba(2, 6, 23, 0.9)', borderBottom: '1px solid rgba(30, 41, 59, 0.9)', color: '#38bdf8', fontWeight: 'bold' }}>
+            <th style={{ padding: '14px 16px', width: '28%' }}>Archivo Auditado</th>
+            <th style={{ padding: '14px 16px', width: '12%' }}>Tipo</th>
+            <th style={{ padding: '14px 16px', width: '15%' }}>Salud</th>
+            <th style={{ padding: '14px 16px', width: '15%' }}>Hallazgos</th>
+            <th style={{ padding: '14px 16px', width: '18%' }}>Fecha</th>
+            <th style={{ padding: '14px 16px', textAlign: 'center', width: '12%' }}>Acciones</th>
           </tr>
         </thead>
         <tbody>
           {items.map((item) => {
-            const scoreColor = item.healthScore >= 80 ? '#22c55e' : item.healthScore >= 50 ? '#eab308' : '#ef4444';
+            const isGood = item.healthScore >= 80;
+            const isMedium = item.healthScore >= 50;
+
+            const scoreBg = isGood ? 'rgba(6, 78, 59, 0.4)' : isMedium ? 'rgba(113, 63, 18, 0.4)' : 'rgba(127, 29, 29, 0.4)';
+            const scoreBorder = isGood ? 'rgba(52, 211, 153, 0.4)' : isMedium ? 'rgba(250, 204, 21, 0.4)' : 'rgba(248, 113, 113, 0.4)';
+            const scoreColor = isGood ? '#34d399' : isMedium ? '#facc15' : '#f87171';
+
             return (
-              <tr key={item.id} style={{ borderBottom: '1px solid #27272a', fontSize: '0.85rem', color: '#f4f4f5' }}>
-                <td style={{ padding: '12px 16px', fontWeight: 'bold' }}>📄 {item.fileName}</td>
-                <td style={{ padding: '12px 16px' }}>
-                  <span style={{ background: '#09090b', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', border: '1px solid #3f3f46' }}>
+              <tr
+                key={item.id}
+                style={{
+                  borderBottom: '1px solid rgba(30, 41, 59, 0.6)',
+                  transition: 'background-color 0.15s ease',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(30, 41, 59, 0.3)')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+              >
+                {/* Archivo Auditado */}
+                <td style={{ padding: '14px 16px', fontWeight: 'bold', color: '#f8fafc', fontSize: '13px' }}>
+                  📄 {item.fileName}
+                </td>
+
+                {/* Tipo */}
+                <td style={{ padding: '14px 16px' }}>
+                  <span
+                    style={{
+                      fontFamily: 'monospace',
+                      fontSize: '12px',
+                      backgroundColor: '#020617',
+                      border: '1px solid rgba(51, 65, 85, 0.8)',
+                      color: '#94a3b8',
+                      padding: '3px 10px',
+                      borderRadius: '4px',
+                    }}
+                  >
                     {item.fileType}
                   </span>
                 </td>
-                <td style={{ padding: '12px 16px', fontWeight: 'bold', color: scoreColor }}>
-                  {item.healthScore} / 100
+
+                {/* Salud */}
+                <td style={{ padding: '14px 16px', fontWeight: 'bold' }}>
+                  <span
+                    style={{
+                      backgroundColor: scoreBg,
+                      border: `1px solid ${scoreBorder}`,
+                      color: scoreColor,
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      display: 'inline-block',
+                    }}
+                  >
+                    {item.healthScore} / 100
+                  </span>
                 </td>
-                <td style={{ padding: '12px 16px' }}>{item.totalFindings} hallazgos</td>
-                <td style={{ padding: '12px 16px', color: '#a1a1aa' }}>
-                  {new Date(item.createdAt).toLocaleString()}
+
+                {/* Hallazgos */}
+                <td style={{ padding: '14px 16px', fontWeight: 'bold', fontSize: '13px', color: item.totalFindings > 0 ? '#f87171' : '#34d399' }}>
+                  {item.totalFindings} hallazgos
                 </td>
-                <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
+
+                {/* Fecha */}
+                <td style={{ padding: '14px 16px', color: '#94a3b8', fontSize: '12px' }}>
+                  {new Date(item.createdAt).toLocaleString('es-ES')}
+                </td>
+
+                {/* Acciones */}
+                <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                  <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'center' }}>
                     <ReportExportActions
                       title={`Auditoría SAST - ${item.fileName}`}
-                      summary={`Auditoría estática realizada el ${new Date(item.createdAt).toLocaleDateString()} con un puntaje de salud de ${item.healthScore}/100 y ${item.totalFindings} hallazgos.`}
+                      summary={`Auditoría estática realizada el ${new Date(item.createdAt).toLocaleDateString('es-ES')} con un puntaje de salud de ${item.healthScore}/100 y ${item.totalFindings} hallazgos.`}
                       score={item.healthScore}
                       findings={item.findings}
                       remediatedCode={item.remediatedCode}
                     />
+
                     <button
                       type="button"
                       onClick={() => onSelectAudit(item)}
                       style={{
-                        background: '#0284c7',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '6px',
-                        padding: '6px 12px',
-                        fontSize: '0.8rem',
+                        backgroundColor: '#0284c7',
+                        color: '#ffffff',
+                        border: '1px solid rgba(56, 189, 248, 0.5)',
+                        borderRadius: '8px',
+                        padding: '6px 14px',
+                        fontSize: '12px',
                         fontWeight: 'bold',
                         cursor: 'pointer',
+                        boxShadow: '0 2px 8px rgba(2, 132, 199, 0.25)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       👁️ Detalle
@@ -82,3 +149,5 @@ export const SastHistoryTable: React.FC<SastHistoryTableProps> = ({ items, onSel
     </div>
   );
 };
+
+export default SastHistoryTable;

@@ -59,7 +59,8 @@ export interface ComplianceAiAnalysisResult {
 export class GeminiAIService {
   private ai: GoogleGenAI;
   // Modelos ordenados por velocidad de respuesta y disponibilidad activa
-  private fallbackModels = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
+  private fallbackModels = ['gemini-3.8-flash'];
+  // private fallbackModels = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
 
   constructor() {
     this.ai = new GoogleGenAI({ apiKey: config.geminiApiKey });

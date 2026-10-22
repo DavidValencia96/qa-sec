@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   getHistoryApi,
   getReportApi,
@@ -16,9 +17,12 @@ import { ReportModal } from './history/ReportModal';
 import { SastHistoryTable } from './history/SastHistoryTable';
 import { LoadTestHistoryTable } from './history/LoadTestHistoryTable';
 import { ScaHistoryTable } from './history/ScaHistoryTable';
+import { DastHistoryTable } from './history/DastHistoryTable';
+import { EasmHistoryTable } from './history/EasmHistoryTable';
+import { RedTeamHistoryTable } from './history/RedTeamHistoryTable';
+import { EmailSecHistoryTable } from './history/EmailSecHistoryTable';
 import { SastDiffModal } from './sast/SastDiffModal';
 import { SastFindingsTable } from './sast/SastFindingsTable';
-import { LoadTestMetricsCard } from './loadTest/LoadTestMetricsCard';
 import {
   ConsolidatedReportExportModal,
   type ConsolidatedReportOptions,
@@ -86,7 +90,7 @@ type SubTabType = 'web' | 'sast' | 'load' | 'dast' | 'sca' | 'easm' | 'redteam' 
 export const ReportHistory: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<SubTabType>('web');
 
-  // Estados del Historial Web Dinámico
+  // Estados del Historial Web
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
@@ -98,27 +102,25 @@ export const ReportHistory: React.FC = () => {
   const [redteamItems, setRedteamItems] = useState<RedTeamHistoryItem[]>([]);
   const [emailsecItems, setEmailsecItems] = useState<EmailSecHistoryItem[]>([]);
 
-  // Estados para el Modal del Reporte Web
+  // Modal Reporte Web
   const [selectedReport, setSelectedReport] = useState<ReportData | null>(null);
   const [selectedTargetUrl, setSelectedTargetUrl] = useState<string>('');
   const [loadingReport, setLoadingReport] = useState(false);
 
-  // Estados para el Historial SAST
+  // Historial SAST
   const [sastItems, setSastItems] = useState<SastHistoryItem[]>([]);
   const [loadingSast, setLoadingSast] = useState<boolean>(false);
   const [selectedSastAudit, setSelectedSastAudit] = useState<SastHistoryItem | null>(null);
   const [showDiffModal, setShowDiffModal] = useState<boolean>(false);
 
-  // Estados para el Historial de Pruebas de Carga
+  // Historial Pruebas de Carga
   const [loadTestItems, setLoadTestItems] = useState<LoadTestHistoryItem[]>([]);
   const [loadingLoadTest, setLoadingLoadTest] = useState<boolean>(false);
-  const [selectedLoadTest, setSelectedLoadTest] = useState<LoadTestHistoryItem | null>(null);
 
-  // Estados para el Modal de Exportación Consolidada
+  // Modal Exportación Consolidada
   const [showConsolidatedModal, setShowConsolidatedModal] = useState<boolean>(false);
   const [exportingConsolidated, setExportingConsolidated] = useState<boolean>(false);
 
-  // Función explícita para cargar el historial SAST
   const loadSastHistory = async () => {
     setLoadingSast(true);
     try {
@@ -131,7 +133,6 @@ export const ReportHistory: React.FC = () => {
     }
   };
 
-  // Función explícita para cargar el historial de Pruebas de Carga
   const loadLoadTestHistory = async () => {
     setLoadingLoadTest(true);
     try {
@@ -144,7 +145,6 @@ export const ReportHistory: React.FC = () => {
     }
   };
 
-  // Cargar Historiales al montar
   useEffect(() => {
     let isMounted = true;
 
@@ -172,6 +172,18 @@ export const ReportHistory: React.FC = () => {
       isMounted = false;
     };
   }, []);
+
+  // Bloquea el scroll del fondo cuando hay un detalle SAST abierto en portal
+  useEffect(() => {
+    if (selectedSastAudit) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [selectedSastAudit]);
 
   const handleTabChange = (tab: SubTabType) => {
     setActiveSubTab(tab);
@@ -309,578 +321,233 @@ export const ReportHistory: React.FC = () => {
       }))
     : [];
 
+  const tabsConfig: Array<{ id: SubTabType; label: string; icon: string }> = [
+    { id: 'web', label: 'Escáneres & Pruebas Web', icon: '🌐' },
+    { id: 'sast', label: 'Auditorías SAST & Código', icon: '🔍' },
+    { id: 'load', label: 'Pruebas de Carga & DoS', icon: '🎯' },
+    { id: 'dast', label: 'DAST & OpenAPI', icon: '🛡️' },
+    { id: 'sca', label: 'SCA & Supply Chain', icon: '🔐' },
+    { id: 'easm', label: 'EASM & OSINT', icon: '🕸️' },
+    { id: 'redteam', label: 'Red Team & Explotación', icon: '⚔️' },
+    { id: 'emailsec', label: 'Email Sec & OSINT', icon: '✉️' },
+  ];
+
   return (
-    <div style={{ background: '#1e1e1e', padding: '20px', borderRadius: '8px', marginTop: '20px' }}>
-      {/* CABECERA */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-        <h2 style={{ color: '#fff', margin: 0, fontSize: '20px' }}>
-          📜 Historial Centralizado de Seguridad
-        </h2>
+    <div style={{ width: '100%', margin: '0', padding: '0', backgroundColor: 'transparent', boxSizing: 'border-box' }}>
+      <div
+        style={{
+          width: '100%',
+          backgroundColor: 'rgba(15, 23, 42, 0.65)',
+          border: '1px solid rgba(30, 41, 59, 0.9)',
+          borderRadius: '16px',
+          padding: '24px',
+          backdropFilter: 'blur(16px)',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
+          boxSizing: 'border-box',
+        }}
+      >
+        {/* HEADER Y BOTÓN EXPORTAR */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '20px', color: '#f8fafc', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ color: '#38bdf8' }}>📜</span> Historial Centralizado de Seguridad
+            </h2>
+            <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#94a3b8' }}>
+              Persistencia global de ejecuciones, trazabilidad técnica y reportes exportables.
+            </p>
+          </div>
 
-        <button
-          type="button"
-          onClick={() => setShowConsolidatedModal(true)}
-          style={{
-            background: '#0284c7',
-            color: '#ffffff',
-            border: 'none',
-            padding: '8px 16px',
-            borderRadius: '6px',
-            fontWeight: 'bold',
-            fontSize: '0.85rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            boxShadow: '0 0 10px rgba(2, 132, 199, 0.4)',
-            transition: 'all 0.2s ease',
-          }}
-        >
-          📄 Exportar Informe Consolidado Global
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={() => setShowConsolidatedModal(true)}
+            style={{
+              backgroundColor: '#0284c7',
+              color: '#ffffff',
+              border: '1px solid rgba(56, 189, 248, 0.5)',
+              padding: '10px 18px',
+              borderRadius: '10px',
+              fontSize: '12px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <span>📄</span> Exportar Informe Consolidado Global
+          </button>
+        </div>
 
-      {/* BOTONES PESTAÑA SUB-NAVEGACIÓN */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        <button
-          type="button"
-          onClick={() => handleTabChange('web')}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '6px',
-            border: 'none',
-            fontSize: '0.85rem',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            backgroundColor: activeSubTab === 'web' ? '#2563eb' : '#27272a',
-            color: '#ffffff',
-            boxShadow: activeSubTab === 'web' ? '0 0 10px rgba(37, 99, 235, 0.4)' : 'none',
-          }}
-        >
-          🌐 Escáneres & Pruebas Web
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleTabChange('sast')}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '6px',
-            border: 'none',
-            fontSize: '0.85rem',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            backgroundColor: activeSubTab === 'sast' ? '#2563eb' : '#27272a',
-            color: '#ffffff',
-            boxShadow: activeSubTab === 'sast' ? '0 0 10px rgba(37, 99, 235, 0.4)' : 'none',
-          }}
-        >
-          🔍 Auditorías SAST & Código
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleTabChange('load')}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '6px',
-            border: 'none',
-            fontSize: '0.85rem',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            backgroundColor: activeSubTab === 'load' ? '#2563eb' : '#27272a',
-            color: '#ffffff',
-            boxShadow: activeSubTab === 'load' ? '0 0 10px rgba(37, 99, 235, 0.4)' : 'none',
-          }}
-        >
-          🎯 Pruebas de Carga & DoS
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleTabChange('dast')}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '6px',
-            border: 'none',
-            fontSize: '0.85rem',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            backgroundColor: activeSubTab === 'dast' ? '#2563eb' : '#27272a',
-            color: '#ffffff',
-            boxShadow: activeSubTab === 'dast' ? '0 0 10px rgba(37, 99, 235, 0.4)' : 'none',
-          }}
-        >
-          🛡️ DAST & OpenAPI
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleTabChange('sca')}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '6px',
-            border: 'none',
-            fontSize: '0.85rem',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            backgroundColor: activeSubTab === 'sca' ? '#2563eb' : '#27272a',
-            color: '#ffffff',
-            boxShadow: activeSubTab === 'sca' ? '0 0 10px rgba(37, 99, 235, 0.4)' : 'none',
-          }}
-        >
-          🔐 SCA & Supply Chain
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleTabChange('easm')}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '6px',
-            border: 'none',
-            fontSize: '0.85rem',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            backgroundColor: activeSubTab === 'easm' ? '#2563eb' : '#27272a',
-            color: '#ffffff',
-            boxShadow: activeSubTab === 'easm' ? '0 0 10px rgba(37, 99, 235, 0.4)' : 'none',
-          }}
-        >
-          🕸️ EASM & OSINT
-        </button>
-
-        {/* SUB-PESTAÑA NUEVA RED TEAM */}
-        <button
-          type="button"
-          onClick={() => handleTabChange('redteam')}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '6px',
-            border: 'none',
-            fontSize: '0.85rem',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            backgroundColor: activeSubTab === 'redteam' ? '#2563eb' : '#27272a',
-            color: '#ffffff',
-            boxShadow: activeSubTab === 'redteam' ? '0 0 10px rgba(37, 99, 235, 0.4)' : 'none',
-          }}
-        >
-          ⚔️ Red Team & Explotación
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleTabChange('emailsec')}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '6px',
-            border: 'none',
-            fontSize: '0.85rem',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            backgroundColor: activeSubTab === 'emailsec' ? '#2563eb' : '#27272a',
-            color: '#ffffff',
-            boxShadow: activeSubTab === 'emailsec' ? '0 0 10px rgba(37, 99, 235, 0.4)' : 'none',
-          }}
-        >
-          ✉️ Email Sec & OSINT
-        </button>
-      </div>
-
-      {/* CONTENIDO 1: HISTORIAL WEB */}
-      {activeSubTab === 'web' && (
-        <>
-          {loading ? (
-            <div style={{ color: '#aaa', padding: '20px 0' }}>Cargando historial de MySQL...</div>
-          ) : (
-            <>
-              <input
-                type="text"
-                placeholder="🔍 Buscar por ID, Tipo, Proyecto, Suite o URL..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+        {/* SUBPESTAÑAS */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '16px', borderBottom: '1px solid rgba(30, 41, 59, 0.8)' }}>
+          {tabsConfig.map((tab) => {
+            const isActive = activeSubTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => handleTabChange(tab.id)}
                 style={{
-                  width: '100%',
-                  padding: '12px 14px',
-                  borderRadius: '6px',
-                  border: '1px solid #333',
-                  background: '#09090b',
-                  color: '#fff',
-                  fontSize: '14px',
-                  marginBottom: '20px',
-                  boxSizing: 'border-box',
-                  outline: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: isActive ? '700' : '500',
+                  cursor: 'pointer',
+                  backgroundColor: isActive ? '#0284c7' : 'rgba(2, 6, 23, 0.7)',
+                  color: '#ffffff',
+                  border: isActive ? '1px solid #38bdf8' : '1px solid rgba(30, 41, 59, 0.9)',
+                  boxShadow: isActive ? '0 0 12px rgba(2, 132, 199, 0.5)' : 'none',
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s ease',
                 }}
-              />
+              >
+                <span>{tab.icon}</span>
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
 
-              <HistoryTable items={filteredItems} onOpenReportModal={handleOpenReportModal} />
+        {/* BUSCADOR */}
+        <div style={{ marginBottom: '20px' }}>
+          <input
+            type="text"
+            placeholder="🔍 Buscar por ID, Tipo, Proyecto, Suite o URL..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              width: '100%',
+              backgroundColor: 'rgba(2, 6, 23, 0.95)',
+              border: '1px solid rgba(30, 41, 59, 0.9)',
+              color: '#f8fafc',
+              fontSize: '12px',
+              borderRadius: '10px',
+              padding: '12px 16px',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+        </div>
 
-              <ReportModal
-                report={selectedReport}
-                targetUrl={selectedTargetUrl}
-                loading={loadingReport}
-                onClose={() => setSelectedReport(null)}
-              />
-            </>
-          )}
-        </>
-      )}
-
-      {/* CONTENIDO 2: HISTORIAL SAST */}
-      {activeSubTab === 'sast' && (
-        <>
-          {loadingSast ? (
-            <div style={{ color: '#60a5fa', padding: '20px 0' }}>🔄 Cargando registros SAST desde MySQL...</div>
-          ) : (
-            <>
-              <SastHistoryTable items={sastItems} onSelectAudit={(item) => setSelectedSastAudit(item)} />
-
-              {selectedSastAudit && (
-                <div style={{ marginTop: '24px', background: '#09090b', padding: '20px', borderRadius: '8px', border: '1px solid #38bdf8' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-                    <h3 style={{ margin: 0, color: '#38bdf8' }}>
-                      📄 Detalle de Auditoría: {selectedSastAudit.fileName}
-                    </h3>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      {selectedSastAudit.remediatedCode && (
-                        <button
-                          type="button"
-                          onClick={() => setShowDiffModal(true)}
-                          style={{ background: '#0284c7', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
-                        >
-                          ✨ Ver Refactorización
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => setSelectedSastAudit(null)}
-                        style={{ background: '#27272a', color: '#a1a1aa', border: 'none', padding: '8px 14px', borderRadius: '6px', cursor: 'pointer' }}
-                      >
-                        ✕ Cerrar Detalle
-                      </button>
-                    </div>
-                  </div>
-
-                  <SastFindingsTable findings={mappedSastFindings} />
+        {/* CONTENIDO DE TABLAS */}
+        <div style={{ backgroundColor: 'rgba(2, 6, 23, 0.5)', border: '1px solid rgba(30, 41, 59, 0.8)', borderRadius: '12px', padding: '16px', minHeight: '380px', width: '100%', boxSizing: 'border-box' }}>
+          {activeSubTab === 'web' && (
+            <div className="space-y-4">
+              {loading ? (
+                <div className="flex items-center justify-center py-12 text-slate-400 text-xs">
+                  <span className="animate-spin text-lg mr-2">🔄</span> Cargando historial desde la base de datos...
                 </div>
+              ) : (
+                <>
+                  <HistoryTable items={filteredItems} onOpenReportModal={handleOpenReportModal} />
+                  <ReportModal report={selectedReport} targetUrl={selectedTargetUrl} loading={loadingReport} onClose={() => setSelectedReport(null)} />
+                </>
               )}
-
-              {showDiffModal && selectedSastAudit?.remediatedCode && (
-                <SastDiffModal
-                  remediatedCode={selectedSastAudit.remediatedCode}
-                  fileName={selectedSastAudit.fileName}
-                  onClose={() => setShowDiffModal(false)}
-                />
-              )}
-            </>
+            </div>
           )}
-        </>
-      )}
 
-      {/* CONTENIDO 3: HISTORIAL PRUEBAS DE CARGA */}
-      {activeSubTab === 'load' && (
-        <>
-          {loadingLoadTest ? (
-            <div style={{ color: '#60a5fa', padding: '20px 0' }}>🔄 Cargando registros de pruebas de carga desde MySQL...</div>
-          ) : (
-            <>
-              <LoadTestHistoryTable
-                items={loadTestItems}
-                onSelectResult={(item) => setSelectedLoadTest(item)}
-                onExportSingleRecord={handleExportSingleLoadTest}
-              />
+          {activeSubTab === 'sast' && (
+            <div className="space-y-4">
+              {loadingSast ? (
+                <div className="flex items-center justify-center py-12 text-cyan-400 text-xs">
+                  <span className="animate-spin text-lg mr-2">🔄</span> Cargando registros SAST desde MySQL...
+                </div>
+              ) : (
+                <SastHistoryTable items={sastItems} onSelectAudit={(item) => setSelectedSastAudit(item)} />
+              )}
+            </div>
+          )}
 
-              {selectedLoadTest && (
-                <div style={{ marginTop: '24px', background: '#09090b', padding: '20px', borderRadius: '8px', border: '1px solid #38bdf8' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-                    <h3 style={{ margin: 0, color: '#38bdf8' }}>
-                      🎯 Detalle de Prueba de Estrés: {selectedLoadTest.targetUrl}
-                    </h3>
+          {activeSubTab === 'load' && (
+            <div className="space-y-4">
+              {loadingLoadTest ? (
+                <div className="flex items-center justify-center py-12 text-cyan-400 text-xs">
+                  <span className="animate-spin text-lg mr-2">🔄</span> Cargando registros de pruebas de carga desde MySQL...
+                </div>
+              ) : (
+                <LoadTestHistoryTable items={loadTestItems} onExportSingleRecord={handleExportSingleLoadTest} />
+              )}
+            </div>
+          )}
+
+          {/* SUBPESTAÑA DAST */}
+          {activeSubTab === 'dast' && <DastHistoryTable items={dastItems} />}
+
+          {/* SUBPESTAÑA SCA */}
+          {activeSubTab === 'sca' && <ScaHistoryTable items={scaItems} />}
+
+          {/* SUBPESTAÑA EASM */}
+          {activeSubTab === 'easm' && (
+            <EasmHistoryTable items={easmItems} onExportSingleRecord={handleExportSingleEasm} />
+          )}
+
+          {/* SUBPESTAÑA RED TEAM */}
+          {activeSubTab === 'redteam' && (
+            <RedTeamHistoryTable items={redteamItems} onExportSingleRecord={handleExportSingleRedTeam} />
+          )}
+
+          {/* SUBPESTAÑA EMAIL SEC CON COMPONENTE MEJORADO */}
+          {activeSubTab === 'emailsec' && (
+            <EmailSecHistoryTable items={emailsecItems} onExportSingleRecord={handleExportSingleEmailSec} />
+          )}
+        </div>
+      </div>
+
+      {/* MODAL DETALLE DE SAST EN PORTAL CIBERNÉTICO CENTRADO */}
+      {selectedSastAudit &&
+        createPortal(
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(2, 6, 23, 0.88)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999, padding: '20px', boxSizing: 'border-box' }}>
+            <div style={{ width: '100%', maxWidth: '920px', maxHeight: '85vh', backgroundColor: '#090d16', border: '1px solid #0284c7', borderRadius: '16px', boxShadow: '0 0 35px rgba(2, 132, 199, 0.45)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', overflow: 'hidden', position: 'relative', boxSizing: 'border-box' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(30, 41, 59, 0.8)', paddingBottom: '14px' }}>
+                <div>
+                  <span style={{ fontSize: '10px', fontFamily: 'monospace', fontWeight: 'bold', color: '#38bdf8', backgroundColor: 'rgba(2, 132, 199, 0.15)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '2px 8px', borderRadius: '4px' }}>
+                    SAST AUDIT DIAGNOSTIC PANEL
+                  </span>
+                  <h3 style={{ margin: '6px 0 0 0', fontSize: '18px', fontWeight: 'bold', color: '#f8fafc' }}>
+                    📄 Detalle de Auditoría: <span style={{ color: '#38bdf8' }}>{selectedSastAudit.fileName}</span>
+                  </h3>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  {selectedSastAudit.remediatedCode && (
                     <button
                       type="button"
-                      onClick={() => setSelectedLoadTest(null)}
-                      style={{ background: '#27272a', color: '#a1a1aa', border: 'none', padding: '8px 14px', borderRadius: '6px', cursor: 'pointer' }}
+                      onClick={() => setShowDiffModal(true)}
+                      style={{ backgroundColor: '#0284c7', color: '#ffffff', border: '1px solid #38bdf8', padding: '8px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 10px rgba(2, 132, 199, 0.3)' }}
                     >
-                      ✕ Cerrar Detalle
+                      ✨ Ver Refactorización
                     </button>
-                  </div>
-
-                  <LoadTestMetricsCard
-                    result={{
-                      runId: selectedLoadTest.id,
-                      config: {
-                        targetUrl: selectedLoadTest.targetUrl,
-                        method: selectedLoadTest.method as 'GET' | 'POST' | 'PUT' | 'DELETE',
-                        concurrency: selectedLoadTest.concurrency,
-                        durationSeconds: selectedLoadTest.durationSeconds,
-                      },
-                      metrics: selectedLoadTest.metrics,
-                      aiDiagnosis: selectedLoadTest.aiDiagnosis,
-                    }}
-                  />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSastAudit(null)}
+                    style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.4)', color: '#ef4444', padding: '8px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+                  >
+                    ✕ Cerrar
+                  </button>
                 </div>
-              )}
-            </>
-          )}
-        </>
+              </div>
+
+              <div style={{ overflowY: 'auto', flex: 1, paddingRight: '4px' }}>
+                <SastFindingsTable findings={mappedSastFindings} />
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* MODAL REFACTORIZACIÓN DIFF */}
+      {showDiffModal && selectedSastAudit?.remediatedCode && (
+        <SastDiffModal remediatedCode={selectedSastAudit.remediatedCode} fileName={selectedSastAudit.fileName} onClose={() => setShowDiffModal(false)} />
       )}
 
-      {/* CONTENIDO 4: HISTORIAL DAST */}
-      {activeSubTab === 'dast' && (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', color: '#f4f4f5', fontSize: '0.9rem' }}>
-            <thead>
-              <tr style={{ background: '#09090b', borderBottom: '1px solid #27272a', textAlign: 'left' }}>
-                <th style={{ padding: '12px' }}>ID Ejecución</th>
-                <th style={{ padding: '12px' }}>URL Base Target</th>
-                <th style={{ padding: '12px' }}>Endpoints Probados</th>
-                <th style={{ padding: '12px' }}>Hallazgos</th>
-                <th style={{ padding: '12px' }}>Fecha</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dastItems.length === 0 ? (
-                <tr>
-                  <td colSpan={5} style={{ padding: '20px', textAlign: 'center', color: '#a1a1aa' }}>
-                    No se registran auditorías DAST en el historial.
-                  </td>
-                </tr>
-              ) : (
-                dastItems.map((item) => {
-                  const findings = item.findingsJson ? JSON.parse(item.findingsJson) : [];
-                  return (
-                    <tr key={item.id} style={{ borderBottom: '1px solid #27272a' }}>
-                      <td style={{ padding: '12px', fontFamily: 'monospace', color: '#38bdf8' }}>{item.id}</td>
-                      <td style={{ padding: '12px' }}>{item.targetBaseUrl}</td>
-                      <td style={{ padding: '12px' }}>{item.totalEndpointsTested}</td>
-                      <td style={{ padding: '12px', color: findings.length > 0 ? '#ef4444' : '#22c55e', fontWeight: 'bold' }}>
-                        {findings.length} Hallazgos
-                      </td>
-                      <td style={{ padding: '12px', color: '#a1a1aa' }}>
-                        {new Date(item.createdAt).toLocaleString('es-ES')}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* CONTENIDO 5: HISTORIAL SCA */}
-      {activeSubTab === 'sca' && <ScaHistoryTable items={scaItems} />}
-
-      {/* CONTENIDO 6: HISTORIAL EASM */}
-      {activeSubTab === 'easm' && (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', color: '#f4f4f5', fontSize: '0.9rem' }}>
-            <thead>
-              <tr style={{ background: '#09090b', borderBottom: '1px solid #27272a', textAlign: 'left' }}>
-                <th style={{ padding: '12px' }}>ID Ejecución</th>
-                <th style={{ padding: '12px' }}>Dominio Objetivo</th>
-                <th style={{ padding: '12px' }}>Subdominios Detectados</th>
-                <th style={{ padding: '12px' }}>Certificado SSL</th>
-                <th style={{ padding: '12px' }}>Fecha</th>
-                <th style={{ padding: '12px', textAlign: 'right' }}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {easmItems.length === 0 ? (
-                <tr>
-                  <td colSpan={6} style={{ padding: '20px', textAlign: 'center', color: '#a1a1aa' }}>
-                    No se registran auditorías EASM en el historial.
-                  </td>
-                </tr>
-              ) : (
-                easmItems.map((item) => {
-                  const subdomains = item.subdomainsJson ? JSON.parse(item.subdomainsJson) : [];
-                  const sslDetails = item.sslDetailsJson ? JSON.parse(item.sslDetailsJson) : {};
-                  return (
-                    <tr key={item.id} style={{ borderBottom: '1px solid #27272a' }}>
-                      <td style={{ padding: '12px', fontFamily: 'monospace', color: '#38bdf8' }}>{item.id}</td>
-                      <td style={{ padding: '12px', fontWeight: 'bold' }}>{item.targetDomain}</td>
-                      <td style={{ padding: '12px', color: '#38bdf8' }}>{subdomains.length} subdominios</td>
-                      <td style={{ padding: '12px', color: sslDetails.valid ? '#22c55e' : '#ef4444', fontWeight: 'bold' }}>
-                        {sslDetails.valid ? 'VÁLIDO' : 'INVÁLIDO / EXPIRADO'}
-                      </td>
-                      <td style={{ padding: '12px', color: '#a1a1aa' }}>
-                        {new Date(item.createdAt).toLocaleString('es-ES')}
-                      </td>
-                      <td style={{ padding: '12px', textAlign: 'right' }}>
-                        <button
-                          type="button"
-                          onClick={() => handleExportSingleEasm(item)}
-                          style={{
-                            background: '#0284c7',
-                            color: '#ffffff',
-                            border: 'none',
-                            padding: '6px 12px',
-                            borderRadius: '6px',
-                            fontSize: '0.8rem',
-                            fontWeight: 'bold',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          📥 Exportar PDF / HTML
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* CONTENIDO 7: HISTORIAL RED TEAM */}
-      {activeSubTab === 'redteam' && (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', color: '#f4f4f5', fontSize: '0.9rem' }}>
-            <thead>
-              <tr style={{ background: '#09090b', borderBottom: '1px solid #27272a', textAlign: 'left' }}>
-                <th style={{ padding: '12px' }}>ID Ejecución</th>
-                <th style={{ padding: '12px' }}>URL Objetivo</th>
-                <th style={{ padding: '12px' }}>Hallazgos JWT</th>
-                <th style={{ padding: '12px' }}>Hallazgos CORS</th>
-                <th style={{ padding: '12px' }}>Fecha</th>
-                <th style={{ padding: '12px', textAlign: 'right' }}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {redteamItems.length === 0 ? (
-                <tr>
-                  <td colSpan={6} style={{ padding: '20px', textAlign: 'center', color: '#a1a1aa' }}>
-                    No se registran ejecuciones de Red Team en el historial.
-                  </td>
-                </tr>
-              ) : (
-                redteamItems.map((item) => {
-                  const jwtFindings = item.jwtFindingsJson ? JSON.parse(item.jwtFindingsJson) : [];
-                  const corsFindings = item.corsFindingsJson ? JSON.parse(item.corsFindingsJson) : [];
-                  return (
-                    <tr key={item.id} style={{ borderBottom: '1px solid #27272a' }}>
-                      <td style={{ padding: '12px', fontFamily: 'monospace', color: '#38bdf8' }}>{item.id}</td>
-                      <td style={{ padding: '12px', fontWeight: 'bold' }}>{item.targetUrl}</td>
-                      <td style={{ padding: '12px', color: jwtFindings.length > 0 ? '#ef4444' : '#22c55e', fontWeight: 'bold' }}>
-                        {jwtFindings.length} vulnerabilidades
-                      </td>
-                      <td style={{ padding: '12px', color: corsFindings.length > 0 ? '#ef4444' : '#22c55e', fontWeight: 'bold' }}>
-                        {corsFindings.length} vulnerabilidades
-                      </td>
-                      <td style={{ padding: '12px', color: '#a1a1aa' }}>
-                        {new Date(item.createdAt).toLocaleString('es-ES')}
-                      </td>
-                      <td style={{ padding: '12px', textAlign: 'right' }}>
-                        <button
-                          type="button"
-                          onClick={() => handleExportSingleRedTeam(item)}
-                          style={{
-                            background: '#0284c7',
-                            color: '#ffffff',
-                            border: 'none',
-                            padding: '6px 12px',
-                            borderRadius: '6px',
-                            fontSize: '0.8rem',
-                            fontWeight: 'bold',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          📥 Exportar PDF / HTML
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* CONTENIDO 8: HISTORIAL EMAIL SECURITY */}
-      {activeSubTab === 'emailsec' && (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', color: '#f4f4f5', fontSize: '0.9rem' }}>
-            <thead>
-              <tr style={{ background: '#09090b', borderBottom: '1px solid #27272a', textAlign: 'left' }}>
-                <th style={{ padding: '12px' }}>ID Ejecución</th>
-                <th style={{ padding: '12px' }}>Dominio / IP Target</th>
-                <th style={{ padding: '12px' }}>Estado DMARC</th>
-                <th style={{ padding: '12px' }}>Diagnóstico IA</th>
-                <th style={{ padding: '12px' }}>Fecha</th>
-                <th style={{ padding: '12px', textAlign: 'right' }}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {emailsecItems.length === 0 ? (
-                <tr>
-                  <td colSpan={6} style={{ padding: '20px', textAlign: 'center', color: '#a1a1aa' }}>
-                    No se registran auditorías de Email Security en el historial.
-                  </td>
-                </tr>
-              ) : (
-                emailsecItems.map((item) => {
-                  const dmarc = item.dmarcJson ? JSON.parse(item.dmarcJson) : null;
-                  const ai = item.aiSummaryJson ? JSON.parse(item.aiSummaryJson) : null;
-                  return (
-                    <tr key={item.id} style={{ borderBottom: '1px solid #27272a' }}>
-                      <td style={{ padding: '12px', fontFamily: 'monospace', color: '#38bdf8' }}>{item.id}</td>
-                      <td style={{ padding: '12px', fontWeight: 'bold' }}>{item.targetDomain || item.targetIp || 'N/A'}</td>
-                      <td style={{ padding: '12px' }}>
-                        <span style={{
-                          padding: '2px 8px',
-                          borderRadius: '4px',
-                          fontSize: '0.8rem',
-                          fontWeight: 'bold',
-                          background: dmarc?.valid ? '#166534' : '#991b1b',
-                          color: '#fff',
-                        }}>
-                          {dmarc?.policy ? dmarc.policy.toUpperCase() : 'MISSING'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px', color: '#cbd5e1', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {ai?.summary || 'Sin diagnóstico'}
-                      </td>
-                      <td style={{ padding: '12px', color: '#a1a1aa' }}>
-                        {new Date(item.createdAt).toLocaleString('es-ES')}
-                      </td>
-                      <td style={{ padding: '12px', textAlign: 'right' }}>
-                        <button
-                          type="button"
-                          onClick={() => handleExportSingleEmailSec(item)}
-                          style={{
-                            background: '#0284c7',
-                            color: '#ffffff',
-                            border: 'none',
-                            padding: '6px 12px',
-                            borderRadius: '6px',
-                            fontSize: '0.8rem',
-                            fontWeight: 'bold',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          📥 Exportar PDF / HTML
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* MODAL DE EXPORTACIÓN CONSOLIDADA */}
-      <ConsolidatedReportExportModal
-        isOpen={showConsolidatedModal}
-        onClose={() => setShowConsolidatedModal(false)}
-        onExport={handleExportConsolidated}
-        loading={exportingConsolidated}
-      />
+      {/* MODAL EXPORTACIÓN CONSOLIDADA */}
+      <ConsolidatedReportExportModal isOpen={showConsolidatedModal} onClose={() => setShowConsolidatedModal(false)} onExport={handleExportConsolidated} loading={exportingConsolidated} />
     </div>
   );
 };
