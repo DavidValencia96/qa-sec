@@ -3,7 +3,8 @@ import type { LoadTestConfig, LoadTestResult, LoadTestMetrics } from '../compone
 import type { ConsolidatedReportOptions } from '../components/report/ConsolidatedReportExportModal';
 export type DependencyManifestType = 'package_json' | 'requirements_txt' | 'pom_xml';
 
-const BASE_URL = 'http://localhost:3000/api';
+// Soporte dinámico para Render / Entornos de producción y desarrollo local
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 export const createProjectApi = async (name: string, targetUrl: string, description?: string) => {
   const res = await fetch(`${BASE_URL}/projects`, {
@@ -566,3 +567,18 @@ export const getComplianceTargetsApi = async (): Promise<string[]> => {
   const data = await response.json();
   return data.targets || [];
 };
+
+export async function sendHeartbeatApi(sessionId: string): Promise<number> {
+  try {
+    const res = await fetch(`${BASE_URL}/telemetry/heartbeat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId }),
+    });
+    if (!res.ok) return 1;
+    const data = await res.json();
+    return typeof data.onlineUsers === 'number' ? data.onlineUsers : 1;
+  } catch {
+    return 1;
+  }
+}

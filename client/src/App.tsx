@@ -3,6 +3,7 @@ import {
   createProjectApi,
   runTestApi,
   getReportApi,
+  sendHeartbeatApi,
   type DastAuditResponse,
   type ScaAuditResponse,
   type DependencyManifestType,
@@ -170,6 +171,38 @@ export function App() {
 
   const [modulesData, setModulesData] = useState<Record<string, ModuleState>>({});
 
+  // Identificador de sesión persistente por pestaña
+  const [sessionId] = useState<string>(() => {
+    let id = sessionStorage.getItem('qa_sec_session_id');
+    if (!id) {
+      id = 'sess_' + Math.random().toString(36).substring(2, 10);
+      sessionStorage.setItem('qa_sec_session_id', id);
+    }
+    return id;
+  });
+
+  const [onlineUsers, setOnlineUsers] = useState<number>(1);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const emitHeartbeat = async () => {
+      const activeCount = await sendHeartbeatApi(sessionId);
+      if (isMounted) {
+        setOnlineUsers(activeCount);
+      }
+    };
+
+    emitHeartbeat();
+
+    const timer = setInterval(emitHeartbeat, 5000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(timer);
+    };
+  }, [sessionId]);
+
   const currentModuleState = modulesData[activeTab] || defaultModuleState;
 
   const updateCurrentModule = (patch: Partial<ModuleState>) => {
@@ -326,6 +359,14 @@ export function App() {
     >
       <CyberBackground />
 
+      <style>{`
+        @keyframes pulse-live-dot {
+          0% { transform: scale(0.9); opacity: 0.5; }
+          50% { transform: scale(1.3); opacity: 1; }
+          100% { transform: scale(0.9); opacity: 0.5; }
+        }
+      `}</style>
+
       <div
         style={{
           position: 'relative',
@@ -411,7 +452,36 @@ export function App() {
           </div>
 
           {/* INSIGNIAS (AL EXTREMO DERECHO) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto', flexWrap: 'wrap' }}>
+            {/* AUDITORES EN LÍNEA */}
+            <div
+              style={{
+                background: 'rgba(34, 197, 94, 0.12)',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                border: '1px solid rgba(34, 197, 94, 0.35)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 0 10px rgba(34, 197, 94, 0.15)',
+              }}
+              title="Auditores conectados actualmente"
+            >
+              <span
+                style={{
+                  width: '7px',
+                  height: '7px',
+                  borderRadius: '50%',
+                  background: '#22c55e',
+                  boxShadow: '0 0 8px #22c55e',
+                  animation: 'pulse-live-dot 1.8s infinite ease-in-out',
+                }}
+              />
+              <span style={{ color: '#4ade80', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                {onlineUsers} Auditor(es) en Línea
+              </span>
+            </div>
+
             <div style={{ background: '#0284c715', padding: '6px 12px', borderRadius: '6px', border: '1px solid #0284c740', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 6px #38bdf8' }} />
               <span style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 'bold' }}>v3.x • Gemini Active</span>

@@ -27,6 +27,7 @@ import { runEasmAuditHandler } from '../controllers/easm/easm.controller.js';
 import { runRedTeamAuditHandler } from '../controllers/redteam/redteam.controller.js';
 import emailSecRoutes from './emailsec.routes.js';
 import complianceRoutes from './compliance.routes.js';
+import { handleHeartbeat } from '../controllers/telemetry.controller';
 
 const router = Router();
 
@@ -72,6 +73,8 @@ router.post('/redteam/audit', runRedTeamAuditHandler);
 
 router.use('/emailsec', emailSecRoutes);
 router.use('/compliance', complianceRoutes);
+
+router.post('/telemetry/heartbeat', handleHeartbeat);
 
 export const apiRouter = router;
 export default router;
