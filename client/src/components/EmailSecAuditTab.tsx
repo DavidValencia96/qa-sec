@@ -34,7 +34,13 @@ export interface EmailSecModuleData {
   dkimSelector: string;
   targetIp: string;
   rawHeaders: string;
-  result: EmailSecResultState | null;
+  // Guardamos un resultado por subpestaña para persistir la memoria independiente
+  results?: {
+    domain?: EmailSecResultState | null;
+    ip?: EmailSecResultState | null;
+    headers?: EmailSecResultState | null;
+  };
+  result?: EmailSecResultState | null; // Retrocompatibilidad
 }
 
 interface EmailSecAuditTabProps {
@@ -49,20 +55,30 @@ export const EmailSecAuditTab: React.FC<EmailSecAuditTabProps> = ({
   const [activeSubTab, setActiveSubTab] = useState<'domain' | 'ip' | 'headers'>(
     emailSecData?.activeSubTab || 'domain'
   );
+
   const [domain, setDomain] = useState<string>(emailSecData?.domain || 'google.com');
   const [dkimSelector, setDkimSelector] = useState<string>(emailSecData?.dkimSelector || 'google');
   const [targetIp, setTargetIp] = useState<string>(emailSecData?.targetIp || '');
   const [rawHeaders, setRawHeaders] = useState<string>(emailSecData?.rawHeaders || '');
 
-  const [loading, setLoading] = useState<boolean>(false);
-  const [result, setResult] = useState<EmailSecResultState | null>(
-    emailSecData?.result || null
-  );
+  // 1. Mapeo independiente de ejecuciones (loading individual por subpestaña)
+  const [loadingMap, setLoadingMap] = useState<Record<'domain' | 'ip' | 'headers', boolean>>({
+    domain: false,
+    ip: false,
+    headers: false,
+  });
+
+  // 2. Mapeo independiente de resultados por subpestaña
+  const [resultsMap, setResultsMap] = useState<Record<'domain' | 'ip' | 'headers', EmailSecResultState | null>>({
+    domain: emailSecData?.results?.domain || (emailSecData?.activeSubTab === 'domain' ? emailSecData.result : null) || null,
+    ip: emailSecData?.results?.ip || (emailSecData?.activeSubTab === 'ip' ? emailSecData.result : null) || null,
+    headers: emailSecData?.results?.headers || (emailSecData?.activeSubTab === 'headers' ? emailSecData.result : null) || null,
+  });
 
   // Popover tooltip hover
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
-  // Derivación segura de estado al cambiar de pestaña
+  // Sync seguro derivando props
   const [prevEmailSecData, setPrevEmailSecData] = useState(emailSecData);
   if (emailSecData !== prevEmailSecData) {
     setPrevEmailSecData(emailSecData);
@@ -71,7 +87,14 @@ export const EmailSecAuditTab: React.FC<EmailSecAuditTabProps> = ({
     if (emailSecData?.dkimSelector !== undefined) setDkimSelector(emailSecData.dkimSelector);
     if (emailSecData?.targetIp !== undefined) setTargetIp(emailSecData.targetIp);
     if (emailSecData?.rawHeaders !== undefined) setRawHeaders(emailSecData.rawHeaders);
-    if (emailSecData?.result !== undefined) setResult(emailSecData.result);
+
+    if (emailSecData?.results) {
+      setResultsMap({
+        domain: emailSecData.results.domain ?? null,
+        ip: emailSecData.results.ip ?? null,
+        headers: emailSecData.results.headers ?? null,
+      });
+    }
   }
 
   const handleUpdateGlobalState = (patch: Partial<EmailSecModuleData>) => {
@@ -103,30 +126,39 @@ export const EmailSecAuditTab: React.FC<EmailSecAuditTabProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return;
+    const currentTab = activeSubTab;
+    if (loadingMap[currentTab]) return;
 
-    setLoading(true);
-    setResult(null);
+    // Marcamos cargando SOLO para la subpestaña actual
+    setLoadingMap((prev) => ({ ...prev, [currentTab]: true }));
 
     try {
       const payload: EmailSecAuditPayload = {};
-      if (activeSubTab === 'domain') {
+      if (currentTab === 'domain') {
         payload.domain = domain;
         payload.dkimSelector = dkimSelector;
-      } else if (activeSubTab === 'ip') {
+      } else if (currentTab === 'ip') {
         payload.targetIp = targetIp;
-      } else if (activeSubTab === 'headers') {
+      } else if (currentTab === 'headers') {
         payload.rawHeaders = rawHeaders;
       }
 
       const data = await runEmailSecAuditApi(payload);
       const resState = data as EmailSecResultState;
-      setResult(resState);
-      handleUpdateGlobalState({ result: resState });
+
+      // Actualizamos el resultado específico de ESTA subpestaña sin borrar los otros
+      setResultsMap((prev) => {
+        const updated = { ...prev, [currentTab]: resState };
+        handleUpdateGlobalState({
+          results: updated,
+          result: resState,
+        });
+        return updated;
+      });
     } catch (err) {
       alert(`Error en la auditoría: ${(err as Error).message}`);
     } finally {
-      setLoading(false);
+      setLoadingMap((prev) => ({ ...prev, [currentTab]: false }));
     }
   };
 
@@ -180,6 +212,10 @@ export const EmailSecAuditTab: React.FC<EmailSecAuditTabProps> = ({
     </div>
   );
 
+  // Extraemos el estado de carga y resultado exclusivo de la subpestaña actual
+  const isCurrentTabLoading = loadingMap[activeSubTab];
+  const currentTabResult = resultsMap[activeSubTab];
+
   return (
     <div
       style={{
@@ -199,7 +235,7 @@ export const EmailSecAuditTab: React.FC<EmailSecAuditTabProps> = ({
         }
       `}</style>
 
-      {/* CABECERA ENTERPRISE ALINEADA CON BADGE Y BOTÓN EJEMPLO */}
+      {/* CABECERA ENTERPRISE */}
       <div
         style={{
           display: 'flex',
@@ -219,11 +255,10 @@ export const EmailSecAuditTab: React.FC<EmailSecAuditTabProps> = ({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', alignSelf: 'flex-start' }}>
-          {/* BOTÓN IMPLEMENTAR EJEMPLO */}
           <button
             type="button"
             onClick={handleLoadExample}
-            disabled={loading}
+            disabled={isCurrentTabLoading}
             style={{
               padding: '6px 14px',
               borderRadius: '20px',
@@ -232,7 +267,7 @@ export const EmailSecAuditTab: React.FC<EmailSecAuditTabProps> = ({
               color: '#38bdf8',
               fontSize: '0.78rem',
               fontWeight: 'bold',
-              cursor: loading ? 'not-allowed' : 'pointer',
+              cursor: isCurrentTabLoading ? 'not-allowed' : 'pointer',
               transition: 'all 0.2s ease',
               boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)',
               whiteSpace: 'nowrap',
@@ -241,7 +276,6 @@ export const EmailSecAuditTab: React.FC<EmailSecAuditTabProps> = ({
             ⚡ Cargar Ejemplo Funcional
           </button>
 
-          {/* BADGE CATEGORÍA */}
           <span
             style={{
               background: 'rgba(56, 189, 248, 0.15)',
@@ -347,7 +381,7 @@ export const EmailSecAuditTab: React.FC<EmailSecAuditTabProps> = ({
                 }}
                 placeholder="ej. paypal.com"
                 required
-                disabled={loading}
+                disabled={isCurrentTabLoading}
                 style={{
                   width: '100%',
                   padding: '10px 14px',
@@ -376,7 +410,7 @@ export const EmailSecAuditTab: React.FC<EmailSecAuditTabProps> = ({
                   handleUpdateGlobalState({ dkimSelector: e.target.value });
                 }}
                 placeholder="ej. google o default"
-                disabled={loading}
+                disabled={isCurrentTabLoading}
                 style={{
                   width: '100%',
                   padding: '10px 14px',
@@ -409,7 +443,7 @@ export const EmailSecAuditTab: React.FC<EmailSecAuditTabProps> = ({
               }}
               placeholder="ej. 185.220.101.5"
               required
-              disabled={loading}
+              disabled={isCurrentTabLoading}
               style={{
                 width: '100%',
                 padding: '10px 14px',
@@ -441,7 +475,7 @@ export const EmailSecAuditTab: React.FC<EmailSecAuditTabProps> = ({
               placeholder="Pega aquí los encabezados Received:, From:, Return-Path:..."
               rows={6}
               required
-              disabled={loading}
+              disabled={isCurrentTabLoading}
               style={{
                 width: '100%',
                 padding: '10px 14px',
@@ -459,95 +493,113 @@ export const EmailSecAuditTab: React.FC<EmailSecAuditTabProps> = ({
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            width: '100%',
-            padding: '14px',
-            borderRadius: '8px',
-            border: '1px solid #38bdf8',
-            background: loading
-              ? 'rgba(51, 65, 85, 0.6)'
-              : 'linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%)',
-            color: '#ffffff',
-            fontWeight: 'bold',
-            fontSize: '1rem',
-            cursor: loading ? 'wait' : 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '10px',
-            boxShadow: loading ? 'none' : '0 0 20px rgba(56, 189, 248, 0.35)',
-            transition: 'all 0.2s ease',
-          }}
-        >
-          {loading ? (
-            <>
-              <span
-                style={{
-                  width: '18px',
-                  height: '18px',
-                  border: '3px solid rgba(56, 189, 248, 0.3)',
-                  borderTop: '3px solid #38bdf8',
-                  borderRadius: '50%',
-                  animation: 'spinner-rotator 0.8s linear infinite',
-                  display: 'inline-block',
-                }}
-              />
-              <span>Escaneando en tiempo real...</span>
-            </>
-          ) : (
-            <>
-              <span>🚀</span>
-              <span>Ejecutar Auditoría de Email Security</span>
-            </>
-          )}
-        </button>
+        {/* BOTÓN CENTRADO, SLIM Y CON EFECTOS CIBERNÉTICOS */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '12px' }}>
+          <button
+            type="submit"
+            disabled={isCurrentTabLoading}
+            style={{
+              width: '100%',
+              maxWidth: '100%',
+              padding: '12px 24px',
+              borderRadius: '10px',
+              border: isCurrentTabLoading ? '1px solid rgba(51, 65, 85, 0.5)' : '1px solid #38bdf8',
+              backgroundColor: isCurrentTabLoading
+                ? 'rgba(30, 41, 59, 0.5)'
+                : 'rgba(2, 132, 199, 0.85)',
+              color: '#ffffff',
+              fontWeight: 'bold',
+              fontSize: '0.95rem',
+              letterSpacing: '0.5px',
+              cursor: isCurrentTabLoading ? 'wait' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              boxShadow: isCurrentTabLoading ? 'none' : '0 0 16px rgba(56, 189, 248, 0.35)',
+              transition: 'all 0.2s ease',
+              opacity: isCurrentTabLoading ? 0.6 : 1,
+            }}
+            onMouseEnter={(e) => {
+              if (!isCurrentTabLoading) {
+                e.currentTarget.style.backgroundColor = '#0284c7';
+                e.currentTarget.style.boxShadow = '0 0 22px rgba(56, 189, 248, 0.55)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isCurrentTabLoading) {
+                e.currentTarget.style.backgroundColor = 'rgba(2, 132, 199, 0.85)';
+                e.currentTarget.style.boxShadow = '0 0 16px rgba(56, 189, 248, 0.35)';
+              }
+            }}
+          >
+            {isCurrentTabLoading ? (
+              <>
+                <span
+                  style={{
+                    width: '18px',
+                    height: '18px',
+                    border: '3px solid rgba(56, 189, 248, 0.3)',
+                    borderTop: '3px solid #38bdf8',
+                    borderRadius: '50%',
+                    animation: 'spinner-rotator 0.8s linear infinite',
+                    display: 'inline-block',
+                  }}
+                />
+                <span>Escaneando en tiempo real...</span>
+              </>
+            ) : (
+              <>
+                <span>🚀</span>
+                <span>Ejecutar Auditoría de Email Security</span>
+              </>
+            )}
+          </button>
+        </div>
       </form>
 
-      {/* RESULTADOS */}
-      {result && (
+      {/* RESULTADO AISLADO EXCLUSIVO DE LA SUBPESTAÑA ACTIVA */}
+      {currentTabResult && (
         <div style={{ marginTop: '28px', background: 'rgba(9, 9, 11, 0.6)', padding: '24px', borderRadius: '10px', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
           <h3 style={{ color: '#38bdf8', marginTop: 0, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
             📊 Diagnóstico IA y Seguridad de Correo
           </h3>
           <p style={{ color: '#cbd5e1', fontSize: '0.92rem', lineHeight: '1.6' }}>
-            {result.aiSummary?.summary}
+            {currentTabResult.aiSummary?.summary}
           </p>
 
-          {result.spf && (
+          {activeSubTab === 'domain' && currentTabResult.spf && (
             <div style={{ marginTop: '16px', background: 'rgba(15, 23, 42, 0.6)', padding: '16px', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
               <h4 style={{ color: '#fff', margin: '0 0 8px 0', fontSize: '0.95rem' }}>📋 Registro SPF:</h4>
-              <pre style={{ color: result.spf.valid ? '#4ade80' : '#ef4444', margin: 0, fontFamily: 'monospace', fontSize: '0.85rem', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
-                {result.spf.raw || 'Sin registro SPF configurado'}
+              <pre style={{ color: currentTabResult.spf.valid ? '#4ade80' : '#ef4444', margin: 0, fontFamily: 'monospace', fontSize: '0.85rem', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                {currentTabResult.spf.raw || 'Sin registro SPF configurado'}
               </pre>
-              {result.spf.warnings?.map((w: string, i: number) => (
+              {currentTabResult.spf.warnings?.map((w: string, i: number) => (
                 <small key={i} style={{ color: '#f97316', display: 'block', marginTop: '6px' }}>⚠️ {w}</small>
               ))}
             </div>
           )}
 
-          {result.dmarc && (
+          {activeSubTab === 'domain' && currentTabResult.dmarc && (
             <div style={{ marginTop: '12px', background: 'rgba(15, 23, 42, 0.6)', padding: '16px', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
               <h4 style={{ color: '#fff', margin: '0 0 8px 0', fontSize: '0.95rem' }}>🛡️ Registro DMARC:</h4>
-              <pre style={{ color: result.dmarc.valid ? '#4ade80' : '#ef4444', margin: 0, fontFamily: 'monospace', fontSize: '0.85rem', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
-                {result.dmarc.raw || 'Sin registro DMARC configurado'}
+              <pre style={{ color: currentTabResult.dmarc.valid ? '#4ade80' : '#ef4444', margin: 0, fontFamily: 'monospace', fontSize: '0.85rem', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                {currentTabResult.dmarc.raw || 'Sin registro DMARC configurado'}
               </pre>
-              {result.dmarc.warnings?.map((w: string, i: number) => (
+              {currentTabResult.dmarc.warnings?.map((w: string, i: number) => (
                 <small key={i} style={{ color: '#f97316', display: 'block', marginTop: '6px' }}>⚠️ {w}</small>
               ))}
             </div>
           )}
 
-          {result.rbl && (
+          {activeSubTab === 'ip' && currentTabResult.rbl && (
             <div style={{ marginTop: '12px', background: 'rgba(15, 23, 42, 0.6)', padding: '16px', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
               <h4 style={{ color: '#fff', margin: '0 0 8px 0', fontSize: '0.95rem' }}>
-                🛑 Reputación RBL en Listas Negras (IP: {result.rbl.ip}):
+                🛑 Reputación RBL en Listas Negras (IP: {currentTabResult.rbl.ip}):
               </h4>
-              {result.rbl.blacklisted ? (
+              {currentTabResult.rbl.blacklisted ? (
                 <p style={{ color: '#ef4444', fontWeight: 'bold', margin: 0, fontSize: '0.9rem' }}>
-                  🚨 La IP está reportada en {result.rbl.listedIn.length} lista(s) negra(s): {result.rbl.listedIn.join(', ')}
+                  🚨 La IP está reportada en {currentTabResult.rbl.listedIn.length} lista(s) negra(s): {currentTabResult.rbl.listedIn.join(', ')}
                 </p>
               ) : (
                 <p style={{ color: '#4ade80', fontWeight: 'bold', margin: 0, fontSize: '0.9rem' }}>

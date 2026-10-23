@@ -91,6 +91,11 @@ export const EmailSecHistoryTable: React.FC<EmailSecHistoryTableProps> = ({ item
             const rbl = safeJsonParse<RblDetails>(item.rblJson, {});
             const aiSummary = safeJsonParse<AiSummaryDetail | null>(item.aiSummaryJson, null);
 
+            // Discriminación del tipo de análisis para evitar falsos positivos
+            const isIpAnalysis = Boolean(item.targetIp || rbl.ipConsulted);
+            const isHeaderAnalysis = Boolean(!item.targetDomain && !item.targetIp);
+            const isDomainAnalysis = Boolean(item.targetDomain || spf.rawSpf || dmarc.rawDmarc) && !isIpAnalysis && !isHeaderAnalysis;
+
             const isDmarcValid = dmarc.valid ?? Boolean(dmarc.policy && dmarc.policy !== 'none' && dmarc.policy !== 'MISSING');
             const isSpfValid = spf.valid ?? Boolean(spf.rawSpf);
 
@@ -129,41 +134,73 @@ export const EmailSecHistoryTable: React.FC<EmailSecHistoryTableProps> = ({ item
 
                   {/* Dominio / IP */}
                   <td style={{ padding: '14px 16px', fontWeight: 'bold', color: '#f8fafc' }}>
-                    ✉️ {item.targetDomain || item.targetIp || 'N/A'}
+                    ✉️ {item.targetDomain || item.targetIp || 'Forensia Encabezados (.eml)'}
                   </td>
 
                   {/* Estado DMARC */}
                   <td style={{ padding: '14px 16px', fontWeight: 'bold' }}>
-                    <span
-                      style={{
-                        backgroundColor: isDmarcValid ? 'rgba(6, 78, 59, 0.4)' : 'rgba(127, 29, 29, 0.4)',
-                        border: `1px solid ${isDmarcValid ? 'rgba(52, 211, 153, 0.4)' : 'rgba(248, 113, 113, 0.4)'}`,
-                        color: isDmarcValid ? '#34d399' : '#f87171',
-                        padding: '4px 10px',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        display: 'inline-block',
-                      }}
-                    >
-                      {dmarcPolicyText}
-                    </span>
+                    {isDomainAnalysis ? (
+                      <span
+                        style={{
+                          backgroundColor: isDmarcValid ? 'rgba(6, 78, 59, 0.4)' : 'rgba(127, 29, 29, 0.4)',
+                          border: `1px solid ${isDmarcValid ? 'rgba(52, 211, 153, 0.4)' : 'rgba(248, 113, 113, 0.4)'}`,
+                          color: isDmarcValid ? '#34d399' : '#f87171',
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          display: 'inline-block',
+                        }}
+                      >
+                        {dmarcPolicyText}
+                      </span>
+                    ) : (
+                      <span
+                        style={{
+                          backgroundColor: 'rgba(30, 41, 59, 0.4)',
+                          border: '1px solid rgba(148, 163, 184, 0.3)',
+                          color: '#94a3b8',
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          display: 'inline-block',
+                        }}
+                      >
+                        N/A
+                      </span>
+                    )}
                   </td>
 
                   {/* Estado SPF */}
                   <td style={{ padding: '14px 16px', fontWeight: 'bold' }}>
-                    <span
-                      style={{
-                        backgroundColor: isSpfValid ? 'rgba(6, 78, 59, 0.4)' : 'rgba(127, 29, 29, 0.4)',
-                        border: `1px solid ${isSpfValid ? 'rgba(52, 211, 153, 0.4)' : 'rgba(248, 113, 113, 0.4)'}`,
-                        color: isSpfValid ? '#34d399' : '#f87171',
-                        padding: '4px 10px',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        display: 'inline-block',
-                      }}
-                    >
-                      {isSpfValid ? 'VÁLIDO' : 'INVÁLIDO / AUSENTE'}
-                    </span>
+                    {isDomainAnalysis ? (
+                      <span
+                        style={{
+                          backgroundColor: isSpfValid ? 'rgba(6, 78, 59, 0.4)' : 'rgba(127, 29, 29, 0.4)',
+                          border: `1px solid ${isSpfValid ? 'rgba(52, 211, 153, 0.4)' : 'rgba(248, 113, 113, 0.4)'}`,
+                          color: isSpfValid ? '#34d399' : '#f87171',
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          display: 'inline-block',
+                        }}
+                      >
+                        {isSpfValid ? 'VÁLIDO' : 'INVÁLIDO / AUSENTE'}
+                      </span>
+                    ) : (
+                      <span
+                        style={{
+                          backgroundColor: 'rgba(30, 41, 59, 0.4)',
+                          border: '1px solid rgba(148, 163, 184, 0.3)',
+                          color: '#94a3b8',
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          display: 'inline-block',
+                        }}
+                      >
+                        N/A
+                      </span>
+                    )}
                   </td>
 
                   {/* Fecha */}
@@ -252,7 +289,7 @@ export const EmailSecHistoryTable: React.FC<EmailSecHistoryTableProps> = ({ item
                               EMAIL SECURITY & DEFENSE (OSINT)
                             </span>
                             <h3 style={{ margin: '6px 0 0 0', fontSize: '15px', color: '#f8fafc', fontWeight: 'bold' }}>
-                              ✉️ Diagnóstico de Seguridad de Correo: <span style={{ color: '#38bdf8' }}>{item.targetDomain || item.targetIp || 'N/A'}</span>
+                              ✉️ Diagnóstico de Seguridad de Correo: <span style={{ color: '#38bdf8' }}>{item.targetDomain || item.targetIp || 'Forensia .eml'}</span>
                             </h3>
                           </div>
                           <button
@@ -285,11 +322,15 @@ export const EmailSecHistoryTable: React.FC<EmailSecHistoryTableProps> = ({ item
                           </div>
                           <div>
                             <span style={{ fontSize: '11px', color: '#94a3b8', display: 'block' }}>Estado SPF:</span>
-                            <strong style={{ color: isSpfValid ? '#34d399' : '#f87171', fontSize: '12px' }}>{isSpfValid ? 'VÁLIDO' : 'INVÁLIDO / AUSENTE'}</strong>
+                            <strong style={{ color: isDomainAnalysis ? (isSpfValid ? '#34d399' : '#f87171') : '#94a3b8', fontSize: '12px' }}>
+                              {isDomainAnalysis ? (isSpfValid ? 'VÁLIDO' : 'INVÁLIDO / AUSENTE') : 'N/A'}
+                            </strong>
                           </div>
                           <div>
                             <span style={{ fontSize: '11px', color: '#94a3b8', display: 'block' }}>Política DMARC:</span>
-                            <strong style={{ color: isDmarcValid ? '#34d399' : '#f87171', fontSize: '12px' }}>{dmarcPolicyText}</strong>
+                            <strong style={{ color: isDomainAnalysis ? (isDmarcValid ? '#34d399' : '#f87171') : '#94a3b8', fontSize: '12px' }}>
+                              {isDomainAnalysis ? dmarcPolicyText : 'N/A'}
+                            </strong>
                           </div>
                         </div>
 
@@ -313,34 +354,40 @@ export const EmailSecHistoryTable: React.FC<EmailSecHistoryTableProps> = ({ item
                         )}
 
                         {/* REGISTRO SPF DETECTADO */}
-                        <div style={{ backgroundColor: '#020617', border: '1px solid rgba(51, 65, 85, 0.8)', borderRadius: '10px', padding: '12px' }}>
-                          <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#f8fafc', display: 'block', marginBottom: '6px' }}>
-                            📋 Registro SPF Detectado:
-                          </span>
-                          <div style={{ fontFamily: 'monospace', fontSize: '11px', color: spf.rawSpf ? '#38bdf8' : '#f87171', backgroundColor: 'rgba(15, 23, 42, 0.8)', padding: '8px 12px', borderRadius: '6px', border: '1px solid rgba(51, 65, 85, 0.5)', wordBreak: 'break-all' }}>
-                            {spf.rawSpf || 'Sin registro SPF configurado'}
+                        {isDomainAnalysis && (
+                          <div style={{ backgroundColor: '#020617', border: '1px solid rgba(51, 65, 85, 0.8)', borderRadius: '10px', padding: '12px' }}>
+                            <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#f8fafc', display: 'block', marginBottom: '6px' }}>
+                              📋 Registro SPF Detectado:
+                            </span>
+                            <div style={{ fontFamily: 'monospace', fontSize: '11px', color: spf.rawSpf ? '#38bdf8' : '#f87171', backgroundColor: 'rgba(15, 23, 42, 0.8)', padding: '8px 12px', borderRadius: '6px', border: '1px solid rgba(51, 65, 85, 0.5)', wordBreak: 'break-all' }}>
+                              {spf.rawSpf || 'Sin registro SPF configurado'}
+                            </div>
                           </div>
-                        </div>
+                        )}
 
                         {/* REGISTRO DMARC DETECTADO */}
-                        <div style={{ backgroundColor: '#020617', border: '1px solid rgba(51, 65, 85, 0.8)', borderRadius: '10px', padding: '12px' }}>
-                          <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#f8fafc', display: 'block', marginBottom: '6px' }}>
-                            🛡️ Registro DMARC Detectado:
-                          </span>
-                          <div style={{ fontFamily: 'monospace', fontSize: '11px', color: dmarc.rawDmarc ? '#38bdf8' : '#f87171', backgroundColor: 'rgba(15, 23, 42, 0.8)', padding: '8px 12px', borderRadius: '6px', border: '1px solid rgba(51, 65, 85, 0.5)', wordBreak: 'break-all' }}>
-                            {dmarc.rawDmarc || 'Sin registro DMARC configurado'}
+                        {isDomainAnalysis && (
+                          <div style={{ backgroundColor: '#020617', border: '1px solid rgba(51, 65, 85, 0.8)', borderRadius: '10px', padding: '12px' }}>
+                            <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#f8fafc', display: 'block', marginBottom: '6px' }}>
+                              🛡️ Registro DMARC Detectado:
+                            </span>
+                            <div style={{ fontFamily: 'monospace', fontSize: '11px', color: dmarc.rawDmarc ? '#38bdf8' : '#f87171', backgroundColor: 'rgba(15, 23, 42, 0.8)', padding: '8px 12px', borderRadius: '6px', border: '1px solid rgba(51, 65, 85, 0.5)', wordBreak: 'break-all' }}>
+                              {dmarc.rawDmarc || 'Sin registro DMARC configurado'}
+                            </div>
                           </div>
-                        </div>
+                        )}
 
                         {/* REPUTACIÓN IP RBL */}
-                        <div style={{ backgroundColor: '#020617', border: '1px solid rgba(51, 65, 85, 0.8)', borderRadius: '10px', padding: '12px' }}>
-                          <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#f8fafc', display: 'block', marginBottom: '6px' }}>
-                            🔴 Reputación IP RBL ({rbl.ipConsulted || item.targetIp || 'N/A'}):
-                          </span>
-                          <div style={{ fontSize: '12px', fontWeight: 'bold', color: rbl.isClean !== false ? '#34d399' : '#f87171' }}>
-                            {rbl.isClean !== false ? '✅ IP limpia en proveedores RBL' : `⚠️ Listada en ${rbl.blacklistsCount || 1} listas negras`}
+                        {isIpAnalysis && (
+                          <div style={{ backgroundColor: '#020617', border: '1px solid rgba(51, 65, 85, 0.8)', borderRadius: '10px', padding: '12px' }}>
+                            <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#f8fafc', display: 'block', marginBottom: '6px' }}>
+                              🔴 Reputación IP RBL ({rbl.ipConsulted || item.targetIp || 'N/A'}):
+                            </span>
+                            <div style={{ fontSize: '12px', fontWeight: 'bold', color: rbl.isClean !== false ? '#34d399' : '#f87171' }}>
+                              {rbl.isClean !== false ? '✅ IP limpia en proveedores RBL' : `⚠️ Listada en ${rbl.blacklistsCount || 1} listas negras`}
+                            </div>
                           </div>
-                        </div>
+                        )}
 
                         {/* RECOMENDACIONES DEFENSIVAS */}
                         {aiSummary?.recommendations && aiSummary.recommendations.length > 0 && (
