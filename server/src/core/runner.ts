@@ -29,18 +29,31 @@ export async function executeInputAuditRunner(
   promptId: string = '',
   headless: boolean = true
 ): Promise<AuditResult[]> {
-  const browser = await chromium.launch({ headless });
-  const page = await (await browser.newContext()).newPage();
+  const browser = await chromium.launch({
+    headless,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--no-first-run',
+      '--no-zygote',
+      '--single-process',
+    ],
+  });
+
+  const context = await browser.newContext();
+  const page = await context.newPage();
   const results: AuditResult[] = [];
 
   try {
     await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
     for (const input of targetInputs) {
-      // Transmite el promptId recuperado a la evaluación del input
       results.push(await evaluateSingleInput(page, input, promptId));
     }
   } finally {
-    await browser.close();
+    await context.close().catch(() => {});
+    await browser.close().catch(() => {});
   }
 
   return results;
