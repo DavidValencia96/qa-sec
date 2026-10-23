@@ -155,13 +155,13 @@ export const AISuiteGenerator: React.FC<AISuiteGeneratorProps> = ({
   return (
     <div
       style={{
-        background: 'rgba(15, 23, 42, 0.35)',
-        backdropFilter: 'blur(10px)',
-        padding: '24px',
-        borderRadius: '10px',
+        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+        backdropFilter: 'blur(12px)',
+        padding: '22px 24px',
+        borderRadius: '14px',
         border: '1px solid rgba(56, 189, 248, 0.25)',
         marginTop: '20px',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.4)',
       }}
     >
       <div
@@ -177,21 +177,22 @@ export const AISuiteGenerator: React.FC<AISuiteGeneratorProps> = ({
         <h3
           style={{
             margin: 0,
-            color: '#38bdf8',
-            fontSize: '1.15rem',
+            color: '#f8fafc',
+            fontSize: '1.1rem',
+            fontWeight: 'bold',
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
           }}
         >
-          🤖 Diseñador de Pruebas con Gemini AI
+          <span style={{ color: '#38bdf8' }}>🤖</span> Diseñador de Pruebas con Gemini AI
         </h3>
         <span
           style={{
-            background: 'rgba(56, 189, 248, 0.15)',
+            backgroundColor: 'rgba(14, 165, 233, 0.15)',
             color: '#38bdf8',
-            padding: '3px 10px',
-            borderRadius: '12px',
+            padding: '3px 8px',
+            borderRadius: '6px',
             fontSize: '0.75rem',
             fontWeight: 'bold',
             border: '1px solid rgba(56, 189, 248, 0.3)',
@@ -202,25 +203,25 @@ export const AISuiteGenerator: React.FC<AISuiteGeneratorProps> = ({
       </div>
 
       <div style={{ marginBottom: '12px' }}>
-        <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '6px', color: '#a0aec0' }}>
+        <label style={{ display: 'block', fontSize: '0.82rem', marginBottom: '6px', color: '#94a3b8' }}>
           Plantillas de Prompts Recomendados:
         </label>
 
         {fetchingPresets ? (
-          <p style={{ color: '#60a5fa', fontSize: '0.85rem' }}>🔄 Cargando plantillas desde la base de datos...</p>
+          <p style={{ color: '#38bdf8', fontSize: '0.82rem' }}>🔄 Cargando plantillas desde la base de datos...</p>
         ) : errorPresets ? (
           <div style={{ marginBottom: '8px' }}>
-            <p style={{ color: '#f87171', fontSize: '0.85rem', margin: '0 0 6px 0' }}>⚠️ {errorPresets}</p>
+            <p style={{ color: '#f87171', fontSize: '0.82rem', margin: '0 0 6px 0' }}>⚠️ {errorPresets}</p>
             <button
               type="button"
               onClick={handleRetryFetch}
               style={{
-                background: '#374151',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '4px',
+                backgroundColor: 'rgba(51, 65, 85, 0.6)',
+                color: '#f8fafc',
+                border: '1px solid rgba(148, 163, 184, 0.4)',
+                borderRadius: '6px',
                 padding: '4px 10px',
-                fontSize: '0.8rem',
+                fontSize: '0.78rem',
                 cursor: 'pointer',
               }}
             >
@@ -234,12 +235,12 @@ export const AISuiteGenerator: React.FC<AISuiteGeneratorProps> = ({
             disabled={loading || isScanRunning}
             style={{
               width: '100%',
-              padding: '12px 16px',
-              borderRadius: '6px',
-              background: 'rgba(15, 23, 42, 0.7)',
-              border: '1px solid rgba(56, 189, 248, 0.3)',
-              color: '#ffffff',
-              fontSize: '0.9rem',
+              padding: '10px 14px',
+              borderRadius: '8px',
+              backgroundColor: 'rgba(2, 6, 23, 0.9)',
+              border: '1px solid rgba(30, 41, 59, 0.9)',
+              color: '#f8fafc',
+              fontSize: '0.85rem',
               outline: 'none',
               cursor: loading || isScanRunning ? 'not-allowed' : 'pointer',
               opacity: loading || isScanRunning ? 0.5 : 1,
@@ -265,69 +266,72 @@ export const AISuiteGenerator: React.FC<AISuiteGeneratorProps> = ({
         rows={4}
         style={{
           width: '100%',
-          padding: '12px',
-          backgroundColor: 'rgba(9, 9, 11, 0.6)',
-          color: '#ffffff',
-          border: '1px solid rgba(56, 189, 248, 0.25)',
-          borderRadius: '6px',
-          fontSize: '0.9rem',
+          padding: '10px 14px',
+          backgroundColor: 'rgba(2, 6, 23, 0.9)',
+          color: '#e2e8f0',
+          border: '1px solid rgba(30, 41, 59, 0.9)',
+          borderRadius: '8px',
+          fontSize: '0.85rem',
           lineHeight: '1.5',
           resize: 'vertical',
           opacity: loading || isScanRunning ? 0.5 : 1,
           outline: 'none',
           boxSizing: 'border-box',
           fontFamily: 'monospace',
+          marginBottom: '16px',
         }}
       />
 
-      <button
-        type="button"
-        onClick={handleGenerateSuite}
-        disabled={isDisabled}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        style={{
-          marginTop: '16px',
-          width: '100%',
-          padding: '12px 24px',
-          fontSize: '1rem',
-          fontWeight: '700',
-          letterSpacing: '0.5px',
-          color: '#ffffff',
-          background: isDisabled
-            ? 'rgba(45, 55, 72, 0.6)'
-            : isHovered
-            ? 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)'
-            : 'linear-gradient(135deg, #0369a1 0%, #1d4ed8 100%)',
-          border: isDisabled ? '1px solid #4a5568' : '1px solid #38bdf8',
-          borderRadius: '8px',
-          cursor: isDisabled ? 'not-allowed' : 'pointer',
-          boxShadow: isDisabled
-            ? 'none'
-            : isHovered
-            ? '0 0 18px rgba(56, 189, 248, 0.55)'
-            : '0 0 10px rgba(56, 189, 248, 0.3)',
-          transform: !isDisabled && isHovered ? 'translateY(-1px)' : 'translateY(0)',
-          transition: 'all 0.25s ease-in-out',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px',
-          opacity: isDisabled ? 0.5 : 1,
-        }}
-      >
-        {loading ? (
-          <>
-            <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⏳</span>
-            <span>Generando Suite con Gemini AI...</span>
-          </>
-        ) : (
-          <>
-            <span>✨</span>
-            <span>Crear Suite con IA</span>
-          </>
-        )}
-      </button>
+      {/* CONTENEDOR CENTRADO PARA EL BOTÓN CREAR SUITE */}
+      <div style={{ display: 'flex', justifyContent: 'center' }}>
+        <button
+          type="button"
+          onClick={handleGenerateSuite}
+          disabled={isDisabled}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          style={{
+            width: '100%',
+            maxWidth: '480px',
+            padding: '10px 18px',
+            fontSize: '0.9rem',
+            fontWeight: 'bold',
+            letterSpacing: '0.5px',
+            color: '#ffffff',
+            backgroundColor: isDisabled
+              ? 'rgba(30, 41, 59, 0.5)'
+              : isHovered
+              ? '#0284c7'
+              : 'rgba(2, 132, 199, 0.85)',
+            border: isDisabled ? '1px solid rgba(51, 65, 85, 0.5)' : '1px solid rgba(56, 189, 248, 0.6)',
+            borderRadius: '8px',
+            cursor: isDisabled ? 'not-allowed' : 'pointer',
+            boxShadow: isDisabled
+              ? 'none'
+              : isHovered
+              ? '0 0 14px rgba(2, 132, 199, 0.45)'
+              : '0 0 8px rgba(2, 132, 199, 0.25)',
+            transition: 'all 0.2s ease',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            opacity: isDisabled ? 0.5 : 1,
+          }}
+        >
+          {loading ? (
+            <>
+              <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⏳</span>
+              <span>Generando Suite con Gemini AI...</span>
+            </>
+          ) : (
+            <>
+              <span>✨</span>
+              <span>Crear Suite con IA</span>
+            </>
+          )}
+        </button>
+      </div>
     </div>
   );
 };

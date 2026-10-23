@@ -52,7 +52,7 @@ export class ConsolidatedReportFormatterService {
           `).join('');
 
       easmHtmlSection = `
-        <h2>🕸️ Módulo 7: External Attack Surface Management (EASM & OSINT)</h2>
+        <h2 style="color: #38bdf8; font-size: 1.15rem; margin-top: 28px;">🕸️ Módulo 7: External Attack Surface Management (EASM & OSINT)</h2>
         <div class="card" style="margin-bottom: 20px;">
           <p><strong>Dominio Objetivo:</strong> ${easm.targetDomain}</p>
           <p><strong>Subdominios Públicos Descubiertos:</strong> <strong style="color: #38bdf8;">${subdomains.length}</strong></p>
@@ -93,7 +93,7 @@ export class ConsolidatedReportFormatterService {
       const corsFindings = red.corsFindings || [];
 
       redTeamHtmlSection = `
-        <h2>⚔️ Módulo 8: Red Team & Explotación Activa</h2>
+        <h2 style="color: #38bdf8; font-size: 1.15rem; margin-top: 28px;">⚔️ Módulo 8: Red Team & Explotación Activa</h2>
         <div class="card" style="margin-bottom: 20px;">
           <p><strong>URL Endpoint Objetivo:</strong> <code>${red.targetUrl}</code></p>
           <p><strong>Hallazgos JWT:</strong> <strong style="color: ${jwtFindings.length > 0 ? '#ef4444' : '#22c55e'};">${jwtFindings.length}</strong></p>
@@ -109,7 +109,7 @@ export class ConsolidatedReportFormatterService {
     const emailSecData = (data as any).emailSecData;
     if ((data.includedModules as any)?.emailSecAudit && emailSecData) {
       emailSecHtmlSection = `
-        <h2>✉️ Módulo 9: Email Security & Anti-Phishing Defense</h2>
+        <h2 style="color: #38bdf8; font-size: 1.15rem; margin-top: 28px;">✉️ Módulo 9: Email Security & Anti-Phishing Defense</h2>
         <div class="card" style="margin-bottom: 20px;">
           <p><strong>Dominio Analizado:</strong> ${emailSecData.domain || 'N/A'}</p>
           <p><strong>Estado Registro SPF:</strong> <strong style="color: ${emailSecData.spf?.valid ? '#22c55e' : '#ef4444'};">${emailSecData.spf?.valid ? 'VÁLIDO' : 'INVÁLIDO / AUSENTE'}</strong></p>
@@ -123,100 +123,200 @@ export class ConsolidatedReportFormatterService {
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Informe Consolidado de Ciberseguridad - ${data.projectName}</title>
   <style>
-    @media print {
-      body { background-color: #ffffff !important; color: #000000 !important; }
-      .no-print { display: none !important; }
-      .page-break { page-break-before: always; }
+    :root {
+      --bg-color: #0b0f19;
+      --card-bg: #111827;
+      --border-color: #1f2937;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent-blue: #38bdf8;
     }
+
     body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background-color: #0f172a;
-      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
       margin: 0;
-      padding: 40px;
+      padding: 40px 20px;
       line-height: 1.6;
     }
+
     .container {
-      max-width: 1000px;
+      max-width: 950px;
       margin: 0 auto;
-      background-color: #1e293b;
-      padding: 40px;
-      border-radius: 12px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
     }
+
     .header {
-      border-bottom: 2px solid #334155;
+      border-bottom: 2px solid var(--border-color);
       padding-bottom: 20px;
       margin-bottom: 30px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
+
     .title {
       font-size: 24px;
-      font-weight: bold;
-      color: #38bdf8;
+      font-weight: 800;
+      color: var(--accent-blue);
       margin: 0;
     }
+
     .subtitle {
-      color: #94a3b8;
+      color: var(--text-muted);
       font-size: 14px;
-      margin-top: 4px;
+      margin-top: 6px;
     }
+
     .badge {
       padding: 6px 16px;
       border-radius: 20px;
       font-weight: bold;
-      font-size: 14px;
+      font-size: 13px;
       color: #ffffff;
       display: inline-block;
+      text-transform: uppercase;
     }
+
     .grid-summary {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
       gap: 20px;
       margin-bottom: 30px;
     }
+
     .card {
-      background-color: #0f172a;
+      background-color: var(--card-bg);
       padding: 20px;
       border-radius: 8px;
-      border: 1px solid #334155;
+      border: 1px solid var(--border-color);
     }
+
     .card-title {
       font-size: 16px;
       font-weight: bold;
-      color: #38bdf8;
+      color: var(--accent-blue);
       margin-top: 0;
       margin-bottom: 12px;
     }
+
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 12px;
       margin-bottom: 24px;
     }
+
     th, td {
       padding: 10px 14px;
       text-align: left;
-      border-bottom: 1px solid #334155;
+      border-bottom: 1px solid var(--border-color);
       font-size: 14px;
     }
+
     th {
-      background-color: #0f172a;
-      color: #38bdf8;
+      background-color: #030712;
+      color: var(--accent-blue);
     }
+
     .btn-print {
-      background-color: #0284c7;
+      background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
       color: #ffffff;
-      border: none;
+      border: 1px solid var(--accent-blue);
       padding: 10px 20px;
       border-radius: 6px;
       font-weight: bold;
       cursor: pointer;
       font-size: 14px;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+    }
+
+    code {
+      background: #030712;
+      color: #a7f3d0;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 13px;
+      border: 1px solid var(--border-color);
+    }
+
+    /* ESTILOS DE IMPRESIÓN Y PDF EN TAMAÑO CARTA SIN BARRA FILE:// */
+    @media print {
+      @page {
+        size: letter;
+        margin: 0;
+      }
+
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      body {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+
+      .container {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 15mm !important;
+        box-sizing: border-box;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      .card {
+        background-color: #f8fafc !important;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        page-break-inside: avoid !important;
+      }
+
+      h1, h2, h3, h4, .title, .card-title {
+        color: #0284c7 !important;
+      }
+
+      p, li, span, div, strong, td {
+        color: #0f172a !important;
+      }
+
+      /* FIX ENCABEZADOS DE TABLAS Y REGISTROS DNS / SUBDOMINIOS EN IMPRESIÓN */
+      table {
+        border-collapse: collapse !important;
+        width: 100% !important;
+      }
+
+      th {
+        background-color: #f1f5f9 !important;
+        color: #0284c7 !important;
+        border-bottom: 2px solid #cbd5e1 !important;
+        font-weight: bold !important;
+      }
+
+      td {
+        border-bottom: 1px solid #e2e8f0 !important;
+        color: #0f172a !important;
+      }
+
+      code, pre {
+        background: #f1f5f9 !important;
+        color: #0284c7 !important;
+        border: 1px solid #cbd5e1 !important;
+        font-weight: bold !important;
+      }
+
+      .subtitle {
+        color: #475569 !important;
+      }
     }
   </style>
 </head>
@@ -239,23 +339,23 @@ export class ConsolidatedReportFormatterService {
         <p>Nivel de Riesgo Consolidado: <span class="badge" style="background-color: ${riskBadgeColor};">${aiSummary.overallRiskLevel}</span></p>
         <p>Score Global de Salud: <strong style="font-size: 20px; color: #38bdf8;">${aiSummary.globalHealthScore} / 100</strong></p>
       </div>
-      <div class="card">
+      <div class="card" style="border-left: 4px solid #38bdf8;">
         <h3 class="card-title">🤖 Diagnóstico Estratégico (Gemini AI)</h3>
-        <p style="font-size: 13px; color: #cbd5e1; margin: 0;">${aiSummary.executiveOverview}</p>
+        <p style="font-size: 13px; color: var(--text-main); margin: 0;">${aiSummary.executiveOverview}</p>
       </div>
     </div>
 
     <!-- RECOMENDACIONES PRIORITARIAS -->
     <div class="card" style="margin-bottom: 30px;">
       <h3 class="card-title">💡 Acciones Remediales Prioritarias</h3>
-      <ul style="margin: 0; padding-left: 20px; color: #f1f5f9; font-size: 14px;">
+      <ul style="margin: 0; padding-left: 20px; color: var(--text-main); font-size: 14px;">
         ${aiSummary.priorityRemediations.map((rec) => `<li style="margin-bottom: 6px;">${rec}</li>`).join('')}
       </ul>
     </div>
 
     <!-- MÓDULO 1: WEB SCAN -->
     ${data.includedModules.webScan && data.webFindings ? `
-      <h2>🌐 Módulo 1: Auditoría Web & Inyección de Inputs</h2>
+      <h2 style="color: #38bdf8; font-size: 1.15rem; margin-top: 28px;">🌐 Módulo 1: Auditoría Web & Inyección de Inputs</h2>
       <table>
         <thead>
           <tr><th>Hallazgo</th><th>Severidad</th><th>Descripción</th><th>Recomendación</th></tr>
@@ -275,12 +375,12 @@ export class ConsolidatedReportFormatterService {
 
     <!-- MÓDULO 2: NETWORK -->
     ${data.includedModules.networkScan && data.networkData ? `
-      <h2>🛡️ Módulo 2: Configuración & Superficie de Red</h2>
+      <h2 style="color: #38bdf8; font-size: 1.15rem; margin-top: 28px;">🛡️ Módulo 2: Configuración & Superficie de Red</h2>
       <div class="card" style="margin-bottom: 20px;">
         <p><strong>Host Objetivo:</strong> ${data.networkData.targetHost}</p>
         <p><strong>Evaluación de Red:</strong> ${data.networkData.riskAssessment || 'Auditoría completada.'}</p>
-        <h4>Puertos Abiertos Detectados:</h4>
-        <ul>
+        <h4 style="color: #38bdf8; margin-top: 12px; margin-bottom: 6px;">Puertos Abiertos Detectados:</h4>
+        <ul style="margin: 0; padding-left: 20px;">
           ${data.networkData.openPorts.length > 0
             ? data.networkData.openPorts.map((p) => `<li>Puerto ${p.port} (${p.service})</li>`).join('')
             : '<li>Ningún puerto expuesto públicamente.</li>'}
@@ -290,7 +390,7 @@ export class ConsolidatedReportFormatterService {
 
     <!-- MÓDULO 3: SAST -->
     ${data.includedModules.sastAudit && data.sastData ? `
-      <h2>🔍 Módulo 3: Auditoría Estática de Código (SAST)</h2>
+      <h2 style="color: #38bdf8; font-size: 1.15rem; margin-top: 28px;">🔍 Módulo 3: Auditoría Estática de Código (SAST)</h2>
       <div class="card" style="margin-bottom: 20px;">
         <p><strong>Archivo Analizado:</strong> ${data.sastData.fileName}</p>
         <p><strong>Health Score de Código:</strong> <strong style="color: #38bdf8;">${data.sastData.healthScore} / 100</strong></p>
@@ -300,7 +400,7 @@ export class ConsolidatedReportFormatterService {
 
     <!-- MÓDULO 4: LOAD TEST -->
     ${data.includedModules.loadTest && data.loadTestData ? `
-      <h2>💥 Módulo 4: Resiliencia & Pruebas de Carga DoS</h2>
+      <h2 style="color: #38bdf8; font-size: 1.15rem; margin-top: 28px;">💥 Módulo 4: Resiliencia & Pruebas de Carga DoS</h2>
       <div class="card" style="margin-bottom: 20px;">
         <p><strong>Endpoint Evaluado:</strong> ${data.loadTestData.targetUrl}</p>
         <p><strong>Peticiones por Segundo (RPS):</strong> <strong style="color: #a855f7;">${data.loadTestData.rps} req/s</strong></p>
@@ -311,7 +411,7 @@ export class ConsolidatedReportFormatterService {
 
     <!-- MÓDULO 5: DAST -->
     ${data.includedModules.dastAudit && data.dastData ? `
-      <h2>🛡️ Módulo 5: DAST & OpenAPI Dynamic Fuzzing</h2>
+      <h2 style="color: #38bdf8; font-size: 1.15rem; margin-top: 28px;">🛡️ Módulo 5: DAST & OpenAPI Dynamic Fuzzing</h2>
       <div class="card" style="margin-bottom: 20px;">
         <p><strong>URL Base Objetivo:</strong> ${data.dastData.targetBaseUrl}</p>
         <p><strong>Endpoints Auditados:</strong> ${data.dastData.totalTestedEndpoints}</p>
@@ -321,7 +421,7 @@ export class ConsolidatedReportFormatterService {
 
     <!-- MÓDULO 6: SCA -->
     ${data.includedModules.scaAudit && data.scaData ? `
-      <h2>🔐 Módulo 6: SCA & Supply Chain Security</h2>
+      <h2 style="color: #38bdf8; font-size: 1.15rem; margin-top: 28px;">🔐 Módulo 6: SCA & Supply Chain Security</h2>
       <div class="card" style="margin-bottom: 20px;">
         <p><strong>Manifest / Configuración:</strong> ${data.scaData.manifestType}</p>
         <p><strong>Dependencias Auditadas:</strong> ${data.scaData.totalDependenciesAudited}</p>

@@ -61,7 +61,7 @@ export const ReportModals: React.FC<ReportModalsProps> = ({
               maxHeight: '85vh',
               display: 'flex',
               flexDirection: 'column',
-              padding: '28px',
+              padding: '24px 28px',
               borderRadius: '16px',
               border: '1px solid rgba(56, 189, 248, 0.4)',
               boxShadow: '0 0 40px rgba(56, 189, 248, 0.25)',
@@ -70,65 +70,90 @@ export const ReportModals: React.FC<ReportModalsProps> = ({
               boxSizing: 'border-box',
             }}
           >
-            <button
-              type="button"
-              onClick={onCloseEvidenceModal}
+            {/* CABECERA DEL MODAL CON SEPARACIÓN ESTRICTA DEL BOTÓN DE CIERRE */}
+            <div
               style={{
-                position: 'absolute',
-                top: '20px',
-                right: '20px',
-                background: 'rgba(239, 68, 68, 0.2)',
-                border: '1px solid #ef4444',
-                color: '#ef4444',
-                borderRadius: '8px',
-                width: '32px',
-                height: '32px',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                fontSize: '1rem',
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              ✕
-            </button>
-
-            <h3
-              style={{
-                marginTop: 0,
-                color: '#38bdf8',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
                 borderBottom: '1px solid rgba(56, 189, 248, 0.25)',
                 paddingBottom: '14px',
-                fontSize: '1.25rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
+                gap: '16px',
               }}
             >
-              🔎 Evidencia Técnica Completa
-              <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 'normal' }}>
-                • {selectedEvidenceModal.title}
-              </span>
-            </h3>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h3
+                  style={{
+                    marginTop: 0,
+                    marginBottom: '4px',
+                    color: '#38bdf8',
+                    fontSize: '1.2rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  <span>🔎</span> Evidencia Técnica Completa
+                </h3>
+                <span
+                  style={{
+                    fontSize: '0.82rem',
+                    color: '#94a3b8',
+                    fontFamily: 'monospace',
+                    wordBreak: 'break-all',
+                    display: 'inline-block',
+                    backgroundColor: 'rgba(2, 6, 23, 0.6)',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    border: '1px solid rgba(30, 41, 59, 0.8)',
+                  }}
+                >
+                  {selectedEvidenceModal.title}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={onCloseEvidenceModal}
+                style={{
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                  color: '#f87171',
+                  borderRadius: '8px',
+                  width: '32px',
+                  height: '32px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  fontSize: '0.9rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                ✕
+              </button>
+            </div>
 
             <div style={{ flex: 1, overflow: 'hidden', marginTop: '14px' }}>
               <pre
                 style={{
                   background: '#09090b',
                   color: '#38bdf8',
-                  padding: '18px',
+                  padding: '16px',
                   borderRadius: '10px',
                   fontSize: '0.82rem',
                   lineHeight: '1.6',
                   border: '1px solid rgba(56, 189, 248, 0.2)',
                   whiteSpace: 'pre-wrap',
                   wordBreak: 'break-all',
-                  maxHeight: '55vh',
+                  maxHeight: '50vh',
                   overflowY: 'auto',
                   fontFamily: 'Consolas, Monaco, "Andale Mono", monospace',
                   boxShadow: 'inset 0 0 15px rgba(0,0,0,0.8)',
+                  margin: 0,
                 }}
               >
                 {selectedEvidenceModal.evidenceText}
@@ -140,14 +165,14 @@ export const ReportModals: React.FC<ReportModalsProps> = ({
                 type="button"
                 onClick={onCloseEvidenceModal}
                 style={{
-                  padding: '10px 22px',
+                  padding: '8px 20px',
                   background: 'rgba(30, 41, 59, 0.8)',
                   color: '#fff',
                   border: '1px solid rgba(255, 255, 255, 0.15)',
                   borderRadius: '8px',
                   cursor: 'pointer',
                   fontWeight: 'bold',
-                  fontSize: '0.88rem',
+                  fontSize: '0.85rem',
                   transition: 'all 0.2s ease',
                 }}
               >
@@ -202,15 +227,15 @@ export const ReportModals: React.FC<ReportModalsProps> = ({
                 position: 'absolute',
                 top: '20px',
                 right: '20px',
-                background: 'rgba(239, 68, 68, 0.2)',
-                border: '1px solid #ef4444',
-                color: '#ef4444',
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(239, 68, 68, 0.4)',
+                color: '#f87171',
                 borderRadius: '8px',
                 width: '32px',
                 height: '32px',
                 cursor: 'pointer',
                 fontWeight: 'bold',
-                fontSize: '1rem',
+                fontSize: '0.9rem',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -220,7 +245,7 @@ export const ReportModals: React.FC<ReportModalsProps> = ({
               ✕
             </button>
 
-            <div style={{ marginBottom: '20px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '14px' }}>
+            <div style={{ marginBottom: '20px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '14px', paddingRight: '40px' }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(56, 189, 248, 0.1)', padding: '4px 10px', borderRadius: '12px', border: '1px solid rgba(56, 189, 248, 0.3)', marginBottom: '8px' }}>
                 <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: 'bold' }}>AUDIT DIAGNOSTIC PANEL</span>
               </div>
@@ -338,15 +363,15 @@ export const ReportModals: React.FC<ReportModalsProps> = ({
                 type="button"
                 onClick={onCloseFindingModal}
                 style={{
-                  padding: '10px 24px',
-                  background: 'linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%)',
+                  padding: '8px 20px',
+                  background: 'rgba(2, 132, 199, 0.85)',
                   color: '#ffffff',
                   border: '1px solid #38bdf8',
                   borderRadius: '8px',
                   fontWeight: 'bold',
-                  fontSize: '0.9rem',
+                  fontSize: '0.85rem',
                   cursor: 'pointer',
-                  boxShadow: '0 0 15px rgba(56, 189, 248, 0.3)',
+                  boxShadow: '0 0 12px rgba(56, 189, 248, 0.3)',
                   transition: 'all 0.2s ease',
                 }}
               >

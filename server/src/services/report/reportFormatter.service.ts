@@ -6,7 +6,7 @@ export class ReportFormatterService {
       .map(
         (f, idx) => `
 ### ${idx + 1}. [${f.severity}] ${f.title}
-* **Descripción:** ${f.description}
+- **Descripción:** ${f.description}
 ${f.recommendation ? `* **Recomendación:** ${f.recommendation}` : ''}
 ${f.evidence ? `* **Evidencia:** \`${f.evidence}\`` : ''}
 `
@@ -16,10 +16,10 @@ ${f.evidence ? `* **Evidencia:** \`${f.evidence}\`` : ''}
     return `
 # 🛡️ Reporte Técnico de Seguridad — QA-Sec Suite
 
-* **Título:** ${data.title}
+- **Título:** ${data.title}
 ${data.targetUrl ? `* **Objetivo de Auditoría:** ${data.targetUrl}` : ''}
-* **Puntaje de Salud:** ${data.score !== undefined ? `${data.score}/100` : 'N/A'}
-* **Fecha de Generación:** ${new Date().toLocaleString()}
+- **Puntaje de Salud:** ${data.score !== undefined ? `${data.score}/100` : 'N/A'}
+- **Fecha de Generación:** ${new Date().toLocaleString()}
 
 ---
 
@@ -60,6 +60,13 @@ ${data.remediatedCode}
     hr { border-color: #27272a; margin: 24px 0; }
     pre { background: #18181b; padding: 16px; border-radius: 6px; color: #86efac; overflow-x: auto; }
     code { background: #27272a; padding: 2px 6px; border-radius: 4px; color: #f87171; }
+
+    @media print {
+      body { background: #ffffff !important; color: #0f172a !important; padding: 0 !important; }
+      h1, h2, h3 { color: #0284c7 !important; }
+      pre { background: #f1f5f9 !important; color: #0284c7 !important; border: 1px solid #cbd5e1 !important; }
+      code { background: #f1f5f9 !important; color: #dc2626 !important; border: 1px solid #cbd5e1 !important; }
+    }
   </style>
 </head>
 <body>

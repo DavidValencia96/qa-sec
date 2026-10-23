@@ -29,15 +29,15 @@ export const ReportViewer: React.FC<Props> = ({ report, currentTargetUrl }) => {
   return (
     <div
       style={{
-        marginTop: '32px',
-        background: 'rgba(15, 23, 42, 0.45)',
-        backdropFilter: 'blur(12px)',
-        borderRadius: '12px',
-        border: '1px solid rgba(56, 189, 248, 0.25)',
-        padding: '28px',
-        maxWidth: '1200px',
-        margin: '32px auto 0 auto',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+        marginTop: '24px',
+        backgroundColor: 'rgba(15, 23, 42, 0.75)',
+        backdropFilter: 'blur(16px)',
+        borderRadius: '16px',
+        border: '1px solid rgba(56, 189, 248, 0.3)',
+        padding: '24px',
+        width: '100%',
+        boxSizing: 'border-box',
+        boxShadow: '0 20px 30px rgba(0, 0, 0, 0.5)',
       }}
     >
       {/* CABECERA CON CONTROLES Y ACCIONES DE EXPORTACIÓN */}
@@ -48,31 +48,32 @@ export const ReportViewer: React.FC<Props> = ({ report, currentTargetUrl }) => {
           alignItems: 'center',
           flexWrap: 'wrap',
           gap: '16px',
-          marginBottom: '24px',
-          paddingBottom: '20px',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          marginBottom: '20px',
+          paddingBottom: '16px',
+          borderBottom: '1px solid rgba(30, 41, 59, 0.8)',
         }}
       >
         <div>
           <h2
             style={{
               margin: '0 0 6px 0',
-              fontSize: '1.35rem',
+              fontSize: '1.25rem',
               color: '#ffffff',
+              fontWeight: 'bold',
               display: 'flex',
               alignItems: 'center',
-              gap: '10px',
+              gap: '8px',
             }}
           >
-            📊 Reporte Transaccional de Análisis
+            <span style={{ color: '#38bdf8' }}>📊</span> Reporte Transaccional de Análisis
           </h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <span
               style={{
                 color: '#38bdf8',
-                fontSize: '0.82rem',
+                fontSize: '0.8rem',
                 fontFamily: 'monospace',
-                background: 'rgba(2, 132, 199, 0.15)',
+                backgroundColor: 'rgba(2, 132, 199, 0.15)',
                 padding: '2px 8px',
                 borderRadius: '4px',
                 border: '1px solid rgba(56, 189, 248, 0.3)',
@@ -80,7 +81,7 @@ export const ReportViewer: React.FC<Props> = ({ report, currentTargetUrl }) => {
             >
               ID: {report.runId}
             </span>
-            <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+            <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>
               Total de verificaciones realizadas: <strong style={{ color: '#f8fafc' }}>{report.findingsCount}</strong>
             </span>
           </div>
@@ -102,10 +103,11 @@ export const ReportViewer: React.FC<Props> = ({ report, currentTargetUrl }) => {
         style={{
           borderBottom: '1px solid rgba(56, 189, 248, 0.2)',
           paddingBottom: '10px',
-          marginTop: '28px',
+          marginTop: '24px',
           marginBottom: '20px',
           color: '#f8fafc',
-          fontSize: '1.15rem',
+          fontSize: '1.1rem',
+          fontWeight: 'bold',
           display: 'flex',
           alignItems: 'center',
           gap: '8px',

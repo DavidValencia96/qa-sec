@@ -369,7 +369,7 @@ export function App() {
               cursor: 'pointer',
               userSelect: 'none',
               transition: 'opacity 0.15s ease',
-              flex: 1, // Empuja el contenido restante hacia la derecha
+              flex: 1,
             }}
             title="Ir a Inicio"
             onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.85')}
@@ -461,26 +461,44 @@ export function App() {
             )}
 
             {currentModuleState.suiteId && (
-              <div style={{ marginTop: '20px' }}>
+              <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <button
                   type="button"
                   onClick={handleRunScanner}
                   disabled={isExecutionDisabled}
                   style={{
                     width: '100%',
-                    background: isExecutionDisabled
-                      ? 'rgba(51, 65, 85, 0.6)'
-                      : 'linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%)',
+                    maxWidth: '480px',
+                    backgroundColor: isExecutionDisabled
+                      ? 'rgba(30, 41, 59, 0.5)'
+                      : 'rgba(2, 132, 199, 0.85)',
                     color: '#ffffff',
-                    padding: '14px 24px',
-                    border: isExecutionDisabled ? '1px solid #475569' : '1px solid #38bdf8',
-                    borderRadius: '8px',
-                    fontSize: '1rem',
+                    padding: '12px 24px',
+                    border: isExecutionDisabled ? '1px solid rgba(51, 65, 85, 0.5)' : '1px solid #38bdf8',
+                    borderRadius: '10px',
+                    fontSize: '0.95rem',
                     fontWeight: 'bold',
+                    letterSpacing: '0.5px',
                     cursor: isExecutionDisabled ? 'not-allowed' : 'pointer',
-                    boxShadow: isExecutionDisabled ? 'none' : '0 0 20px rgba(56, 189, 248, 0.35)',
+                    boxShadow: isExecutionDisabled ? 'none' : '0 0 16px rgba(56, 189, 248, 0.35)',
                     transition: 'all 0.2s ease',
                     opacity: isExecutionDisabled ? 0.6 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isExecutionDisabled) {
+                      e.currentTarget.style.backgroundColor = '#0284c7';
+                      e.currentTarget.style.boxShadow = '0 0 22px rgba(56, 189, 248, 0.55)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isExecutionDisabled) {
+                      e.currentTarget.style.backgroundColor = 'rgba(2, 132, 199, 0.85)';
+                      e.currentTarget.style.boxShadow = '0 0 16px rgba(56, 189, 248, 0.35)';
+                    }
                   }}
                 >
                   {currentModuleState.generatingSuite
@@ -491,7 +509,9 @@ export function App() {
                 </button>
 
                 {currentModuleState.running && (
-                  <ScanProgressBar progress={currentModuleState.progress} statusText={currentModuleState.statusText} />
+                  <div style={{ width: '100%', marginTop: '12px' }}>
+                    <ScanProgressBar progress={currentModuleState.progress} statusText={currentModuleState.statusText} />
+                  </div>
                 )}
               </div>
             )}
@@ -533,26 +553,44 @@ export function App() {
             )}
 
             {currentModuleState.suiteId && (
-              <div style={{ marginTop: '20px' }}>
+              <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <button
                   type="button"
                   onClick={handleRunScannerWithInputs}
                   disabled={isExecutionDisabled}
                   style={{
                     width: '100%',
-                    background: isExecutionDisabled
-                      ? 'rgba(51, 65, 85, 0.6)'
-                      : 'linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%)',
+                    maxWidth: '480px',
+                    backgroundColor: isExecutionDisabled
+                      ? 'rgba(30, 41, 59, 0.5)'
+                      : 'rgba(2, 132, 199, 0.85)',
                     color: '#ffffff',
-                    padding: '14px 24px',
-                    border: isExecutionDisabled ? '1px solid #475569' : '1px solid #38bdf8',
-                    borderRadius: '8px',
-                    fontSize: '1rem',
+                    padding: '12px 24px',
+                    border: isExecutionDisabled ? '1px solid rgba(51, 65, 85, 0.5)' : '1px solid #38bdf8',
+                    borderRadius: '10px',
+                    fontSize: '0.95rem',
                     fontWeight: 'bold',
+                    letterSpacing: '0.5px',
                     cursor: isExecutionDisabled ? 'not-allowed' : 'pointer',
-                    boxShadow: isExecutionDisabled ? 'none' : '0 0 20px rgba(56, 189, 248, 0.35)',
+                    boxShadow: isExecutionDisabled ? 'none' : '0 0 16px rgba(56, 189, 248, 0.35)',
                     transition: 'all 0.2s ease',
                     opacity: isExecutionDisabled ? 0.6 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isExecutionDisabled) {
+                      e.currentTarget.style.backgroundColor = '#0284c7';
+                      e.currentTarget.style.boxShadow = '0 0 22px rgba(56, 189, 248, 0.55)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isExecutionDisabled) {
+                      e.currentTarget.style.backgroundColor = 'rgba(2, 132, 199, 0.85)';
+                      e.currentTarget.style.boxShadow = '0 0 16px rgba(56, 189, 248, 0.35)';
+                    }
                   }}
                 >
                   {currentModuleState.generatingSuite
@@ -563,7 +601,9 @@ export function App() {
                 </button>
 
                 {currentModuleState.running && (
-                  <ScanProgressBar progress={currentModuleState.progress} statusText={currentModuleState.statusText} />
+                  <div style={{ width: '100%', marginTop: '12px' }}>
+                    <ScanProgressBar progress={currentModuleState.progress} statusText={currentModuleState.statusText} />
+                  </div>
                 )}
               </div>
             )}

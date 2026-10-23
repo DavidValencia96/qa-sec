@@ -48,13 +48,13 @@ export const InputInjectionAuditor: React.FC<InputInjectionAuditorProps> = ({
   return (
     <div
       style={{
-        background: 'rgba(15, 23, 42, 0.35)',
-        backdropFilter: 'blur(10px)',
-        padding: '24px',
-        borderRadius: '10px',
-        border: '1px solid rgba(56, 189, 248, 0.2)',
-        marginBottom: '24px',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+        backdropFilter: 'blur(12px)',
+        padding: '22px 24px',
+        borderRadius: '14px',
+        border: '1px solid rgba(56, 189, 248, 0.25)',
+        marginBottom: '20px',
+        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.4)',
       }}
     >
       <div
@@ -62,27 +62,27 @@ export const InputInjectionAuditor: React.FC<InputInjectionAuditorProps> = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '20px',
+          marginBottom: '18px',
           flexWrap: 'wrap',
           gap: '12px',
         }}
       >
         <div>
-          <h2 style={{ marginTop: 0, color: '#ffffff', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            🎯 Módulo de Auditoría de Inputs y Sanitización de Formularios
+          <h2 style={{ color: '#f8fafc', margin: 0, fontSize: '1.2rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ color: '#38bdf8' }}>🎯</span> Módulo de Auditoría de Inputs y Sanitización de Formularios
           </h2>
-          <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '4px 0 0 0' }}>
+          <p style={{ color: '#94a3b8', fontSize: '0.82rem', margin: '4px 0 0 0' }}>
             Define la URL objetivo y especifica los localizadores (ID, Name, XPath o CSS) de los campos de entrada que deseas evaluar.
           </p>
         </div>
 
         <span
           style={{
-            background: 'rgba(236, 72, 153, 0.15)',
-            color: '#f472b6',
-            padding: '4px 12px',
-            borderRadius: '20px',
-            border: '1px solid #f472b6',
+            backgroundColor: 'rgba(2, 132, 199, 0.15)',
+            border: '1px solid rgba(56, 189, 248, 0.3)',
+            color: '#38bdf8',
+            padding: '4px 10px',
+            borderRadius: '6px',
             fontSize: '0.75rem',
             fontWeight: 'bold',
           }}
@@ -92,8 +92,8 @@ export const InputInjectionAuditor: React.FC<InputInjectionAuditorProps> = ({
       </div>
 
       {/* Input de URL */}
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', marginBottom: '8px', color: '#cbd5e1' }}>
+      <div style={{ marginBottom: '18px' }}>
+        <label style={{ display: 'block', color: '#38bdf8', fontSize: '0.82rem', fontWeight: 'bold', marginBottom: '6px' }}>
           🌐 URL Objetivo del Formulario:
         </label>
         <input
@@ -104,12 +104,13 @@ export const InputInjectionAuditor: React.FC<InputInjectionAuditorProps> = ({
           disabled={isRunning}
           style={{
             width: '100%',
-            padding: '12px 16px',
-            backgroundColor: 'rgba(15, 23, 42, 0.6)',
-            color: '#ffffff',
-            border: '1px solid rgba(56, 189, 248, 0.3)',
-            borderRadius: '6px',
+            padding: '10px 14px',
+            backgroundColor: 'rgba(2, 6, 23, 0.9)',
+            color: '#34d399',
+            border: '1px solid rgba(30, 41, 59, 0.9)',
+            borderRadius: '8px',
             fontSize: '0.95rem',
+            fontFamily: 'monospace',
             boxSizing: 'border-box',
             outline: 'none',
           }}
@@ -119,15 +120,15 @@ export const InputInjectionAuditor: React.FC<InputInjectionAuditorProps> = ({
       {/* Contenedor de Localizadores Dinámicos */}
       <div
         style={{
-          backgroundColor: 'rgba(9, 9, 11, 0.6)',
-          padding: '18px',
-          borderRadius: '8px',
-          border: '1px solid rgba(56, 189, 248, 0.25)',
-          marginBottom: '20px',
+          backgroundColor: 'rgba(2, 6, 23, 0.6)',
+          padding: '16px',
+          borderRadius: '10px',
+          border: '1px solid rgba(56, 189, 248, 0.2)',
+          marginBottom: '18px',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-          <label style={{ color: '#38bdf8', fontSize: '0.88rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <label style={{ color: '#38bdf8', fontSize: '0.82rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
             🏷️ Campos / Inputs Objetivo para Análisis de Sanitización:
           </label>
           <button
@@ -137,16 +138,15 @@ export const InputInjectionAuditor: React.FC<InputInjectionAuditorProps> = ({
             onMouseEnter={() => setAddHovered(true)}
             onMouseLeave={() => setAddHovered(false)}
             style={{
-              padding: '6px 14px',
-              fontSize: '0.8rem',
-              fontWeight: '700',
-              color: '#ffffff',
-              background: isRunning ? '#27272a' : addHovered ? '#059669' : '#047857',
-              border: '1px solid #34d399',
+              padding: '6px 12px',
+              fontSize: '0.78rem',
+              fontWeight: 'bold',
+              color: '#34d399',
+              backgroundColor: isRunning ? 'rgba(30, 41, 59, 0.5)' : addHovered ? 'rgba(16, 185, 129, 0.25)' : 'rgba(16, 185, 129, 0.15)',
+              border: '1px solid rgba(52, 211, 153, 0.4)',
               borderRadius: '6px',
               cursor: isRunning ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s ease',
-              boxShadow: addHovered ? '0 0 10px rgba(52, 211, 153, 0.4)' : 'none',
+              transition: 'all 0.15s ease',
             }}
           >
             + Agregar Campo
@@ -154,23 +154,23 @@ export const InputInjectionAuditor: React.FC<InputInjectionAuditorProps> = ({
         </div>
 
         {targetInputs.length === 0 ? (
-          <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: 0, fontStyle: 'italic' }}>
+          <p style={{ color: '#94a3b8', fontSize: '0.8rem', margin: 0, fontStyle: 'italic', padding: '10px 0' }}>
             No has agregado localizadores. Presiona "+ Agregar Campo" para especificar IDs, Names, XPaths o CSS Selectors.
           </p>
         ) : (
           targetInputs.map((item) => (
-            <div key={item.id} style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
+            <div key={item.id} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
               <select
                 value={item.type}
                 onChange={(e) => handleUpdateInputRow(item.id, 'type', e.target.value as LocatorType)}
                 disabled={isRunning}
                 style={{
-                  backgroundColor: 'rgba(15, 23, 42, 0.8)',
+                  backgroundColor: 'rgba(2, 6, 23, 0.9)',
                   color: '#38bdf8',
-                  border: '1px solid rgba(56, 189, 248, 0.3)',
-                  padding: '10px 12px',
+                  border: '1px solid rgba(30, 41, 59, 0.9)',
+                  padding: '8px 12px',
                   borderRadius: '6px',
-                  fontSize: '0.85rem',
+                  fontSize: '0.82rem',
                   outline: 'none',
                 }}
               >
@@ -188,12 +188,12 @@ export const InputInjectionAuditor: React.FC<InputInjectionAuditorProps> = ({
                 disabled={isRunning}
                 style={{
                   flex: 1,
-                  backgroundColor: 'rgba(15, 23, 42, 0.8)',
-                  color: '#ffffff',
-                  border: '1px solid rgba(56, 189, 248, 0.25)',
-                  padding: '10px 14px',
+                  backgroundColor: 'rgba(2, 6, 23, 0.9)',
+                  color: '#f8fafc',
+                  border: '1px solid rgba(30, 41, 59, 0.9)',
+                  padding: '8px 12px',
                   borderRadius: '6px',
-                  fontSize: '0.88rem',
+                  fontSize: '0.85rem',
                   outline: 'none',
                   fontFamily: 'monospace',
                 }}
@@ -204,15 +204,14 @@ export const InputInjectionAuditor: React.FC<InputInjectionAuditorProps> = ({
                 onClick={() => handleRemoveInputRow(item.id)}
                 disabled={isRunning}
                 style={{
-                  backgroundColor: 'rgba(239, 68, 68, 0.2)',
-                  color: '#ef4444',
-                  border: '1px solid #ef4444',
-                  padding: '9px 14px',
+                  backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                  color: '#f87171',
+                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                  padding: '8px 12px',
                   borderRadius: '6px',
                   cursor: isRunning ? 'not-allowed' : 'pointer',
-                  fontWeight: 'bold',
-                  fontSize: '0.85rem',
-                  transition: 'all 0.2s ease',
+                  fontSize: '0.82rem',
+                  transition: 'all 0.15s ease',
                 }}
               >
                 ✕
@@ -223,7 +222,7 @@ export const InputInjectionAuditor: React.FC<InputInjectionAuditorProps> = ({
       </div>
 
       {/* Botones de Inicialización */}
-      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
         <button
           type="button"
           onClick={onInitProject}
@@ -231,30 +230,30 @@ export const InputInjectionAuditor: React.FC<InputInjectionAuditorProps> = ({
           onMouseEnter={() => setInitHovered(true)}
           onMouseLeave={() => setInitHovered(false)}
           style={{
-            flex: '1',
-            minWidth: '200px',
-            padding: '12px 20px',
-            fontSize: '0.95rem',
-            fontWeight: '700',
+            width: '100%',
+            maxWidth: '480px',
+            padding: '10px 18px',
+            fontSize: '0.9rem',
+            fontWeight: 'bold',
             color: '#ffffff',
-            background: isRunning
-              ? 'rgba(45, 55, 72, 0.6)'
+            backgroundColor: isRunning
+              ? 'rgba(30, 41, 59, 0.5)'
               : initHovered
-              ? 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)'
-              : 'linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%)',
-            border: isRunning ? '1px solid #4a5568' : '1px solid #60a5fa',
-            borderRadius: '6px',
+              ? '#0284c7'
+              : 'rgba(2, 132, 199, 0.85)',
+            border: isRunning ? '1px solid rgba(51, 65, 85, 0.5)' : '1px solid rgba(56, 189, 248, 0.6)',
+            borderRadius: '8px',
             cursor: isRunning ? 'not-allowed' : 'pointer',
             boxShadow: isRunning
               ? 'none'
               : initHovered
-              ? '0 0 16px rgba(37, 99, 235, 0.5)'
-              : '0 0 8px rgba(37, 99, 235, 0.3)',
-            transition: 'all 0.25s ease-in-out',
+              ? '0 0 14px rgba(2, 132, 199, 0.45)'
+              : '0 0 8px rgba(2, 132, 199, 0.25)',
+            transition: 'all 0.2s ease',
             opacity: isRunning ? 0.5 : 1,
           }}
         >
-          1. Inicializar Proyecto de Inputs
+          ⚡ 1. Inicializar Proyecto de Inputs
         </button>
 
         {isRunning && (
@@ -264,22 +263,20 @@ export const InputInjectionAuditor: React.FC<InputInjectionAuditorProps> = ({
             onMouseEnter={() => setResetHovered(true)}
             onMouseLeave={() => setResetHovered(false)}
             style={{
-              flex: '1',
-              minWidth: '200px',
-              padding: '12px 20px',
-              fontSize: '0.95rem',
-              fontWeight: '700',
-              color: '#ffffff',
-              background: resetHovered
-                ? 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)'
-                : 'linear-gradient(135deg, #b91c1c 0%, #dc2626 100%)',
-              border: '1px solid #f87171',
-              borderRadius: '6px',
+              width: '100%',
+              maxWidth: '480px',
+              padding: '10px 18px',
+              fontSize: '0.9rem',
+              fontWeight: 'bold',
+              color: '#f87171',
+              backgroundColor: resetHovered
+                ? 'rgba(239, 68, 68, 0.25)'
+                : 'rgba(239, 68, 68, 0.12)',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              borderRadius: '8px',
               cursor: 'pointer',
-              boxShadow: resetHovered
-                ? '0 0 16px rgba(239, 68, 68, 0.6)'
-                : '0 0 8px rgba(239, 68, 68, 0.3)',
-              transition: 'all 0.25s ease-in-out',
+              boxShadow: resetHovered ? '0 0 12px rgba(239, 68, 68, 0.35)' : 'none',
+              transition: 'all 0.2s ease',
             }}
           >
             🔄 Cancelar / Nuevo Análisis

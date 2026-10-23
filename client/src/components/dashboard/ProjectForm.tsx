@@ -21,13 +21,13 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
   return (
     <div
       style={{
-        background: 'rgba(15, 23, 42, 0.35)',
-        backdropFilter: 'blur(10px)',
-        padding: '24px',
-        borderRadius: '10px',
-        border: '1px solid rgba(56, 189, 248, 0.2)',
-        marginBottom: '24px',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+        backdropFilter: 'blur(12px)',
+        padding: '22px 24px',
+        borderRadius: '14px',
+        border: '1px solid rgba(56, 189, 248, 0.25)',
+        marginBottom: '20px',
+        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.4)',
       }}
     >
       {/* ENCABEZADO DEL MÓDULO */}
@@ -36,7 +36,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '20px',
+          marginBottom: '18px',
           flexWrap: 'wrap',
           gap: '12px',
         }}
@@ -44,28 +44,29 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
         <div>
           <h2
             style={{
-              color: '#ffffff',
+              color: '#f8fafc',
               margin: 0,
-              fontSize: '1.25rem',
+              fontSize: '1.2rem',
+              fontWeight: 'bold',
               display: 'flex',
               alignItems: 'center',
-              gap: '10px',
+              gap: '8px',
             }}
           >
-            🚀 Escáner Web & Diseñador de Suites IA
+            <span style={{ color: '#38bdf8' }}>🚀</span> Escáner Web & Diseñador de Suites IA
           </h2>
-          <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '4px 0 0 0' }}>
+          <p style={{ color: '#94a3b8', fontSize: '0.82rem', margin: '4px 0 0 0' }}>
             Análisis automatizado de parámetros, cabeceras HTTP y generación de pruebas dinámicas.
           </p>
         </div>
 
         <span
           style={{
-            background: 'rgba(37, 99, 235, 0.2)',
+            backgroundColor: 'rgba(2, 132, 199, 0.15)',
+            border: '1px solid rgba(56, 189, 248, 0.3)',
             color: '#38bdf8',
-            padding: '4px 12px',
-            borderRadius: '20px',
-            border: '1px solid #38bdf8',
+            padding: '4px 10px',
+            borderRadius: '6px',
             fontSize: '0.75rem',
             fontWeight: 'bold',
           }}
@@ -79,10 +80,10 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
         <label
           style={{
             display: 'block',
-            color: '#cbd5e1',
-            fontSize: '0.85rem',
+            color: '#38bdf8',
+            fontSize: '0.82rem',
             fontWeight: 'bold',
-            marginBottom: '8px',
+            marginBottom: '6px',
           }}
         >
           🌐 URL Objetivo del Análisis:
@@ -95,21 +96,22 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
           disabled={isRunning}
           style={{
             width: '100%',
-            padding: '12px 16px',
-            backgroundColor: 'rgba(15, 23, 42, 0.6)',
-            color: '#ffffff',
-            border: '1px solid rgba(56, 189, 248, 0.3)',
-            borderRadius: '6px',
-            fontSize: '1rem',
+            padding: '10px 14px',
+            backgroundColor: 'rgba(2, 6, 23, 0.9)',
+            color: '#34d399',
+            border: '1px solid rgba(30, 41, 59, 0.9)',
+            borderRadius: '8px',
+            fontSize: '0.95rem',
+            fontFamily: 'monospace',
             boxSizing: 'border-box',
             outline: 'none',
             opacity: isRunning ? 0.6 : 1,
-            transition: 'border 0.2s ease',
+            transition: 'all 0.2s ease',
           }}
         />
       </div>
 
-      {/* BOTONES DE ACCIÓN */}
+      {/* BOTONES DE ACCIÓN CENTRADOS Y CONTROLADOS */}
       <div
         style={{
           display: 'flex',
@@ -126,30 +128,34 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
           onMouseEnter={() => setInitHovered(true)}
           onMouseLeave={() => setInitHovered(false)}
           style={{
-            flex: '1',
-            minWidth: '200px',
-            padding: '12px 20px',
-            fontSize: '0.95rem',
-            fontWeight: '700',
+            width: '100%',
+            maxWidth: '480px',
+            padding: '10px 18px',
+            fontSize: '0.9rem',
+            fontWeight: 'bold',
             color: '#ffffff',
-            background: isRunning
-              ? 'rgba(45, 55, 72, 0.6)'
+            backgroundColor: isRunning
+              ? 'rgba(30, 41, 59, 0.5)'
               : initHovered
-              ? 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)'
-              : 'linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%)',
-            border: isRunning ? '1px solid #4a5568' : '1px solid #60a5fa',
-            borderRadius: '6px',
+              ? '#0284c7'
+              : 'rgba(2, 132, 199, 0.85)',
+            border: isRunning ? '1px solid rgba(51, 65, 85, 0.5)' : '1px solid rgba(56, 189, 248, 0.6)',
+            borderRadius: '8px',
             cursor: isRunning ? 'not-allowed' : 'pointer',
             boxShadow: isRunning
               ? 'none'
               : initHovered
-              ? '0 0 16px rgba(37, 99, 235, 0.5)'
-              : '0 0 8px rgba(37, 99, 235, 0.3)',
-            transition: 'all 0.25s ease-in-out',
+              ? '0 0 14px rgba(2, 132, 199, 0.45)'
+              : '0 0 8px rgba(2, 132, 199, 0.25)',
+            transition: 'all 0.2s ease',
             opacity: isRunning ? 0.5 : 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
           }}
         >
-          Inicializar Proyecto
+          ⚡ Inicializar Proyecto
         </button>
 
         {isRunning && (
@@ -159,22 +165,26 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
             onMouseEnter={() => setResetHovered(true)}
             onMouseLeave={() => setResetHovered(false)}
             style={{
-              flex: '1',
-              minWidth: '200px',
-              padding: '12px 20px',
-              fontSize: '0.95rem',
-              fontWeight: '700',
-              color: '#ffffff',
-              background: resetHovered
-                ? 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)'
-                : 'linear-gradient(135deg, #b91c1c 0%, #dc2626 100%)',
-              border: '1px solid #f87171',
-              borderRadius: '6px',
+              width: '100%',
+              maxWidth: '480px',
+              padding: '10px 18px',
+              fontSize: '0.9rem',
+              fontWeight: 'bold',
+              color: '#f87171',
+              backgroundColor: resetHovered
+                ? 'rgba(239, 68, 68, 0.25)'
+                : 'rgba(239, 68, 68, 0.12)',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              borderRadius: '8px',
               cursor: 'pointer',
               boxShadow: resetHovered
-                ? '0 0 16px rgba(239, 68, 68, 0.6)'
-                : '0 0 8px rgba(239, 68, 68, 0.3)',
-              transition: 'all 0.25s ease-in-out',
+                ? '0 0 12px rgba(239, 68, 68, 0.35)'
+                : 'none',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
             }}
           >
             🔄 Cancelar / Nuevo Análisis
