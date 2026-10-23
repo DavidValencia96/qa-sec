@@ -97,7 +97,7 @@ export const ComplianceRadarTab: React.FC<ComplianceRadarTabProps> = ({
   );
 
   const handleLoadExample = () => {
-    const exampleTarget = 'bebolder.com';
+    const exampleTarget = 'urlexample.com';
     setCustomTargetInput(exampleTarget);
     setSelectedTarget('');
 
@@ -513,7 +513,7 @@ export const ComplianceRadarTab: React.FC<ComplianceRadarTabProps> = ({
           <input
             type="text"
             disabled={loading}
-            placeholder="O escribe una IP / Dominio / URL manual (ej. bebolder.com)"
+            placeholder="O escribe una IP / Dominio / URL manual (ej. urlexample.com)"
             value={customTargetInput}
             onChange={(e) => {
               setCustomTargetInput(e.target.value);
