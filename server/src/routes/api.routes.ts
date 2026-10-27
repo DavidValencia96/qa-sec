@@ -32,6 +32,7 @@ import authRoutes from './auth.routes.js';
 import adminRoutes from './admin.routes.js';
 import { authenticateJwt } from '../middleware/auth.middleware.js';
 import { requireRole } from '../middleware/rbac.middleware.js';
+import { guestScanLimiter } from '../middleware/rateLimit.middleware.js';
 
 const router = Router();
 
@@ -48,7 +49,7 @@ router.get('/threats/latest', getLatestThreats);
 // 3. Módulos Públicos: Escáner Web General e Inputs & Sanitización
 router.post('/projects', createProject);
 router.post('/suites/generate-ai', generateSuiteWithAI);
-router.post('/tests/run', executeTestRun);
+router.post('/tests/run', guestScanLimiter, executeTestRun);
 router.get('/reports/:runId', getRunReport);
 
 // 4. Auditorías Avanzadas y Motores Profundos (Requieren sesión: ADMIN o AUDITOR)
