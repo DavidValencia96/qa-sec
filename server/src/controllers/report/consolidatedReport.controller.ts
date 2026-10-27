@@ -3,6 +3,7 @@ import { GeminiAIService } from '../../services/gemini.service.js';
 import { ConsolidatedReportFormatterService } from '../../services/report/consolidatedReportFormatter.service.js';
 import type { ConsolidatedReportInputDTO } from '../../modules/report/consolidatedReport.types.js';
 import { getDbPool } from '../../config/database.js';
+import { logAuditEvent } from '../../services/auditLog.service.js';
 
 const geminiService = new GeminiAIService();
 const formatterService = new ConsolidatedReportFormatterService();
@@ -71,6 +72,17 @@ export const exportConsolidatedReportHandler = async (req: Request, res: Respons
 
     // 4. Diagnóstico Global con Gemini AI
     const aiSummary = await geminiService.generateConsolidatedExecutiveSummary(data);
+
+    // Registro de auditoría
+    const user = (req as any).user;
+    await logAuditEvent({
+      userId: user?.id || null,
+      userEmail: user?.email || 'guest@qa-sec.local',
+      action: 'REPORT_EXPORT',
+      module: 'REPORTS',
+      details: `Exportación consolidada de: ${data.projectName} (${data.format || 'html'})`,
+      ipAddress: req.ip,
+    });
 
     // 5. Generar informe según formato deseado (HTML o Markdown)
     if (data.format === 'markdown') {

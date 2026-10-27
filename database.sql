@@ -360,3 +360,17 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id VARCHAR(64) NULL,
+  user_email VARCHAR(255) NOT NULL,
+  action ENUM('ROLE_CHANGE', 'USER_SUSPEND', 'TEST_RUN', 'REPORT_EXPORT') NOT NULL,
+  module VARCHAR(64) NOT NULL,
+  details TEXT NOT NULL,
+  ip_address VARCHAR(45) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_audit_user (user_id),
+  INDEX idx_audit_action (action),
+  INDEX idx_audit_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

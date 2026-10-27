@@ -5,6 +5,7 @@ import type { ConsolidatedReportInputDTO } from '../../modules/report/consolidat
 import type { DastFinding } from '../../modules/dast/dast.types.js';
 import type { JwtFinding, CorsFinding } from '../../modules/redteam/redteam.types.js';
 import { getDbPool } from '../../config/database.js';
+import { logAuditEvent } from '../../services/auditLog.service.js';
 
 const geminiService = new GeminiAIService();
 const formatterService = new ConsolidatedReportFormatterService();
@@ -97,6 +98,17 @@ export const exportConsolidatedReportHandler = async (req: Request, res: Respons
 
     // 6. Diagnóstico Global con Gemini AI
     const aiSummary = await geminiService.generateConsolidatedExecutiveSummary(data);
+
+    // Registro de auditoría
+    const user = (req as any).user;
+    await logAuditEvent({
+      userId: user?.id || null,
+      userEmail: user?.email || 'guest@qa-sec.local',
+      action: 'REPORT_EXPORT',
+      module: 'REPORTS',
+      details: `Exportación consolidada de: ${data.projectName} (${data.format || 'html'})`,
+      ipAddress: req.ip,
+    });
 
     // 7. Generar informe en el formato solicitado
     if (data.format === 'markdown') {
@@ -734,6 +746,17 @@ export const exportSingleRecordHandler = async (req: Request, res: Response): Pr
     } else {
       htmlBody = `<h2>Reporte de auditoría estándar</h2>`;
     }
+
+    // Registro de auditoría
+    const user = (req as any).user;
+    await logAuditEvent({
+      userId: user?.id || null,
+      userEmail: user?.email || 'guest@qa-sec.local',
+      action: 'REPORT_EXPORT',
+      module: 'REPORTS',
+      details: `Exportación individual módulo: ${moduleType} (${title})`,
+      ipAddress: req.ip,
+    });
 
     const fullHtml = `<!DOCTYPE html>
 <html lang="es">
