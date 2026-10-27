@@ -13,7 +13,7 @@ export const handleHeartbeat = (req: Request, res: Response) => {
 
   // Elimina sesiones inactivas (más de 30 segundos sin enviar heartbeat)
   for (const [id, lastSeen] of activeSessions.entries()) {
-    if (now - lastSeen > 15000) {
+    if (now - lastSeen > 30000) {
       activeSessions.delete(id);
     }
   }

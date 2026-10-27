@@ -200,7 +200,7 @@ export function App() {
 
     emitHeartbeat();
 
-    const timer = setInterval(emitHeartbeat, 5000);
+    const timer = setInterval(emitHeartbeat, 15000);
 
     return () => {
       isMounted = false;
