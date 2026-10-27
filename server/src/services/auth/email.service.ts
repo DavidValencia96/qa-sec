@@ -1,38 +1,6 @@
-import nodemailer, { type Transporter } from 'nodemailer';
-import { Resend } from 'resend';
 import { config } from '../../config/env.js';
 
 class EmailService {
-  private resendClient: Resend | null = null;
-  private smtpTransporter: Transporter | null = null;
-
-  constructor() {
-    if (config.resend.apiKey) {
-      this.resendClient = new Resend(config.resend.apiKey);
-    }
-  }
-
-  private getSmtpTransporter(): Transporter | null {
-    if (!this.smtpTransporter && config.smtp.user && config.smtp.pass) {
-      this.smtpTransporter = nodemailer.createTransport({
-        service: config.smtp.host.includes('gmail') ? 'gmail' : undefined,
-        host: config.smtp.host,
-        port: config.smtp.port,
-        secure: config.smtp.secure,
-        auth: {
-          user: config.smtp.user,
-          pass: config.smtp.pass,
-        },
-        tls: {
-          rejectUnauthorized: false,
-        },
-        family: 4, // Fuerza IPv4 para evitar timeouts en redes locales
-        connectionTimeout: 5000,
-      } as any);
-    }
-    return this.smtpTransporter;
-  }
-
   private getHtmlTemplate(otpCode: string): string {
     return `
       <!DOCTYPE html>
@@ -70,61 +38,52 @@ class EmailService {
   }
 
   public async sendOtpEmail(toEmail: string, otpCode: string): Promise<boolean> {
-    const html = this.getHtmlTemplate(otpCode);
-    const subject = `🔑 Tu código de acceso QA-Sec Suite: ${otpCode}`;
-    const text = `Tu código de acceso OTP para QA-Sec Suite es: ${otpCode}. Expira en 10 minutos.`;
+    const brevoApiKey = process.env.BREVO_API_KEY || (config as any).brevoApiKey;
+    const senderEmail = process.env.SMTP_USER || config.smtp?.user || 'qa.testing.sec@gmail.com';
 
-    // 1. INTENTO PRIMARIO: Resend API (HTTPS por puerto 443 - no bloqueable)
-    if (config.resend.apiKey) {
-      try {
-        if (!this.resendClient) {
-          this.resendClient = new Resend(config.resend.apiKey);
-        }
-
-        const resendRes = await this.resendClient.emails.send({
-          from: config.resend.from,
-          to: toEmail,
-          subject,
-          text,
-          html,
-        });
-
-        if (!resendRes.error) {
-          console.log(`[MAILER-RESEND] ✅ Código OTP entregado vía HTTPS a ${toEmail} (ID: ${resendRes.data?.id})`);
-          return true;
-        }
-
-        console.warn(`[MAILER-RESEND] ⚠️ Resend reportó error:`, resendRes.error.message);
-      } catch (err: any) {
-        console.warn(`[MAILER-RESEND] ⚠️ Excepción con Resend: ${err.message}. Probando fallback SMTP...`);
-      }
+    if (!brevoApiKey) {
+      console.warn('=============================================');
+      console.warn('[MAILER-LOCAL] BREVO_API_KEY no configurada.');
+      console.warn(`[MAILER-LOCAL] Destinatario: ${toEmail}`);
+      console.warn(`[MAILER-LOCAL] CÓDIGO OTP: [ ${otpCode} ]`);
+      console.warn('=============================================');
+      return false;
     }
 
-    // 2. INTENTO SECUNDARIO (FAILOVER): SMTP / Nodemailer
-    const transporter = this.getSmtpTransporter();
-    if (transporter && config.smtp.user && config.smtp.pass) {
-      try {
-        await transporter.sendMail({
-          from: config.smtp.from,
-          to: toEmail,
-          subject,
-          text,
-          html,
-        });
-        console.log(`[MAILER-SMTP] ✅ Código OTP entregado vía SMTP a ${toEmail}`);
-        return true;
-      } catch (err: any) {
-        console.warn(`[MAILER-SMTP] ⚠️ Fallo en transporte SMTP: ${err.message}`);
-      }
-    }
+    try {
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'api-key': brevoApiKey,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          sender: {
+            name: 'QA-Sec Suite Security',
+            email: senderEmail,
+          },
+          to: [{ email: toEmail }],
+          subject: `🔑 Tu código de acceso QA-Sec Suite: ${otpCode}`,
+          htmlContent: this.getHtmlTemplate(otpCode),
+          textContent: `Tu código de acceso OTP para QA-Sec Suite es: ${otpCode}. Expira en 10 minutos.`,
+        }),
+      });
 
-    // 3. MODO DE CONTINGENCIA LOCAL: Si la red bloquea ambos, muestra el OTP en consola
-    console.warn('=============================================');
-    console.warn(`[MAILER-FALLBACK] No hubo salida de red externa.`);
-    console.warn(`[MAILER-FALLBACK] Destinatario: ${toEmail}`);
-    console.warn(`[MAILER-FALLBACK] CÓDIGO OTP: [ ${otpCode} ]`);
-    console.warn('=============================================');
-    return false;
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('[MAILER-BREVO] ❌ Error en API HTTP:', errorData);
+        console.warn(`[FALLBACK-OTP] Código para ${toEmail}: [ ${otpCode} ]`);
+        return false;
+      }
+
+      console.log(`[MAILER-BREVO] ✅ Correo entregado a ${toEmail} desde ${senderEmail} vía HTTPS`);
+      return true;
+    } catch (error: any) {
+      console.error('[MAILER-BREVO] ❌ Error de red al conectar con Brevo:', error.message);
+      console.warn(`[FALLBACK-OTP] Código para ${toEmail}: [ ${otpCode} ]`);
+      return false;
+    }
   }
 }
 
