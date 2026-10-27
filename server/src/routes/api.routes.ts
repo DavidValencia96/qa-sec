@@ -27,54 +27,50 @@ import { runEasmAuditHandler } from '../controllers/easm/easm.controller.js';
 import { runRedTeamAuditHandler } from '../controllers/redteam/redteam.controller.js';
 import emailSecRoutes from './emailsec.routes.js';
 import complianceRoutes from './compliance.routes.js';
-import { handleHeartbeat } from '../controllers/telemetry.controller';
+import { handleHeartbeat } from '../controllers/telemetry.controller.js';
+import authRoutes from './auth.routes.js';
+import adminRoutes from './admin.routes.js';
+import { authenticateJwt } from '../middleware/auth.middleware.js';
+import { requireRole } from '../middleware/rbac.middleware.js';
 
 const router = Router();
 
-// Proyectos y Suites
+// 1. Módulos de Autenticación y Administración RBAC
+router.use('/auth', authRoutes);
+router.use('/admin', adminRoutes);
+
+// 2. Telemetría y Configuración Pública
+router.post('/telemetry/heartbeat', handleHeartbeat);
+router.get('/prompts/presets', getPromptPresets);
+router.get('/prompts', getInputPrompts);
+router.get('/threats/latest', getLatestThreats);
+
+// 3. Módulos Públicos: Escáner Web General e Inputs & Sanitización
 router.post('/projects', createProject);
 router.post('/suites/generate-ai', generateSuiteWithAI);
-
-// Pruebas y Reportes Web
 router.post('/tests/run', executeTestRun);
 router.get('/reports/:runId', getRunReport);
 
-// Auditoría de Red
-router.post('/network/analyze-config', handleAnalyzeNetworkConfig);
+// 4. Auditorías Avanzadas y Motores Profundos (Requieren sesión: ADMIN o AUDITOR)
+router.post('/network/analyze-config', authenticateJwt, requireRole(['ADMIN', 'AUDITOR']), handleAnalyzeNetworkConfig);
+router.post('/threats/analyze-cve', authenticateJwt, requireRole(['ADMIN', 'AUDITOR']), analyzeCveWithAiHandler);
+router.post('/sast/analyze', authenticateJwt, requireRole(['ADMIN', 'AUDITOR']), analyzeSastContentHandler);
+router.post('/load-test/run', authenticateJwt, requireRole(['ADMIN', 'AUDITOR']), runLoadTestHandler);
+router.post('/dast/run', authenticateJwt, requireRole(['ADMIN', 'AUDITOR']), runDastAuditHandler);
+router.post('/sca/run', authenticateJwt, requireRole(['ADMIN', 'AUDITOR']), runScaAuditHandler);
+router.post('/easm/audit', authenticateJwt, requireRole(['ADMIN', 'AUDITOR']), runEasmAuditHandler);
+router.post('/redteam/audit', authenticateJwt, requireRole(['ADMIN', 'AUDITOR']), runRedTeamAuditHandler);
+router.use('/emailsec', authenticateJwt, requireRole(['ADMIN', 'AUDITOR']), emailSecRoutes);
+router.use('/compliance', authenticateJwt, requireRole(['ADMIN', 'AUDITOR']), complianceRoutes);
 
-// Historial
-router.get('/history', getTestRunsHistory);
-
-// Prompts y Presets
-router.get('/prompts/presets', getPromptPresets);
-router.get('/prompts', getInputPrompts);
-
-// CiberThreat Feed & CVE Radar
-router.get('/threats/latest', getLatestThreats);
-router.post('/threats/analyze-cve', analyzeCveWithAiHandler);
-router.post('/sast/analyze', analyzeSastContentHandler);
-router.post('/reports/export', exportReportHandler);
-
-// Registrar rutas de historial SAST:
-router.get('/sast/history', getSastHistoryHandler);
-router.get('/sast/history/:id', getSastHistoryItemHandler);
-
-router.post('/load-test/run', runLoadTestHandler);
-router.get('/load-test/history', getLoadTestHistoryHandler);
-
-router.post('/reports/consolidated/export', exportConsolidatedReportHandler);
-router.post('/reports/single/export', exportSingleRecordHandler);
-
-router.post('/dast/run', runDastAuditHandler);
-router.post('/sca/run', runScaAuditHandler);
-
-router.post('/easm/audit', runEasmAuditHandler);
-router.post('/redteam/audit', runRedTeamAuditHandler);
-
-router.use('/emailsec', emailSecRoutes);
-router.use('/compliance', complianceRoutes);
-
-router.post('/telemetry/heartbeat', handleHeartbeat);
+// 5. Historial Centralizado y Exportación (Requieren sesión: ADMIN, AUDITOR o VIEWER)
+router.get('/history', authenticateJwt, requireRole(['ADMIN', 'AUDITOR', 'VIEWER']), getTestRunsHistory);
+router.get('/sast/history', authenticateJwt, requireRole(['ADMIN', 'AUDITOR', 'VIEWER']), getSastHistoryHandler);
+router.get('/sast/history/:id', authenticateJwt, requireRole(['ADMIN', 'AUDITOR', 'VIEWER']), getSastHistoryItemHandler);
+router.get('/load-test/history', authenticateJwt, requireRole(['ADMIN', 'AUDITOR', 'VIEWER']), getLoadTestHistoryHandler);
+router.post('/reports/export', authenticateJwt, requireRole(['ADMIN', 'AUDITOR', 'VIEWER']), exportReportHandler);
+router.post('/reports/consolidated/export', authenticateJwt, requireRole(['ADMIN', 'AUDITOR', 'VIEWER']), exportConsolidatedReportHandler);
+router.post('/reports/single/export', authenticateJwt, requireRole(['ADMIN', 'AUDITOR', 'VIEWER']), exportSingleRecordHandler);
 
 export const apiRouter = router;
 export default router;

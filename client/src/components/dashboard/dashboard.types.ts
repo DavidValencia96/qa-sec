@@ -22,4 +22,5 @@ export type TabType =
   | 'redteam'
   | 'emailsec'
   | 'compliance'
-  | 'history';
+  | 'history'
+  | 'admin';

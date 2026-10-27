@@ -308,3 +308,55 @@ CREATE TABLE IF NOT EXISTS emailsec_history (
     ai_summary_json LONGTEXT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- 1. Tabla de Roles del Sistema
+CREATE TABLE IF NOT EXISTS roles (
+    id VARCHAR(36) PRIMARY KEY,
+    name ENUM('ADMIN', 'AUDITOR', 'VIEWER') NOT NULL UNIQUE,
+    description VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO roles (id, name, description) VALUES
+('role-admin-01', 'ADMIN', 'Acceso total: gestión de usuarios, roles y configuración del sistema.'),
+('role-auditor-02', 'AUDITOR', 'Ejecución de auditorías, escaneos y generación de informes.'),
+('role-viewer-03', 'VIEWER', 'Acceso de solo lectura a historiales e informes ejecutivos.')
+ON DUPLICATE KEY UPDATE description=VALUES(description);
+
+-- 2. Tabla de Usuarios
+CREATE TABLE IF NOT EXISTS users (
+    id VARCHAR(36) PRIMARY KEY,
+    email VARCHAR(191) NOT NULL UNIQUE,
+    full_name VARCHAR(100) NULL,
+    role_id VARCHAR(36) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    last_login_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 3. Tabla de Códigos OTP Transaccionales
+CREATE TABLE IF NOT EXISTS auth_otps (
+    id VARCHAR(36) PRIMARY KEY,
+    email VARCHAR(191) NOT NULL,
+    otp_code VARCHAR(64) NOT NULL, -- Hash SHA-256 del código para evitar exposición directa en DB
+    attempts_left TINYINT NOT NULL DEFAULT 3,
+    expires_at DATETIME NOT NULL,
+    consumed BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_otp_email_lookup (email, consumed, expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 4. Registro de Auditoría de Acciones Administrativas (Compliance & Traceability)
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NULL,
+    action VARCHAR(100) NOT NULL,
+    target_resource VARCHAR(100) NOT NULL,
+    ip_address VARCHAR(45) NULL,
+    user_agent TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

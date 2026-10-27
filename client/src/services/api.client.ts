@@ -3,13 +3,20 @@ import type { LoadTestConfig, LoadTestResult, LoadTestMetrics } from '../compone
 import type { ConsolidatedReportOptions } from '../components/report/ConsolidatedReportExportModal';
 export type DependencyManifestType = 'package_json' | 'requirements_txt' | 'pom_xml';
 
-// Soporte dinámico para Render / Entornos de producción y desarrollo local
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
+export const getAuthHeaders = (): HeadersInit => {
+  const token = localStorage.getItem('qa_sec_token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
 
 export const createProjectApi = async (name: string, targetUrl: string, description?: string) => {
   const res = await fetch(`${BASE_URL}/projects`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ name, targetUrl, description }),
   });
   return res.json();
@@ -18,7 +25,7 @@ export const createProjectApi = async (name: string, targetUrl: string, descript
 export const generateSuiteAIApi = async (projectId: string, userPrompt: string, promptId?: string) => {
   const res = await fetch(`${BASE_URL}/suites/generate-ai`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ projectId, userPrompt, promptId }),
   });
   return res.json();
@@ -32,26 +39,30 @@ export const runTestApi = async (
 ) => {
   const res = await fetch(`${BASE_URL}/tests/run`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ suiteId, targetUrl, targetInputs, promptId }),
   });
   return res.json();
 };
 
 export const getReportApi = async (runId: string) => {
-  const res = await fetch(`${BASE_URL}/reports/${runId}`);
+  const res = await fetch(`${BASE_URL}/reports/${runId}`, {
+    headers: getAuthHeaders(),
+  });
   return res.json();
 };
 
 export const getHistoryApi = async () => {
-  const response = await fetch(`${BASE_URL}/history`);
+  const response = await fetch(`${BASE_URL}/history`, {
+    headers: getAuthHeaders(),
+  });
   return await response.json();
 };
 
 export const analyzeNetworkConfigApi = async (targetHost: string) => {
   const response = await fetch(`${BASE_URL}/network/analyze-config`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ targetHost }),
   });
   return await response.json();
@@ -98,7 +109,7 @@ export const analyzeCveWithAiApi = async (cveData: {
 }) => {
   const res = await fetch(`${BASE_URL}/threats/analyze-cve`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(cveData),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}: Error al analizar CVE con IA.`);
@@ -113,7 +124,7 @@ export const analyzeSastContentApi = async (payload: {
 }) => {
   const res = await fetch(`${BASE_URL}/sast/analyze`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 
@@ -141,7 +152,7 @@ export const exportReportApi = async (payload: {
 }): Promise<void> => {
   const res = await fetch(`${BASE_URL}/reports/export`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 
@@ -186,7 +197,9 @@ export interface SastHistoryItem {
 }
 
 export const fetchSastHistoryApi = async (): Promise<SastHistoryItem[]> => {
-  const res = await fetch(`${BASE_URL}/sast/history`);
+  const res = await fetch(`${BASE_URL}/sast/history`, {
+    headers: getAuthHeaders(),
+  });
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}: Error al obtener el historial SAST.`);
   }
@@ -197,7 +210,7 @@ export const fetchSastHistoryApi = async (): Promise<SastHistoryItem[]> => {
 export const runLoadTestApi = async (payload: LoadTestConfig): Promise<LoadTestResult> => {
   const res = await fetch(`${BASE_URL}/load-test/run`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 
@@ -232,7 +245,9 @@ export interface LoadTestHistoryItem {
 }
 
 export const fetchLoadTestHistoryApi = async (): Promise<LoadTestHistoryItem[]> => {
-  const res = await fetch(`${BASE_URL}/load-test/history`);
+  const res = await fetch(`${BASE_URL}/load-test/history`, {
+    headers: getAuthHeaders(),
+  });
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}: Error al obtener el historial de pruebas de carga.`);
   }
@@ -294,7 +309,7 @@ export const exportConsolidatedReportApi = async (options: ConsolidatedReportOpt
 
   const res = await fetch(`${BASE_URL}/reports/consolidated/export`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 
@@ -328,7 +343,7 @@ export const exportSingleRecordApi = async (payload: {
 }): Promise<void> => {
   const res = await fetch(`${BASE_URL}/reports/single/export`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 
@@ -388,7 +403,7 @@ export const runDastAuditApi = async (data: {
 }): Promise<DastAuditResponse> => {
   const response = await fetch(`${BASE_URL}/dast/run`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   return response.json();
@@ -436,7 +451,7 @@ export const runScaAuditApi = async (data: {
 }): Promise<ScaAuditResponse> => {
   const response = await fetch(`${BASE_URL}/sca/run`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   return response.json();
@@ -452,7 +467,7 @@ export interface EasmAuditPayload {
 export const runEasmAuditApi = async (payload: EasmAuditPayload) => {
   const response = await fetch(`${BASE_URL}/easm/audit`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
   if (!response.ok) {
@@ -475,7 +490,7 @@ export interface RedTeamAuditPayload {
 export const runRedTeamAuditApi = async (payload: RedTeamAuditPayload) => {
   const response = await fetch(`${BASE_URL}/redteam/audit`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 
@@ -497,7 +512,7 @@ export interface EmailSecAuditPayload {
 export const runEmailSecAuditApi = async (payload: EmailSecAuditPayload) => {
   const response = await fetch(`${BASE_URL}/emailsec/audit`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 
@@ -546,12 +561,14 @@ export interface ComplianceRadarResponse {
 }
 
 export const getComplianceRadarApi = async (target?: string): Promise<ComplianceRadarResponse> => {
-  const url = new URL(`${BASE_URL}/compliance/radar`);
+  const url = new URL(`${BASE_URL}/compliance/radar`, window.location.origin);
   if (target && target.trim().length > 0) {
     url.searchParams.append('target', target.trim());
   }
 
-  const response = await fetch(url.toString());
+  const response = await fetch(url.toString(), {
+    headers: getAuthHeaders(),
+  });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.error || `HTTP ${response.status}: Error al obtener métricas de cumplimiento normativo.`);
@@ -560,7 +577,9 @@ export const getComplianceRadarApi = async (target?: string): Promise<Compliance
 };
 
 export const getComplianceTargetsApi = async (): Promise<string[]> => {
-  const response = await fetch(`${BASE_URL}/compliance/targets`);
+  const response = await fetch(`${BASE_URL}/compliance/targets`, {
+    headers: getAuthHeaders(),
+  });
   if (!response.ok) {
     return [];
   }

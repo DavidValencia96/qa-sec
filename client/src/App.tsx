@@ -31,7 +31,10 @@ import { EasmAuditTab, type EasmAuditResult } from './components/EasmAuditTab';
 import { RedTeamAuditTab, type RedTeamAuditResult } from './components/redteam/RedTeamAuditTab';
 import { EmailSecAuditTab, type EmailSecResultState } from './components/EmailSecAuditTab';
 import { ComplianceRadarTab, type ComplianceModuleData } from './components/compliance/ComplianceRadarTab';
+import { AdminDashboardTab } from './components/admin/AdminDashboardTab';
 import { CyberBackground } from './components/ui/CyberBackground';
+import { useAuth } from './context/useAuth.js';
+import { LoginOtpModal } from './components/auth/LoginOtpModal.js';
 import type { CveItem, CveAiAnalysis } from './components/cve/cve.types';
 import type { SastAnalysisResponse } from './components/sast/sast.types';
 import type { LoadTestResult, LoadTestConfig } from './components/loadTest/loadTest.types';
@@ -165,9 +168,11 @@ const defaultModuleState: ModuleState = {
 };
 
 export function App() {
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const [targetUrl, setTargetUrl] = useState('https://www.google.com/');
   const [targetInputs, setTargetInputs] = useState<TargetInput[]>([]);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
 
   const [modulesData, setModulesData] = useState<Record<string, ModuleState>>({});
 
@@ -203,13 +208,17 @@ export function App() {
     };
   }, [sessionId]);
 
-  const currentModuleState = modulesData[activeTab] || defaultModuleState;
+  // Pestaña efectiva: Si no hay usuario y se intenta ver un módulo restringido, se evalúa como 'home' directamente en render
+  const isRestricted = !['home', 'scanner', 'injection'].includes(activeTab);
+  const currentTab = !user && isRestricted ? 'home' : activeTab;
+
+  const currentModuleState = modulesData[currentTab] || defaultModuleState;
 
   const updateCurrentModule = (patch: Partial<ModuleState>) => {
     setModulesData((prev) => ({
       ...prev,
-      [activeTab]: {
-        ...(prev[activeTab] || defaultModuleState),
+      [currentTab]: {
+        ...(prev[currentTab] || defaultModuleState),
         ...patch,
       },
     }));
@@ -220,7 +229,7 @@ export function App() {
     if (currentModuleState.running) {
       interval = setInterval(() => {
         setModulesData((prev) => {
-          const current = prev[activeTab] || defaultModuleState;
+          const current = prev[currentTab] || defaultModuleState;
           if (!current.running) return prev;
 
           let newProgress = current.progress;
@@ -228,13 +237,13 @@ export function App() {
 
           if (current.progress < 30) {
             newStatus =
-              activeTab === 'injection'
+              currentTab === 'injection'
                 ? 'Localizando campos objetivo en el DOM con Playwright...'
                 : 'Interceptando tráfico de red y encabezados HTTP...';
             newProgress += 5;
           } else if (current.progress < 65) {
             newStatus =
-              activeTab === 'injection'
+              currentTab === 'injection'
                 ? 'Analizando tipos de datos, atributos de sanitización y respuestas...'
                 : 'Escaneando archivos sensibles y configuraciones...';
             newProgress += 5;
@@ -245,7 +254,7 @@ export function App() {
 
           return {
             ...prev,
-            [activeTab]: {
+            [currentTab]: {
               ...current,
               progress: newProgress,
               statusText: newStatus,
@@ -255,7 +264,7 @@ export function App() {
       }, 600);
     }
     return () => clearInterval(interval);
-  }, [currentModuleState.running, activeTab]);
+  }, [currentModuleState.running, currentTab]);
 
   const handleInitProject = async () => {
     let formattedUrl = targetUrl.trim();
@@ -388,7 +397,7 @@ export function App() {
             justifyContent: 'space-between',
             alignItems: 'center',
             padding: '16px 24px',
-            marginBottom: activeTab === 'home' ? '24px' : '32px',
+            marginBottom: currentTab === 'home' ? '24px' : '32px',
             background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.5) 0%, rgba(9, 9, 11, 0.5) 100%)',
             backdropFilter: 'blur(8px)',
             borderRadius: '10px',
@@ -451,7 +460,7 @@ export function App() {
             </div>
           </div>
 
-          {/* INSIGNIAS (AL EXTREMO DERECHO) */}
+          {/* INSIGNIAS Y CONTROL DE SESIÓN (AL EXTREMO DERECHO) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto', flexWrap: 'wrap' }}>
             {/* AUDITORES EN LÍNEA */}
             <div
@@ -491,17 +500,86 @@ export function App() {
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 6px #22c55e' }} />
               <span style={{ color: '#22c55e', fontSize: '0.75rem', fontWeight: 'bold' }}>Secured</span>
             </div>
+
+            {/* SECCIÓN DE USUARIO / INICIAR SESIÓN */}
+            {user ? (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: 'rgba(2, 6, 23, 0.85)',
+                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                  padding: '5px 12px',
+                  borderRadius: '8px',
+                  boxShadow: '0 0 10px rgba(2, 132, 199, 0.2)',
+                }}
+              >
+                <span style={{ fontSize: '0.8rem', color: '#cbd5e1', fontFamily: 'monospace' }}>{user.email}</span>
+                <span
+                  style={{
+                    fontSize: '0.65rem',
+                    fontWeight: 800,
+                    color: user.role === 'ADMIN' ? '#c084fc' : '#38bdf8',
+                    backgroundColor: user.role === 'ADMIN' ? 'rgba(88, 28, 135, 0.4)' : 'rgba(2, 132, 199, 0.25)',
+                    border: `1px solid ${user.role === 'ADMIN' ? 'rgba(192, 132, 252, 0.4)' : 'rgba(56, 189, 248, 0.3)'}`,
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  {user.role}
+                </span>
+                <button
+                  type="button"
+                  onClick={logout}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#f87171',
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    textDecoration: 'underline',
+                    paddingLeft: '4px',
+                  }}
+                >
+                  Salir
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsLoginModalOpen(true)}
+                style={{
+                  backgroundColor: '#0284c7',
+                  color: '#ffffff',
+                  border: '1px solid #38bdf8',
+                  borderRadius: '8px',
+                  padding: '6px 14px',
+                  fontSize: '0.78rem',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  boxShadow: '0 0 12px rgba(2, 132, 199, 0.4)',
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#0369a1')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#0284c7')}
+              >
+                🔑 Iniciar Sesión
+              </button>
+            )}
           </div>
         </header>
 
-        {activeTab !== 'home' && (
-          <NavigationTabs activeTab={activeTab} onTabChange={setActiveTab} />
+        {currentTab !== 'home' && (
+          <NavigationTabs activeTab={currentTab} onTabChange={setActiveTab} />
         )}
 
-        {activeTab === 'home' && <HomeTab onNavigate={setActiveTab} />}
+        {currentTab === 'home' && <HomeTab onNavigate={setActiveTab} />}
 
         {/* PESTAÑA 1: ESCÁNER GENERAL */}
-        {activeTab === 'scanner' && (
+        {currentTab === 'scanner' && (
           <div>
             <ProjectForm
               targetUrl={targetUrl}
@@ -591,7 +669,7 @@ export function App() {
         )}
 
         {/* PESTAÑA 2: MÓDULO DE INYECCIÓN & INPUTS SEC */}
-        {activeTab === 'injection' && (
+        {currentTab === 'injection' && (
           <div>
             <InputInjectionAuditor
               targetUrl={targetUrl}
@@ -683,7 +761,7 @@ export function App() {
         )}
 
         {/* PESTAÑA 3: AUDITORÍA DEFENSIVA DE CONFIGURACIÓN DE RED */}
-        {activeTab === 'network' && (
+        {currentTab === 'network' && (
           <NetworkConfigAuditor
             networkData={{
               targetHost: currentModuleState.prompt || 'portquiz.net',
@@ -701,7 +779,7 @@ export function App() {
         )}
 
         {/* PESTAÑA 4: CVE RADAR */}
-        {activeTab === 'cve' && (
+        {currentTab === 'cve' && (
           <CveRadarTab
             cveData={{
               vulnerabilities: currentModuleState.vulnerabilities || [],
@@ -725,7 +803,7 @@ export function App() {
         )}
 
         {/* PESTAÑA 5: SAST & CODE AUDIT */}
-        {activeTab === 'sast' && (
+        {currentTab === 'sast' && (
           <SastAuditTab
             sastData={{
               fileName: currentModuleState.sastFileName || 'snippet.ts',
@@ -747,7 +825,7 @@ export function App() {
         )}
 
         {/* PESTAÑA 6: CARGA & DOS */}
-        {activeTab === 'load-test' && (
+        {currentTab === 'load-test' && (
           <LoadTestTab
             loadTestData={{
               config: currentModuleState.loadTestConfig,
@@ -763,7 +841,7 @@ export function App() {
         )}
 
         {/* PESTAÑA 7: DAST API */}
-        {activeTab === 'dast' && (
+        {currentTab === 'dast' && (
           <DastAuditTab
             dastData={{
               targetBaseUrl: currentModuleState.dastTargetBaseUrl || 'http://localhost:3000/api',
@@ -789,7 +867,7 @@ export function App() {
         )}
 
         {/* PESTAÑA 8: SCA & SUPPLY CHAIN */}
-        {activeTab === 'sca' && (
+        {currentTab === 'sca' && (
           <ScaAuditTab
             scaData={{
               manifestType: currentModuleState.scaManifestType || 'package_json',
@@ -811,7 +889,7 @@ export function App() {
         )}
 
         {/* PESTAÑA 9: EASM OSINT */}
-        {activeTab === 'easm' && (
+        {currentTab === 'easm' && (
           <EasmAuditTab
             easmData={{
               targetDomain: currentModuleState.easmTargetDomain || 'google.com',
@@ -833,7 +911,7 @@ export function App() {
         )}
 
         {/* PESTAÑA 10: RED TEAM */}
-        {activeTab === 'redteam' && (
+        {currentTab === 'redteam' && (
           <RedTeamAuditTab
             redTeamData={{
               targetUrl: currentModuleState.redTeamTargetUrl || 'http://localhost:3000/api/users',
@@ -855,7 +933,7 @@ export function App() {
         )}
 
         {/* PESTAÑA 11: EMAIL SECURITY */}
-        {activeTab === 'emailsec' && (
+        {currentTab === 'emailsec' && (
           <EmailSecAuditTab
             emailSecData={{
               activeSubTab: currentModuleState.emailSecActiveSubTab || 'domain',
@@ -879,7 +957,7 @@ export function App() {
         )}
 
         {/* PESTAÑA 12: COMPLIANCE RADAR */}
-        {activeTab === 'compliance' && (
+        {currentTab === 'compliance' && (
           <ComplianceRadarTab
             complianceData={{
               selectedTarget: currentModuleState.complianceSelectedTarget || '',
@@ -897,8 +975,14 @@ export function App() {
         )}
 
         {/* RESTO DE MÓDULOS */}
-        {activeTab === 'history' && <ReportHistory />}
+        {currentTab === 'history' && <ReportHistory />}
+
+        {/* PESTAÑA ADMIN RBAC */}
+        {currentTab === 'admin' && user?.role === 'ADMIN' && <AdminDashboardTab />}
       </div>
+
+      {/* MODAL GLOBAL DE LOGIN / OTP */}
+      <LoginOtpModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
     </div>
   );
 }
