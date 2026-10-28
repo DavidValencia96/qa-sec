@@ -2,6 +2,7 @@ import { getDbPool } from '../../config/database.js';
 
 export interface ScaHistoryRow {
   id: string;
+  testerEmail?: string;
   manifestType: string;
   totalDepsAudited: number;
   vulnerabilitiesJson: string | null;
@@ -10,11 +11,15 @@ export interface ScaHistoryRow {
   createdAt: string;
 }
 
-export const fetchScaHistoryRows = async (): Promise<ScaHistoryRow[]> => {
+export const fetchScaHistoryRows = async (
+  sqlClause: string = '',
+  params: string[] = []
+): Promise<ScaHistoryRow[]> => {
   const pool = getDbPool();
   const query = `
     SELECT 
       id,
+      tester_email AS testerEmail,
       manifest_type AS manifestType,
       total_deps_audited AS totalDepsAudited,
       vulnerabilities_json AS vulnerabilitiesJson,
@@ -22,9 +27,10 @@ export const fetchScaHistoryRows = async (): Promise<ScaHistoryRow[]> => {
       ai_summary_json AS aiSummaryJson,
       created_at AS createdAt
     FROM sca_history
+    ${sqlClause}
     ORDER BY created_at DESC
   `;
 
-  const [rows] = await pool.query(query);
+  const [rows] = await pool.query(query, params);
   return rows as ScaHistoryRow[];
 };

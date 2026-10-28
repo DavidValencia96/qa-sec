@@ -5,13 +5,14 @@ export const saveLoadTestAuditRecord = async (
   id: string,
   config: LoadTestConfigDTO,
   metrics: LoadTestMetrics,
-  aiDiagnosisJson: string
+  aiDiagnosisJson: string,
+  testerEmail: string = 'visitante'
 ): Promise<void> => {
   try {
     const query = `
       INSERT INTO load_test_history 
-        (id, target_url, method, concurrency, duration_seconds, payload_json, headers_json, total_requests, rps, avg_latency_ms, p95_latency_ms, rate_limit_protection, metrics_json, ai_diagnosis_json) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (id, tester_email, target_url, method, concurrency, duration_seconds, payload_json, headers_json, total_requests, rps, avg_latency_ms, p95_latency_ms, rate_limit_protection, metrics_json, ai_diagnosis_json) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const payloadToSave = config.payloadJson && config.payloadJson.trim().length > 0 
@@ -24,6 +25,7 @@ export const saveLoadTestAuditRecord = async (
 
     await getDbPool().execute(query, [
       id,
+      testerEmail,
       config.targetUrl,
       config.method,
       config.concurrency,

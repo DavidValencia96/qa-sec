@@ -4,6 +4,8 @@ import { getDbPool } from '../../config/database.js';
 import { EasmScannerService } from '../../services/easm/easmScanner.service.js';
 import { GeminiAIService } from '../../services/gemini.service.js';
 import type { EasmAuditDTO, EasmAuditResult } from '../../modules/easm/easm.types.js';
+import type { AuthenticatedRequest } from '../../modules/auth/auth.types.js';
+import { extractTesterEmail } from '../../modules/auth/auth.helpers.js';
 
 const easmScanner = new EasmScannerService();
 const geminiService = new GeminiAIService();
@@ -25,9 +27,12 @@ export const runEasmAuditHandler = async (req: Request, res: Response): Promise<
       return;
     }
 
+    // 1. Extraer identificador del tester (email autenticado o 'visitante')
+    const testerEmail = extractTesterEmail(req as AuthenticatedRequest);
+
     const cleanDomain = targetDomain.trim().toLowerCase().replace(/^https?:\/\//i, '').split('/')[0];
 
-    // 1. Ejecutar escaneos en paralelo
+    // 2. Ejecutar escaneos en paralelo
     const [dnsRecords, subdomains, wafAndTech, sslDetails] = await Promise.all([
       easmScanner.resolveDnsRecords(cleanDomain),
       enableSubdomainDiscovery ? easmScanner.discoverSubdomains(cleanDomain) : Promise.resolve([]),
@@ -39,7 +44,7 @@ export const runEasmAuditHandler = async (req: Request, res: Response): Promise<
         : Promise.resolve({ valid: false, weakProtocolsDetected: [] }),
     ]);
 
-    // 2. Diagnóstico IA sintético con Gemini
+    // 3. Diagnóstico IA sintético con Gemini
     const rawEasmData = { cleanDomain, dnsRecords, subdomains, wafAndTech, sslDetails };
     const aiSummary = await geminiService.generateEasmSummary(rawEasmData);
 
@@ -54,14 +59,15 @@ export const runEasmAuditHandler = async (req: Request, res: Response): Promise<
       aiSummary,
     };
 
-    // 3. Persistir auditoría en MySQL
+    // 4. Persistir auditoría en MySQL asociando al tester responsable
     const pool = getDbPool();
     await pool.query(
       `INSERT INTO easm_history 
-        (id, target_domain, dns_records_json, subdomains_json, waf_tech_json, ssl_details_json, ai_summary_json)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        (id, tester_email, target_domain, dns_records_json, subdomains_json, waf_tech_json, ssl_details_json, ai_summary_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         runId,
+        testerEmail,
         cleanDomain,
         JSON.stringify(dnsRecords),
         JSON.stringify(subdomains),

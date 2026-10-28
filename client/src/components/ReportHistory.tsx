@@ -34,6 +34,7 @@ export type { HistoryItem };
 
 export interface DastHistoryItem {
   id: string;
+  testerEmail?: string;
   targetBaseUrl: string;
   totalEndpointsTested: number;
   findingsJson?: string;
@@ -43,6 +44,7 @@ export interface DastHistoryItem {
 
 export interface ScaHistoryItem {
   id: string;
+  testerEmail?: string;
   manifestType: string;
   totalDepsAudited: number;
   vulnerabilitiesJson?: string;
@@ -53,6 +55,7 @@ export interface ScaHistoryItem {
 
 export interface EasmHistoryItem {
   id: string;
+  testerEmail?: string;
   targetDomain: string;
   dnsRecordsJson?: string;
   subdomainsJson?: string;
@@ -64,6 +67,7 @@ export interface EasmHistoryItem {
 
 export interface RedTeamHistoryItem {
   id: string;
+  testerEmail?: string;
   targetUrl: string;
   jwtToken?: string;
   jwtFindingsJson?: string;
@@ -75,6 +79,7 @@ export interface RedTeamHistoryItem {
 
 export interface EmailSecHistoryItem {
   id: string;
+  testerEmail?: string;
   targetDomain?: string;
   targetIp?: string;
   spfJson?: string;

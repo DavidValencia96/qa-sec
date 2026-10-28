@@ -5,6 +5,8 @@ import { GeminiAIService } from '../services/gemini.service.js';
 import type { SastAnalysisRequestDTO, SastFinding } from '../modules/sast/sast.types.js';
 import { generateId } from '../utils/id.generator.js';
 import { saveSastAuditRecord } from './sast/sast.helpers.js';
+import type { AuthenticatedRequest } from '../modules/auth/auth.types.js';
+import { extractTesterEmail } from '../modules/auth/auth.helpers.js';
 
 const secretScanner = new SecretScannerService();
 const dependencyScanner = new DependencyScannerService();
@@ -19,19 +21,22 @@ export const analyzeSastContentHandler = async (req: Request, res: Response): Pr
       return;
     }
 
+    // 1. Extraer identificador del tester
+    const testerEmail = extractTesterEmail(req as AuthenticatedRequest);
+
     let findings: SastFinding[] = [];
 
-    // 1. Escaneo Regex de Secretos
+    // 2. Escaneo Regex de Secretos
     const secretFindings = secretScanner.scanContentForSecrets(codeOrContent);
     findings = [...findings, ...secretFindings];
 
-    // 2. Escaneo de Dependencias si es package.json
+    // 3. Escaneo de Dependencias si es package.json
     if (fileType === 'package_json' || fileName.endsWith('package.json')) {
       const depFindings = dependencyScanner.scanPackageJson(codeOrContent);
       findings = [...findings, ...depFindings];
     }
 
-    // 3. Auditoría SAST con IA (Gemini)
+    // 4. Auditoría SAST con IA (Gemini)
     const aiResult = await geminiService.analyzeCodeWithAi({
       codeOrContent,
       language,
@@ -59,7 +64,8 @@ export const analyzeSastContentHandler = async (req: Request, res: Response): Pr
       analyzedAt: new Date().toISOString(),
     };
 
-    await saveSastAuditRecord(auditId, fileName, fileType, responseData);
+    // 5. Guardar asociando al ejecutor
+    await saveSastAuditRecord(auditId, fileName, fileType, responseData, testerEmail);
 
     res.status(200).json(responseData);
   } catch (error) {

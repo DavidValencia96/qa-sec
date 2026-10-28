@@ -6,6 +6,31 @@ interface DastHistoryTableProps {
   items: DastHistoryItem[];
 }
 
+const renderTesterBadge = (email?: string) => {
+  const isGuest = !email || email.toLowerCase() === 'visitante';
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '5px',
+        padding: '3px 8px',
+        borderRadius: '5px',
+        fontSize: '11px',
+        fontFamily: isGuest ? 'sans-serif' : 'monospace',
+        fontWeight: 600,
+        backgroundColor: isGuest ? 'rgba(100, 116, 139, 0.15)' : 'rgba(2, 132, 199, 0.2)',
+        color: isGuest ? '#94a3b8' : '#38bdf8',
+        border: `1px solid ${isGuest ? 'rgba(148, 163, 184, 0.3)' : 'rgba(56, 189, 248, 0.3)'}`,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <span>{isGuest ? '👤' : '✉️'}</span>
+      <span>{isGuest ? 'visitante' : email}</span>
+    </span>
+  );
+};
+
 export const DastHistoryTable: React.FC<DastHistoryTableProps> = ({ items }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -36,11 +61,12 @@ export const DastHistoryTable: React.FC<DastHistoryTableProps> = ({ items }) => 
       <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: '#f8fafc', fontSize: '13px' }}>
         <thead>
           <tr style={{ backgroundColor: 'rgba(2, 6, 23, 0.9)', borderBottom: '1px solid rgba(30, 41, 59, 0.9)', color: '#38bdf8', fontWeight: 'bold' }}>
-            <th style={{ padding: '14px 16px', width: '22%' }}>ID Ejecución</th>
-            <th style={{ padding: '14px 16px', width: '28%' }}>URL Base Target</th>
-            <th style={{ padding: '14px 16px', width: '15%' }}>Endpoints Probados</th>
-            <th style={{ padding: '14px 16px', width: '15%' }}>Hallazgos</th>
-            <th style={{ padding: '14px 16px', width: '10%' }}>Fecha</th>
+            <th style={{ padding: '14px 16px', width: '18%' }}>ID Ejecución</th>
+            <th style={{ padding: '14px 16px', width: '22%' }}>URL Base Target</th>
+            <th style={{ padding: '14px 16px', width: '14%' }}>Endpoints Probados</th>
+            <th style={{ padding: '14px 16px', width: '12%' }}>Hallazgos</th>
+            <th style={{ padding: '14px 16px', width: '12%' }}>Fecha</th>
+            <th style={{ padding: '14px 16px', width: '12%' }}>Tester</th>
             <th style={{ padding: '14px 16px', textAlign: 'center', width: '10%' }}>Acciones</th>
           </tr>
         </thead>
@@ -121,6 +147,11 @@ export const DastHistoryTable: React.FC<DastHistoryTableProps> = ({ items }) => 
                     {new Date(item.createdAt).toLocaleString('es-ES')}
                   </td>
 
+                  {/* Columna Tester */}
+                  <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                    {renderTesterBadge(item.testerEmail)}
+                  </td>
+
                   {/* Acciones */}
                   <td style={{ padding: '14px 16px', textAlign: 'center', whiteSpace: 'nowrap' }}>
                     <button
@@ -149,7 +180,7 @@ export const DastHistoryTable: React.FC<DastHistoryTableProps> = ({ items }) => 
                 {/* FILA ACORDEÓN DESPLEGABLE IN-LINE */}
                 {isExpanded && (
                   <tr style={{ borderBottom: '1px solid rgba(30, 41, 59, 0.8)', backgroundColor: 'rgba(15, 23, 42, 0.85)' }}>
-                    <td colSpan={6} style={{ padding: '20px' }}>
+                    <td colSpan={7} style={{ padding: '20px' }}>
                       <div
                         style={{
                           backgroundColor: '#090d16',
@@ -220,7 +251,7 @@ export const DastHistoryTable: React.FC<DastHistoryTableProps> = ({ items }) => 
                           </div>
                         )}
 
-                        {/* LISTA DE HALLAZGOS CON TIPADO STRICTO (SIN 'any') */}
+                        {/* LISTA DE HALLAZGOS CON TIPADO ESTRICTO */}
                         {findings.length === 0 ? (
                           <div style={{ backgroundColor: 'rgba(6, 78, 59, 0.2)', border: '1px solid rgba(52, 211, 153, 0.3)', color: '#34d399', borderRadius: '10px', padding: '14px', fontSize: '12px', fontWeight: '500' }}>
                             ✅ No se encontraron vulnerabilidades ni vectores de inyección durante el fuzzing OpenAPI en los {item.totalEndpointsTested} endpoints probados.

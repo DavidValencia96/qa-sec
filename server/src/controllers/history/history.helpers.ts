@@ -1,3 +1,5 @@
+// server/src/controllers/history/history.helpers.ts
+
 export interface FormattedHistoryRun {
   runId: string;
   auditType: 'WEB_AUDIT' | 'NETWORK_AUDIT';
@@ -9,6 +11,7 @@ export interface FormattedHistoryRun {
   projectName: string;
   targetUrl: string;
   totalFindings: number;
+  testerEmail: string;
 }
 
 export const formatHistoryRecords = (rawHistory: any[]): FormattedHistoryRun[] => {
@@ -23,5 +26,6 @@ export const formatHistoryRecords = (rawHistory: any[]): FormattedHistoryRun[] =
     projectName: item.projectName || 'General',
     targetUrl: item.targetUrl || 'N/A',
     totalFindings: Number(item.totalFindings || 0),
+    testerEmail: String(item.testerEmail || item.tester_email || 'visitante').trim().toLowerCase(),
   }));
 };

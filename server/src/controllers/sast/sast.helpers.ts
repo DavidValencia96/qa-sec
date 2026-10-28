@@ -5,16 +5,18 @@ export const saveSastAuditRecord = async (
   id: string,
   fileName: string,
   fileType: string,
-  result: SastAnalysisResponse
+  result: SastAnalysisResponse,
+  testerEmail: string = 'visitante'
 ): Promise<void> => {
   try {
     const query = `
       INSERT INTO sast_audit_history 
-        (id, file_name, file_type, health_score, total_findings, findings_json, remediated_code) 
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+        (id, tester_email, file_name, file_type, health_score, total_findings, findings_json, remediated_code) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
     await getDbPool().execute(query, [
       id,
+      testerEmail,
       fileName,
       fileType,
       result.score,

@@ -26,10 +26,12 @@ export const requireModuleAccess = (requiredModule: SystemModuleKey) => {
       return;
     }
 
-    if (user.role === 'ADMIN') {
+    // ADMIN y AUDITOR cuentan con autorización global sin validar checklist individual
+    if (user.role === 'ADMIN' || user.role === 'AUDITOR') {
       return next();
     }
 
+    // Para VIEWER u otros roles se comprueba el listado granular asignado en BD
     const authorized = user.allowed_modules || [];
     if (!authorized.includes(requiredModule)) {
       res.status(403).json({

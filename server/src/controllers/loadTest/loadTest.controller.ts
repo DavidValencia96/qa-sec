@@ -4,6 +4,8 @@ import { generateId } from '../../utils/id.generator.js';
 import { saveLoadTestAuditRecord } from './loadTest.helpers.js';
 import { GeminiAIService } from '../../services/gemini.service.js';
 import type { LoadTestConfigDTO } from '../../modules/loadTest/loadTest.types.js';
+import type { AuthenticatedRequest } from '../../modules/auth/auth.types.js';
+import { extractTesterEmail } from '../../modules/auth/auth.helpers.js';
 
 const runnerService = new LoadTestRunnerService();
 const geminiService = new GeminiAIService();
@@ -17,12 +19,15 @@ export const runLoadTestHandler = async (req: Request, res: Response): Promise<v
       return;
     }
 
+    // Identificar al ejecutor
+    const testerEmail = extractTesterEmail(req as AuthenticatedRequest);
+
     // Configuración por defecto y límites de seguridad
     const safeConfig: LoadTestConfigDTO = {
       targetUrl: config.targetUrl,
       method: config.method || 'GET',
-      concurrency: Math.min(Math.max(config.concurrency || 10, 1), 100), // Max 100 conexiones
-      durationSeconds: Math.min(Math.max(config.durationSeconds || 5, 2), 30), // Max 30s
+      concurrency: Math.min(Math.max(config.concurrency || 10, 1), 100),
+      durationSeconds: Math.min(Math.max(config.durationSeconds || 5, 2), 30),
       headers: config.headers,
       headersJson: config.headersJson,
       payloadJson: config.payloadJson,
@@ -33,11 +38,11 @@ export const runLoadTestHandler = async (req: Request, res: Response): Promise<v
     // 1. Ejecutar prueba de carga controlada
     const metrics = await runnerService.executeLoadTest(safeConfig);
 
-    // 2. Diagnóstico IA con Gemini AI usando fallback automático
+    // 2. Diagnóstico IA con Gemini AI
     const aiDiagnosis = await geminiService.analyzeLoadTestWithAi(safeConfig, metrics);
 
-    // 3. Guardar persistencia en MySQL
-    await saveLoadTestAuditRecord(runId, safeConfig, metrics, JSON.stringify(aiDiagnosis));
+    // 3. Guardar persistencia en MySQL asociando al tester responsable
+    await saveLoadTestAuditRecord(runId, safeConfig, metrics, JSON.stringify(aiDiagnosis), testerEmail);
 
     res.status(200).json({
       success: true,

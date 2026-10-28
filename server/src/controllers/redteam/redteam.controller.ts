@@ -6,6 +6,8 @@ import { GeminiAIService } from '../../services/gemini.service.js';
 import { getDbPool } from '../../config/database.js';
 import { generateUniqueId } from '../../utils/id.generator.js';
 import type { RedTeamAuditPayload, RedTeamAuditResponse, JwtFinding, CorsFinding } from '../../modules/redteam/redteam.types.js';
+import type { AuthenticatedRequest } from '../../modules/auth/auth.types.js';
+import { extractTesterEmail } from '../../modules/auth/auth.helpers.js';
 
 const jwtScanner = new JwtScannerService();
 const corsScanner = new CorsScannerService();
@@ -20,6 +22,9 @@ export const runRedTeamAuditHandler = async (req: Request, res: Response): Promi
       res.status(400).json({ success: false, error: 'La URL objetivo (targetUrl) es requerida.' });
       return;
     }
+
+    // 1. Extraer identificador del tester (email autenticado o 'visitante')
+    const testerEmail = extractTesterEmail(req as AuthenticatedRequest);
 
     const runId = generateUniqueId();
     let jwtFindings: JwtFinding[] = [];
@@ -46,12 +51,14 @@ export const runRedTeamAuditHandler = async (req: Request, res: Response): Promi
       phishingCount
     );
 
+    // 2. Persistir auditoría en MySQL asociando al tester responsable
     const pool = getDbPool();
     await pool.query(
-      `INSERT INTO redteam_history (id, target_url, jwt_token, jwt_findings_json, cors_findings_json, phishing_count, ai_summary_json)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO redteam_history (id, tester_email, target_url, jwt_token, jwt_findings_json, cors_findings_json, phishing_count, ai_summary_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         runId,
+        testerEmail,
         payload.targetUrl,
         payload.jwtToken || null,
         JSON.stringify(jwtFindings),

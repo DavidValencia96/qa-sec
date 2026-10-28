@@ -6,6 +6,31 @@ interface HistoryTableProps {
   onOpenReportModal: (item: HistoryItem) => void;
 }
 
+const renderTesterBadge = (email?: string) => {
+  const isGuest = !email || email.toLowerCase() === 'visitante';
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '5px',
+        padding: '3px 8px',
+        borderRadius: '5px',
+        fontSize: '11px',
+        fontFamily: isGuest ? 'sans-serif' : 'monospace',
+        fontWeight: 600,
+        backgroundColor: isGuest ? 'rgba(100, 116, 139, 0.15)' : 'rgba(2, 132, 199, 0.2)',
+        color: isGuest ? '#94a3b8' : '#38bdf8',
+        border: `1px solid ${isGuest ? 'rgba(148, 163, 184, 0.3)' : 'rgba(56, 189, 248, 0.3)'}`,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <span>{isGuest ? '👤' : '✉️'}</span>
+      <span>{isGuest ? 'visitante' : email}</span>
+    </span>
+  );
+};
+
 export const HistoryTable: React.FC<HistoryTableProps> = ({ items, onOpenReportModal }) => {
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
 
@@ -33,14 +58,15 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({ items, onOpenReportM
         <thead>
           <tr style={{ backgroundColor: 'rgba(2, 6, 23, 0.9)', borderBottom: '1px solid rgba(30, 41, 59, 0.9)', color: '#38bdf8', fontWeight: 'bold' }}>
             <th style={{ padding: '14px 16px', width: '8%', whiteSpace: 'nowrap' }}>Tipo</th>
-            <th style={{ padding: '14px 16px', width: '18%', whiteSpace: 'nowrap' }}>ID Ejecución</th>
-            <th style={{ padding: '14px 16px', width: '16%', whiteSpace: 'nowrap' }}>Proyecto</th>
-            <th style={{ padding: '14px 16px', width: '22%', whiteSpace: 'nowrap' }}>URL Objetivo</th>
-            <th style={{ padding: '14px 16px', width: '18%', whiteSpace: 'nowrap' }}>Suite / Módulo</th>
-            <th style={{ padding: '14px 16px', width: '10%', whiteSpace: 'nowrap' }}>Fecha</th>
-            <th style={{ padding: '14px 16px', width: '10%', whiteSpace: 'nowrap' }}>Estado</th>
-            <th style={{ padding: '14px 16px', width: '10%', whiteSpace: 'nowrap' }}>Hallazgos</th>
-            <th style={{ padding: '14px 16px', textAlign: 'center', width: '12%', whiteSpace: 'nowrap' }}>Acción</th>
+            <th style={{ padding: '14px 16px', width: '15%', whiteSpace: 'nowrap' }}>ID Ejecución</th>
+            <th style={{ padding: '14px 16px', width: '14%', whiteSpace: 'nowrap' }}>Proyecto</th>
+            <th style={{ padding: '14px 16px', width: '18%', whiteSpace: 'nowrap' }}>URL Objetivo</th>
+            <th style={{ padding: '14px 16px', width: '15%', whiteSpace: 'nowrap' }}>Suite / Módulo</th>
+            <th style={{ padding: '14px 16px', width: '9%', whiteSpace: 'nowrap' }}>Fecha</th>
+            <th style={{ padding: '14px 16px', width: '8%', whiteSpace: 'nowrap' }}>Estado</th>
+            <th style={{ padding: '14px 16px', width: '8%', whiteSpace: 'nowrap' }}>Hallazgos</th>
+            <th style={{ padding: '14px 16px', width: '12%', whiteSpace: 'nowrap' }}>Tester</th>
+            <th style={{ padding: '14px 16px', textAlign: 'center', width: '10%', whiteSpace: 'nowrap' }}>Acción</th>
           </tr>
         </thead>
         <tbody>
@@ -160,6 +186,11 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({ items, onOpenReportM
                   >
                     {totalFindings} {isNetwork ? 'Abiertos' : 'Detectados'}
                   </span>
+                </td>
+
+                {/* Tester */}
+                <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                  {renderTesterBadge(item.testerEmail)}
                 </td>
 
                 {/* Acción */}

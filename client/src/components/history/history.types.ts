@@ -9,4 +9,5 @@ export interface HistoryItem {
   projectName: string | null;
   targetUrl: string | null;
   totalFindings: number;
+  testerEmail?: string;
 }

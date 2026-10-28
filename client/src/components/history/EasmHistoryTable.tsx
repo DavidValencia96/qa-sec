@@ -6,6 +6,31 @@ interface EasmHistoryTableProps {
   onExportSingleRecord: (item: EasmHistoryItem) => void;
 }
 
+const renderTesterBadge = (email?: string) => {
+  const isGuest = !email || email.toLowerCase() === 'visitante';
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '5px',
+        padding: '3px 8px',
+        borderRadius: '5px',
+        fontSize: '11px',
+        fontFamily: isGuest ? 'sans-serif' : 'monospace',
+        fontWeight: 600,
+        backgroundColor: isGuest ? 'rgba(100, 116, 139, 0.15)' : 'rgba(2, 132, 199, 0.2)',
+        color: isGuest ? '#94a3b8' : '#38bdf8',
+        border: `1px solid ${isGuest ? 'rgba(148, 163, 184, 0.3)' : 'rgba(56, 189, 248, 0.3)'}`,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <span>{isGuest ? '👤' : '✉️'}</span>
+      <span>{isGuest ? 'visitante' : email}</span>
+    </span>
+  );
+};
+
 // Helper seguro para deserializar JSON sin romper la interfaz
 function safeJsonParse<T>(data: unknown, fallback: T): T {
   if (!data) return fallback;
@@ -51,12 +76,13 @@ export const EasmHistoryTable: React.FC<EasmHistoryTableProps> = ({ items, onExp
       <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: '#f8fafc', fontSize: '13px' }}>
         <thead>
           <tr style={{ backgroundColor: 'rgba(2, 6, 23, 0.9)', borderBottom: '1px solid rgba(30, 41, 59, 0.9)', color: '#38bdf8', fontWeight: 'bold' }}>
-            <th style={{ padding: '14px 16px', width: '22%' }}>ID Ejecución</th>
-            <th style={{ padding: '14px 16px', width: '22%' }}>Dominio Objetivo</th>
-            <th style={{ padding: '14px 16px', width: '16%' }}>Subdominios</th>
-            <th style={{ padding: '14px 16px', width: '16%' }}>Certificado SSL</th>
+            <th style={{ padding: '14px 16px', width: '18%' }}>ID Ejecución</th>
+            <th style={{ padding: '14px 16px', width: '20%' }}>Dominio Objetivo</th>
+            <th style={{ padding: '14px 16px', width: '14%' }}>Subdominios</th>
+            <th style={{ padding: '14px 16px', width: '14%' }}>Certificado SSL</th>
             <th style={{ padding: '14px 16px', width: '12%' }}>Fecha</th>
-            <th style={{ padding: '14px 16px', textAlign: 'center', width: '12%' }}>Acciones</th>
+            <th style={{ padding: '14px 16px', width: '12%' }}>Tester</th>
+            <th style={{ padding: '14px 16px', textAlign: 'center', width: '10%' }}>Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -158,6 +184,11 @@ export const EasmHistoryTable: React.FC<EasmHistoryTableProps> = ({ items, onExp
                     {new Date(item.createdAt).toLocaleString('es-ES')}
                   </td>
 
+                  {/* Columna Tester */}
+                  <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                    {renderTesterBadge(item.testerEmail)}
+                  </td>
+
                   {/* Acciones */}
                   <td style={{ padding: '14px 16px', textAlign: 'center', whiteSpace: 'nowrap' }}>
                     <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'center' }}>
@@ -205,10 +236,10 @@ export const EasmHistoryTable: React.FC<EasmHistoryTableProps> = ({ items, onExp
                   </td>
                 </tr>
 
-                {/* FILA ACORDEÓN DESPLEGABLE CON DETALLE EASM & OSINT */}
+                {/* FILA ACORDEÓN DESPLEGABLE */}
                 {isExpanded && (
                   <tr style={{ borderBottom: '1px solid rgba(30, 41, 59, 0.8)', backgroundColor: 'rgba(15, 23, 42, 0.85)' }}>
-                    <td colSpan={6} style={{ padding: '20px' }}>
+                    <td colSpan={7} style={{ padding: '20px' }}>
                       <div
                         style={{
                           backgroundColor: '#090d16',
@@ -338,7 +369,7 @@ export const EasmHistoryTable: React.FC<EasmHistoryTableProps> = ({ items, onExp
                           </div>
                         </div>
 
-                        {/* REGISTROS DNS RENDERIZADOS CON ÉXITO */}
+                        {/* REGISTROS DNS */}
                         <div style={{ backgroundColor: '#020617', border: '1px solid rgba(51, 65, 85, 0.8)', borderRadius: '10px', padding: '12px' }}>
                           <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#f8fafc', display: 'block', marginBottom: '8px' }}>
                             📡 Registros DNS ({parsedDnsList.length}):

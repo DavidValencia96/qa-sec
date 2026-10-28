@@ -1,12 +1,16 @@
-import type { Request, Response } from 'express';
+import type { Response } from 'express';
 import { SastHistoryService } from '../../services/sast/sastHistory.service.js';
+import type { AuthenticatedRequest } from '../../modules/auth/auth.types.js';
+import { buildTesterFilterClause } from '../../modules/auth/auth.helpers.js';
 
 const sastHistoryService = new SastHistoryService();
 
-export const getSastHistoryHandler = async (req: Request, res: Response): Promise<void> => {
+export const getSastHistoryHandler = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const limit = req.query.limit ? parseInt(String(req.query.limit), 10) : 20;
-    const history = await sastHistoryService.fetchSastAuditHistory(limit);
+    const { sqlClause, params } = buildTesterFilterClause(req);
+
+    const history = await sastHistoryService.fetchSastAuditHistory(limit, sqlClause, params);
 
     res.status(200).json({
       success: true,
@@ -19,7 +23,7 @@ export const getSastHistoryHandler = async (req: Request, res: Response): Promis
   }
 };
 
-export const getSastHistoryItemHandler = async (req: Request, res: Response): Promise<void> => {
+export const getSastHistoryItemHandler = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     if (!id) {

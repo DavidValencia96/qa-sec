@@ -366,3 +366,53 @@ SET u.allowed_modules = JSON_ARRAY(
     'REPORTS', 'CVE', 'ADMIN'
 )
 WHERE r.name = 'ADMIN';
+
+
+
+
+USE qa_sec_db;
+
+-- 1. Suites / Escáner Web & Form Inputs
+ALTER TABLE test_runs 
+ADD COLUMN tester_email VARCHAR(191) NOT NULL DEFAULT 'visitante' AFTER test_suite_id,
+ADD INDEX idx_test_runs_tester (tester_email);
+
+-- 2. Escaneo de Red & Puertos
+ALTER TABLE port_scans 
+ADD COLUMN tester_email VARCHAR(191) NOT NULL DEFAULT 'visitante' AFTER project_id,
+ADD INDEX idx_port_scans_tester (tester_email);
+
+-- 3. SAST (Análisis de Código Estático)
+ALTER TABLE sast_audit_history 
+ADD COLUMN tester_email VARCHAR(191) NOT NULL DEFAULT 'visitante' AFTER id,
+ADD INDEX idx_sast_tester (tester_email);
+
+-- 4. Pruebas de Carga & DoS
+ALTER TABLE load_test_history 
+ADD COLUMN tester_email VARCHAR(191) NOT NULL DEFAULT 'visitante' AFTER id,
+ADD INDEX idx_load_test_tester (tester_email);
+
+-- 5. DAST API / OpenAPI
+ALTER TABLE dast_history 
+ADD COLUMN tester_email VARCHAR(191) NOT NULL DEFAULT 'visitante' AFTER id,
+ADD INDEX idx_dast_tester (tester_email);
+
+-- 6. SCA & Dependencias / Git Secrets
+ALTER TABLE sca_history 
+ADD COLUMN tester_email VARCHAR(191) NOT NULL DEFAULT 'visitante' AFTER id,
+ADD INDEX idx_sca_tester (tester_email);
+
+-- 7. EASM OSINT Surface
+ALTER TABLE easm_history 
+ADD COLUMN tester_email VARCHAR(191) NOT NULL DEFAULT 'visitante' AFTER id,
+ADD INDEX idx_easm_tester (tester_email);
+
+-- 8. Red Team & Tokens
+ALTER TABLE redteam_history 
+ADD COLUMN tester_email VARCHAR(191) NOT NULL DEFAULT 'visitante' AFTER id,
+ADD INDEX idx_redteam_tester (tester_email);
+
+-- 9. Email Security & DNS
+ALTER TABLE emailsec_history 
+ADD COLUMN tester_email VARCHAR(191) NOT NULL DEFAULT 'visitante' AFTER id,
+ADD INDEX idx_emailsec_tester (tester_email);

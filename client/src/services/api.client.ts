@@ -1,3 +1,5 @@
+// client/src/services/api.client.ts
+
 import type { TargetInput } from '../components/dashboard/dashboard.types';
 import type { LoadTestConfig, LoadTestResult, LoadTestMetrics } from '../components/loadTest/loadTest.types';
 import type { ConsolidatedReportOptions } from '../components/report/ConsolidatedReportExportModal';
@@ -6,7 +8,7 @@ export type DependencyManifestType = 'package_json' | 'requirements_txt' | 'pom_
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 export const getAuthHeaders = (): HeadersInit => {
-  const token = localStorage.getItem('qa_sec_token');
+  const token = localStorage.getItem('qa_sec_token') || sessionStorage.getItem('qa_sec_token');
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -181,6 +183,7 @@ export const exportReportApi = async (payload: {
 
 export interface SastHistoryItem {
   id: string;
+  testerEmail?: string;
   fileName: string;
   fileType: string;
   healthScore: number;
@@ -224,6 +227,7 @@ export const runLoadTestApi = async (payload: LoadTestConfig): Promise<LoadTestR
 
 export interface LoadTestHistoryItem {
   id: string;
+  testerEmail?: string;
   targetUrl: string;
   method: string;
   concurrency: number;

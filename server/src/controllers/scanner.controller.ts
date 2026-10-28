@@ -8,6 +8,8 @@ import { GeminiAIService } from '../services/gemini.service.js';
 import { generateUniqueId } from '../utils/id.generator.js';
 import { RunTestDTO } from './api.types.js';
 import { executeModulesAndSaveFindings, mapFindingsToSummaryInput } from './scanner/scanner.helpers.js';
+import type { AuthenticatedRequest } from '../modules/auth/auth.types.js';
+import { extractTesterEmail } from '../modules/auth/auth.helpers.js';
 
 const geminiService = new GeminiAIService();
 
@@ -56,9 +58,13 @@ export const executeTestRun = async (
     const { suiteId, targetUrl, targetInputs, promptId: bodyPromptId } = req.body;
     const runId = generateUniqueId();
 
+    // 1. Obtener email del usuario autenticado o 'visitante'
+    const testerEmail = extractTesterEmail(req as AuthenticatedRequest);
+
+    // 2. Registrar ejecución asociando al tester responsable
     await getDbPool().execute(
-      'INSERT INTO test_runs (id, test_suite_id, status) VALUES (?, ?, ?)',
-      [runId, suiteId, 'RUNNING']
+      'INSERT INTO test_runs (id, test_suite_id, tester_email, status) VALUES (?, ?, ?, ?)',
+      [runId, suiteId, testerEmail, 'RUNNING']
     );
 
     const hasInputs = targetInputs && Array.isArray(targetInputs) && targetInputs.length > 0;

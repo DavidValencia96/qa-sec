@@ -3,6 +3,8 @@ import { scanTargetPortsReal } from '../services/portScanner.service.js';
 import { GeminiAIService } from '../services/gemini.service.js';
 import { saveNetworkAuditRun } from '../services/history.service.js';
 import { validateTargetHost, filterOpenPorts } from './portScan/portScan.helpers.js';
+import type { AuthenticatedRequest } from '../modules/auth/auth.types.js';
+import { extractTesterEmail } from '../modules/auth/auth.helpers.js';
 
 const geminiService = new GeminiAIService();
 
@@ -15,17 +17,25 @@ export const handleAnalyzeNetworkConfig = async (req: Request, res: Response): P
       return;
     }
 
-    // 1. Escaneo real de puertos TCP en el servidor
+    // 1. Identificar al ejecutor de la prueba (email o 'visitante')
+    const testerEmail = extractTesterEmail(req as AuthenticatedRequest);
+
+    // 2. Escaneo real de puertos TCP en el servidor
     const scannedPorts = await scanTargetPortsReal(host);
 
-    // 2. Filtrar puertos abiertos para la IA
+    // 3. Filtrar puertos abiertos para la IA
     const openPorts = filterOpenPorts(scannedPorts);
 
-    // 3. Consultar a Gemini AI sobre los hallazgos
+    // 4. Consultar a Gemini AI sobre los hallazgos
     const analysis = await geminiService.analyzeNetworkConfigurationWithAi(host, openPorts);
 
-    // 4. Guardar resultado en MySQL
-    const scanId = await saveNetworkAuditRun(host, analysis.riskAssessment, analysis.mitigations);
+    // 5. Guardar resultado en MySQL asociando al tester responsable
+    const scanId = await saveNetworkAuditRun(
+      host,
+      analysis.riskAssessment,
+      analysis.mitigations,
+      testerEmail
+    );
 
     res.status(200).json({
       success: true,

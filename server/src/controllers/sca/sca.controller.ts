@@ -4,6 +4,8 @@ import { generateId } from '../../utils/id.generator.js';
 import { ScaDependencyScannerService } from '../../services/sca/scaDependencyScanner.service.js';
 import { GitHistoryScannerService } from '../../services/sca/gitHistoryScanner.service.js';
 import type { ScaAuditConfigDTO } from '../../modules/sca/sca.types.js';
+import type { AuthenticatedRequest } from '../../modules/auth/auth.types.js';
+import { extractTesterEmail } from '../../modules/auth/auth.helpers.js';
 
 const dependencyScanner = new ScaDependencyScannerService();
 const gitScanner = new GitHistoryScannerService();
@@ -12,6 +14,9 @@ export const runScaAuditHandler = async (req: Request, res: Response): Promise<v
   try {
     const config = req.body as ScaAuditConfigDTO;
     const runId = generateId('sca');
+
+    // 1. Identificar al ejecutor de la prueba
+    const testerEmail = extractTesterEmail(req as AuthenticatedRequest);
 
     const vulnerabilities = config.enableDependencyScan && config.manifestContent && config.manifestType
       ? await dependencyScanner.scanManifest(config.manifestContent, config.manifestType)
@@ -32,12 +37,14 @@ export const runScaAuditHandler = async (req: Request, res: Response): Promise<v
       ],
     };
 
+    // 2. Persistencia en MySQL con tester_email
     const query = `
-      INSERT INTO sca_history (id, manifest_type, total_deps_audited, vulnerabilities_json, git_secrets_json, ai_summary_json)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO sca_history (id, tester_email, manifest_type, total_deps_audited, vulnerabilities_json, git_secrets_json, ai_summary_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
     await getDbPool().execute(query, [
       runId,
+      testerEmail,
       config.manifestType || 'package_json',
       totalAudited,
       JSON.stringify(vulnerabilities),

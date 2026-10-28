@@ -6,6 +6,8 @@ import { GeminiAIService } from '../../services/gemini.service.js';
 import { getDbPool } from '../../config/database.js';
 import { generateUniqueId } from '../../utils/id.generator.js';
 import type { EmailSecAuditPayload, EmailSecAuditResponse } from '../../modules/emailsec/emailsec.types.js';
+import type { AuthenticatedRequest } from '../../modules/auth/auth.types.js';
+import { extractTesterEmail } from '../../modules/auth/auth.helpers.js';
 
 const dnsScanner = new DnsAuthScannerService();
 const rblScanner = new RblScannerService();
@@ -16,6 +18,9 @@ export const runEmailSecAuditHandler = async (req: Request, res: Response): Prom
   try {
     const payload = req.body as EmailSecAuditPayload;
     const runId = generateUniqueId();
+
+    // 1. Extraer identificador del tester (email autenticado o 'visitante')
+    const testerEmail = extractTesterEmail(req as AuthenticatedRequest);
 
     let spfResult;
     let dmarcResult;
@@ -48,13 +53,14 @@ export const runEmailSecAuditHandler = async (req: Request, res: Response): Prom
       headerResult
     );
 
-    // Guardar en la base de datos
+    // 2. Persistir en MySQL asociando al tester responsable
     const pool = getDbPool();
     await pool.query(
-      `INSERT INTO emailsec_history (id, target_domain, target_ip, spf_json, dmarc_json, dkim_json, rbl_json, headers_json, ai_summary_json)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO emailsec_history (id, tester_email, target_domain, target_ip, spf_json, dmarc_json, dkim_json, rbl_json, headers_json, ai_summary_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         runId,
+        testerEmail,
         payload.domain || null,
         payload.targetIp || null,
         spfResult ? JSON.stringify(spfResult) : null,

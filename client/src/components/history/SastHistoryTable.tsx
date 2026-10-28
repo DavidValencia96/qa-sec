@@ -6,6 +6,31 @@ interface SastHistoryTableProps {
   onSelectAudit: (item: SastHistoryItem) => void;
 }
 
+const renderTesterBadge = (email?: string) => {
+  const isGuest = !email || email.toLowerCase() === 'visitante';
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '5px',
+        padding: '3px 8px',
+        borderRadius: '5px',
+        fontSize: '11px',
+        fontFamily: isGuest ? 'sans-serif' : 'monospace',
+        fontWeight: 600,
+        backgroundColor: isGuest ? 'rgba(100, 116, 139, 0.15)' : 'rgba(2, 132, 199, 0.2)',
+        color: isGuest ? '#94a3b8' : '#38bdf8',
+        border: `1px solid ${isGuest ? 'rgba(148, 163, 184, 0.3)' : 'rgba(56, 189, 248, 0.3)'}`,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <span>{isGuest ? '👤' : '✉️'}</span>
+      <span>{isGuest ? 'visitante' : email}</span>
+    </span>
+  );
+};
+
 export const SastHistoryTable: React.FC<SastHistoryTableProps> = ({ items, onSelectAudit }) => {
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
 
@@ -27,7 +52,6 @@ export const SastHistoryTable: React.FC<SastHistoryTableProps> = ({ items, onSel
     );
   }
 
-  // Descarga directa en HTML / Markdown manteniendo consistencia de botones
   const handleExportSingle = (item: SastHistoryItem, format: 'html' | 'markdown') => {
     try {
       const content = format === 'html' ? generateHtmlReport(item) : generateMarkdownReport(item);
@@ -53,12 +77,13 @@ export const SastHistoryTable: React.FC<SastHistoryTableProps> = ({ items, onSel
       <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: '#f8fafc', fontSize: '13px' }}>
         <thead>
           <tr style={{ backgroundColor: 'rgba(2, 6, 23, 0.9)', borderBottom: '1px solid rgba(30, 41, 59, 0.9)', color: '#38bdf8', fontWeight: 'bold' }}>
-            <th style={{ padding: '14px 16px', width: '22%' }}>Archivo Auditado</th>
-            <th style={{ padding: '14px 16px', width: '10%' }}>Tipo</th>
-            <th style={{ padding: '14px 16px', width: '12%' }}>Salud</th>
-            <th style={{ padding: '14px 16px', width: '15%' }}>Hallazgos</th>
-            <th style={{ padding: '14px 16px', width: '18%' }}>Fecha</th>
-            <th style={{ padding: '14px 16px', textAlign: 'center', width: '23%' }}>Acciones</th>
+            <th style={{ padding: '14px 16px', width: '20%' }}>Archivo Auditado</th>
+            <th style={{ padding: '14px 16px', width: '8%' }}>Tipo</th>
+            <th style={{ padding: '14px 16px', width: '10%' }}>Salud</th>
+            <th style={{ padding: '14px 16px', width: '12%' }}>Hallazgos</th>
+            <th style={{ padding: '14px 16px', width: '14%' }}>Fecha</th>
+            <th style={{ padding: '14px 16px', width: '14%' }}>Tester</th>
+            <th style={{ padding: '14px 16px', textAlign: 'center', width: '22%' }}>Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -146,6 +171,11 @@ export const SastHistoryTable: React.FC<SastHistoryTableProps> = ({ items, onSel
                   {new Date(item.createdAt).toLocaleString('es-ES')}
                 </td>
 
+                {/* TESTER */}
+                <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                  {renderTesterBadge(item.testerEmail)}
+                </td>
+
                 {/* ACCIONES */}
                 <td style={{ padding: '14px 16px', textAlign: 'center', whiteSpace: 'nowrap' }}>
                   <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'center' }}>
@@ -226,7 +256,6 @@ export const SastHistoryTable: React.FC<SastHistoryTableProps> = ({ items, onSel
   );
 };
 
-// Generador HTML para exportación individual
 function generateHtmlReport(item: SastHistoryItem): string {
   const findingsList = item.findings && item.findings.length > 0
     ? item.findings.map(f => `
@@ -254,6 +283,7 @@ function generateHtmlReport(item: SastHistoryItem): string {
       <div class="card">
         <h1>🔍 Reporte de Auditoría SAST</h1>
         <p><strong>Archivo:</strong> <code>${item.fileName}</code></p>
+        <p><strong>Tester:</strong> <code>${item.testerEmail || 'visitante'}</code></p>
         <p><strong>Puntaje de Salud:</strong> ${item.healthScore} / 100</p>
         <p><strong>Fecha:</strong> ${new Date(item.createdAt).toLocaleString('es-ES')}</p>
         <hr style="border-color:#334155; margin:16px 0;" />
@@ -265,13 +295,12 @@ function generateHtmlReport(item: SastHistoryItem): string {
   `;
 }
 
-// Generador Markdown para exportación individual
 function generateMarkdownReport(item: SastHistoryItem): string {
   const findingsMd = item.findings && item.findings.length > 0
     ? item.findings.map(f => `### [${f.severity}] ${f.title}\n- **Descripción:** ${f.description}\n- **Remediación:** ${f.recommendation || 'N/A'}\n`).join('\n')
     : '✅ No se identificaron vulnerabilidades.\n';
 
-  return `# 🔍 Reporte SAST - ${item.fileName}\n\n- **Archivo:** \`${item.fileName}\`\n- **Salud:** ${item.healthScore}/100\n- **Fecha:** ${new Date(item.createdAt).toLocaleString('es-ES')}\n\n## Hallazgos\n\n${findingsMd}`;
+  return `# 🔍 Reporte SAST - ${item.fileName}\n\n- **Archivo:** \`${item.fileName}\`\n- **Tester:** \`${item.testerEmail || 'visitante'}\`\n- **Salud:** ${item.healthScore}/100\n- **Fecha:** ${new Date(item.createdAt).toLocaleString('es-ES')}\n\n## Hallazgos\n\n${findingsMd}`;
 }
 
 export default SastHistoryTable;

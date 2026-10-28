@@ -8,6 +8,31 @@ interface LoadTestHistoryTableProps {
   onExportSingleRecord?: (item: LoadTestHistoryItem) => void;
 }
 
+const renderTesterBadge = (email?: string) => {
+  const isGuest = !email || email.toLowerCase() === 'visitante';
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '5px',
+        padding: '3px 8px',
+        borderRadius: '5px',
+        fontSize: '11px',
+        fontFamily: isGuest ? 'sans-serif' : 'monospace',
+        fontWeight: 600,
+        backgroundColor: isGuest ? 'rgba(100, 116, 139, 0.15)' : 'rgba(2, 132, 199, 0.2)',
+        color: isGuest ? '#94a3b8' : '#38bdf8',
+        border: `1px solid ${isGuest ? 'rgba(148, 163, 184, 0.3)' : 'rgba(56, 189, 248, 0.3)'}`,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <span>{isGuest ? '👤' : '✉️'}</span>
+      <span>{isGuest ? 'visitante' : email}</span>
+    </span>
+  );
+};
+
 export const LoadTestHistoryTable: React.FC<LoadTestHistoryTableProps> = ({
   items,
   onExportSingleRecord,
@@ -41,14 +66,15 @@ export const LoadTestHistoryTable: React.FC<LoadTestHistoryTableProps> = ({
       <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: '#f8fafc', fontSize: '13px' }}>
         <thead>
           <tr style={{ backgroundColor: 'rgba(2, 6, 23, 0.9)', borderBottom: '1px solid rgba(30, 41, 59, 0.9)', color: '#38bdf8', fontWeight: 'bold' }}>
-            <th style={{ padding: '14px 16px', width: '25%' }}>Endpoint</th>
-            <th style={{ padding: '14px 16px', width: '10%' }}>Método</th>
-            <th style={{ padding: '14px 16px', width: '12%' }}>Concurrencia</th>
-            <th style={{ padding: '14px 16px', width: '10%' }}>RPS</th>
-            <th style={{ padding: '14px 16px', width: '12%' }}>Latencia Media</th>
-            <th style={{ padding: '14px 16px', width: '15%' }}>Protección Rate Limit</th>
-            <th style={{ padding: '14px 16px', width: '16%' }}>Fecha</th>
-            <th style={{ padding: '14px 16px', textAlign: 'center', width: '15%' }}>Acciones</th>
+            <th style={{ padding: '14px 16px', width: '22%' }}>Endpoint</th>
+            <th style={{ padding: '14px 16px', width: '8%' }}>Método</th>
+            <th style={{ padding: '14px 16px', width: '10%' }}>Concurrencia</th>
+            <th style={{ padding: '14px 16px', width: '8%' }}>RPS</th>
+            <th style={{ padding: '14px 16px', width: '10%' }}>Latencia Media</th>
+            <th style={{ padding: '14px 16px', width: '14%' }}>Protección Rate Limit</th>
+            <th style={{ padding: '14px 16px', width: '12%' }}>Fecha</th>
+            <th style={{ padding: '14px 16px', width: '12%' }}>Tester</th>
+            <th style={{ padding: '14px 16px', textAlign: 'center', width: '14%' }}>Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -115,8 +141,13 @@ export const LoadTestHistoryTable: React.FC<LoadTestHistoryTableProps> = ({
                     </span>
                   </td>
 
-                  <td style={{ padding: '14px 16px', color: '#94a3b8', fontSize: '12px' }}>
+                  <td style={{ padding: '14px 16px', color: '#94a3b8', fontSize: '12px', whiteSpace: 'nowrap' }}>
                     {new Date(item.createdAt).toLocaleString('es-ES')}
+                  </td>
+
+                  {/* Columna Tester */}
+                  <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                    {renderTesterBadge(item.testerEmail)}
                   </td>
 
                   <td style={{ padding: '14px 16px', textAlign: 'center', whiteSpace: 'nowrap' }}>
@@ -167,10 +198,10 @@ export const LoadTestHistoryTable: React.FC<LoadTestHistoryTableProps> = ({
                   </td>
                 </tr>
 
-                {/* FILA DESPLEGABLE DIRECTAMENTE DEBAJO DEL REGISTRO */}
+                {/* FILA DESPLEGABLE */}
                 {isExpanded && (
                   <tr style={{ borderBottom: '1px solid rgba(30, 41, 59, 0.8)', backgroundColor: 'rgba(15, 23, 42, 0.85)' }}>
-                    <td colSpan={8} style={{ padding: '20px' }}>
+                    <td colSpan={9} style={{ padding: '20px' }}>
                       <div
                         style={{
                           backgroundColor: '#090d16',

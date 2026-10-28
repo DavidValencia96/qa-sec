@@ -1,3 +1,5 @@
+// client/src/components/history/ScaHistoryTable.tsx
+
 import React, { useState } from 'react';
 import {
   exportSingleRecordApi,
@@ -7,6 +9,7 @@ import {
 
 export interface ScaHistoryItem {
   id: string;
+  testerEmail?: string;
   manifestType: string;
   totalDepsAudited: number;
   vulnerabilitiesJson?: string;
@@ -18,6 +21,31 @@ export interface ScaHistoryItem {
 interface ScaHistoryTableProps {
   items: ScaHistoryItem[];
 }
+
+const renderTesterBadge = (email?: string) => {
+  const isGuest = !email || email.toLowerCase() === 'visitante';
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '5px',
+        padding: '3px 8px',
+        borderRadius: '5px',
+        fontSize: '11px',
+        fontFamily: isGuest ? 'sans-serif' : 'monospace',
+        fontWeight: 600,
+        backgroundColor: isGuest ? 'rgba(100, 116, 139, 0.15)' : 'rgba(2, 132, 199, 0.2)',
+        color: isGuest ? '#94a3b8' : '#38bdf8',
+        border: `1px solid ${isGuest ? 'rgba(148, 163, 184, 0.3)' : 'rgba(56, 189, 248, 0.3)'}`,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <span>{isGuest ? '👤' : '✉️'}</span>
+      <span>{isGuest ? 'visitante' : email}</span>
+    </span>
+  );
+};
 
 export const ScaHistoryTable: React.FC<ScaHistoryTableProps> = ({ items }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -40,6 +68,7 @@ export const ScaHistoryTable: React.FC<ScaHistoryTableProps> = ({ items }) => {
         moduleType: 'sca',
         recordData: {
           id: item.id,
+          testerEmail: item.testerEmail,
           manifestType: item.manifestType,
           totalDependenciesAudited: item.totalDepsAudited,
           vulnerabilities,
@@ -77,13 +106,14 @@ export const ScaHistoryTable: React.FC<ScaHistoryTableProps> = ({ items }) => {
       <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: '#f8fafc', fontSize: '13px' }}>
         <thead>
           <tr style={{ backgroundColor: 'rgba(2, 6, 23, 0.9)', borderBottom: '1px solid rgba(30, 41, 59, 0.9)', color: '#38bdf8', fontWeight: 'bold' }}>
-            <th style={{ padding: '14px 16px', width: '18%' }}>ID Ejecución</th>
-            <th style={{ padding: '14px 16px', width: '14%' }}>Manifest</th>
-            <th style={{ padding: '14px 16px', width: '14%' }}>Líneas / Deps</th>
-            <th style={{ padding: '14px 16px', width: '16%' }}>Vulnerabilidades</th>
-            <th style={{ padding: '14px 16px', width: '16%' }}>Secretos Git</th>
-            <th style={{ padding: '14px 16px', width: '14%' }}>Fecha</th>
-            <th style={{ padding: '14px 16px', textAlign: 'center', width: '12%' }}>Acciones</th>
+            <th style={{ padding: '14px 16px', width: '16%' }}>ID Ejecución</th>
+            <th style={{ padding: '14px 16px', width: '12%' }}>Manifest</th>
+            <th style={{ padding: '14px 16px', width: '12%' }}>Líneas / Deps</th>
+            <th style={{ padding: '14px 16px', width: '14%' }}>Vulnerabilidades</th>
+            <th style={{ padding: '14px 16px', width: '14%' }}>Secretos Git</th>
+            <th style={{ padding: '14px 16px', width: '12%' }}>Fecha</th>
+            <th style={{ padding: '14px 16px', width: '10%' }}>Tester</th>
+            <th style={{ padding: '14px 16px', textAlign: 'center', width: '10%' }}>Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -180,6 +210,11 @@ export const ScaHistoryTable: React.FC<ScaHistoryTableProps> = ({ items }) => {
                     {new Date(item.createdAt).toLocaleString('es-ES')}
                   </td>
 
+                  {/* Tester */}
+                  <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                    {renderTesterBadge(item.testerEmail)}
+                  </td>
+
                   {/* Acciones */}
                   <td style={{ padding: '14px 16px', textAlign: 'center', whiteSpace: 'nowrap' }}>
                     <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'center' }}>
@@ -230,7 +265,7 @@ export const ScaHistoryTable: React.FC<ScaHistoryTableProps> = ({ items }) => {
                 {/* FILA ACORDEÓN DESPLEGABLE */}
                 {isExpanded && (
                   <tr style={{ borderBottom: '1px solid rgba(30, 41, 59, 0.8)', backgroundColor: 'rgba(15, 23, 42, 0.85)' }}>
-                    <td colSpan={7} style={{ padding: '20px' }}>
+                    <td colSpan={8} style={{ padding: '20px' }}>
                       <div
                         style={{
                           backgroundColor: '#090d16',

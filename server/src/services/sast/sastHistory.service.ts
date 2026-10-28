@@ -1,8 +1,9 @@
 import { getDbPool } from '../../config/database.js';
-import type { SastAnalysisResponse, SastFinding } from '../../modules/sast/sast.types.js';
+import type { SastFinding } from '../../modules/sast/sast.types.js';
 
 export interface SastAuditHistoryItem {
   id: string;
+  testerEmail: string;
   fileName: string;
   fileType: string;
   healthScore: number;
@@ -13,11 +14,16 @@ export interface SastAuditHistoryItem {
 }
 
 export class SastHistoryService {
-  public async fetchSastAuditHistory(limit: number = 20): Promise<SastAuditHistoryItem[]> {
+  public async fetchSastAuditHistory(
+    limit: number = 20,
+    sqlClause: string = '',
+    params: string[] = []
+  ): Promise<SastAuditHistoryItem[]> {
     try {
       const query = `
         SELECT 
           id, 
+          tester_email AS testerEmail,
           file_name AS fileName, 
           file_type AS fileType, 
           health_score AS healthScore, 
@@ -26,15 +32,17 @@ export class SastHistoryService {
           remediated_code AS remediatedCode, 
           created_at AS createdAt 
         FROM sast_audit_history 
+        ${sqlClause}
         ORDER BY created_at DESC 
         LIMIT ?
       `;
 
-      const [rows] = await getDbPool().query(query, [limit]);
+      const [rows] = await getDbPool().query(query, [...params, limit]);
       const items = rows as any[];
 
       return items.map((row) => ({
         id: row.id,
+        testerEmail: row.testerEmail || 'visitante',
         fileName: row.fileName,
         fileType: row.fileType,
         healthScore: row.healthScore,
@@ -54,6 +62,7 @@ export class SastHistoryService {
       const query = `
         SELECT 
           id, 
+          tester_email AS testerEmail,
           file_name AS fileName, 
           file_type AS fileType, 
           health_score AS healthScore, 
@@ -74,6 +83,7 @@ export class SastHistoryService {
       const row = items[0];
       return {
         id: row.id,
+        testerEmail: row.testerEmail || 'visitante',
         fileName: row.fileName,
         fileType: row.fileType,
         healthScore: row.healthScore,

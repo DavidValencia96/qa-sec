@@ -6,6 +6,8 @@ import { BolaScannerService } from '../../services/dast/bolaScanner.service.js';
 import { HeaderInjectionScannerService } from '../../services/dast/headerInjectionScanner.service.js';
 import { GeminiAIService } from '../../services/gemini.service.js';
 import type { DastAuditConfigDTO, DastFinding } from '../../modules/dast/dast.types.js';
+import type { AuthenticatedRequest } from '../../modules/auth/auth.types.js';
+import { extractTesterEmail } from '../../modules/auth/auth.helpers.js';
 
 const openApiParser = new OpenApiParserService();
 const bolaScanner = new BolaScannerService();
@@ -21,10 +23,13 @@ export const runDastAuditHandler = async (req: Request, res: Response): Promise<
       return;
     }
 
+    // 1. Identificar al ejecutor de la prueba
+    const testerEmail = extractTesterEmail(req as AuthenticatedRequest);
+
     const runId = generateId('dast');
     const findings: DastFinding[] = [];
 
-    // 1. Fuzzing de endpoints OpenAPI / Swagger si se adjuntó especificación JSON
+    // 2. Fuzzing de endpoints OpenAPI / Swagger si se adjuntó especificación JSON
     let endpointsCount = 0;
     if (config.openApiSpecJson) {
       const endpoints = openApiParser.parseSpecification(config.openApiSpecJson);
@@ -43,26 +48,27 @@ export const runDastAuditHandler = async (req: Request, res: Response): Promise<
       }
     }
 
-    // 2. Fuzzing de inyección de encabezados HTTP
+    // 3. Fuzzing de inyección de encabezados HTTP
     if (config.enableHeaderInjectionTesting) {
       const headerFindings = await headerScanner.auditHeaderInjections(config.targetBaseUrl);
       findings.push(...headerFindings);
     }
 
-    // 3. Diagnóstico con Gemini AI
+    // 4. Diagnóstico con Gemini AI
     const aiSummary = await geminiService.analyzeDastResultsWithAi(
       config.targetBaseUrl,
       endpointsCount,
       findings
     );
 
-    // 4. Persistencia en MySQL
+    // 5. Persistencia en MySQL asociando al tester responsable
     const insertQuery = `
-      INSERT INTO dast_history (id, target_base_url, total_endpoints_tested, findings_json, ai_summary_json)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO dast_history (id, tester_email, target_base_url, total_endpoints_tested, findings_json, ai_summary_json)
+      VALUES (?, ?, ?, ?, ?, ?)
     `;
     await getDbPool().execute(insertQuery, [
       runId,
+      testerEmail,
       config.targetBaseUrl,
       endpointsCount,
       JSON.stringify(findings),

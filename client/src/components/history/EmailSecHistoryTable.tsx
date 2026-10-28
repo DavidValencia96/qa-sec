@@ -29,6 +29,31 @@ interface AiSummaryDetail {
   recommendations?: string[];
 }
 
+const renderTesterBadge = (email?: string) => {
+  const isGuest = !email || email.toLowerCase() === 'visitante';
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '5px',
+        padding: '3px 8px',
+        borderRadius: '5px',
+        fontSize: '11px',
+        fontFamily: isGuest ? 'sans-serif' : 'monospace',
+        fontWeight: 600,
+        backgroundColor: isGuest ? 'rgba(100, 116, 139, 0.15)' : 'rgba(2, 132, 199, 0.2)',
+        color: isGuest ? '#94a3b8' : '#38bdf8',
+        border: `1px solid ${isGuest ? 'rgba(148, 163, 184, 0.3)' : 'rgba(56, 189, 248, 0.3)'}`,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <span>{isGuest ? '👤' : '✉️'}</span>
+      <span>{isGuest ? 'visitante' : email}</span>
+    </span>
+  );
+};
+
 // Helper seguro para deserializar JSON
 function safeJsonParse<T>(data: unknown, fallback: T): T {
   if (!data) return fallback;
@@ -74,12 +99,13 @@ export const EmailSecHistoryTable: React.FC<EmailSecHistoryTableProps> = ({ item
       <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: '#f8fafc', fontSize: '13px' }}>
         <thead>
           <tr style={{ backgroundColor: 'rgba(2, 6, 23, 0.9)', borderBottom: '1px solid rgba(30, 41, 59, 0.9)', color: '#38bdf8', fontWeight: 'bold' }}>
-            <th style={{ padding: '14px 16px', width: '22%' }}>ID Ejecución</th>
+            <th style={{ padding: '14px 16px', width: '18%' }}>ID Ejecución</th>
             <th style={{ padding: '14px 16px', width: '22%' }}>Dominio / IP</th>
-            <th style={{ padding: '14px 16px', width: '16%' }}>Estado DMARC</th>
-            <th style={{ padding: '14px 16px', width: '16%' }}>Estado SPF</th>
-            <th style={{ padding: '14px 16px', width: '12%' }}>Fecha</th>
-            <th style={{ padding: '14px 16px', textAlign: 'center', width: '12%' }}>Acciones</th>
+            <th style={{ padding: '14px 16px', width: '14%' }}>Estado DMARC</th>
+            <th style={{ padding: '14px 16px', width: '14%' }}>Estado SPF</th>
+            <th style={{ padding: '14px 16px', width: '11%' }}>Fecha</th>
+            <th style={{ padding: '14px 16px', width: '11%' }}>Tester</th>
+            <th style={{ padding: '14px 16px', textAlign: 'center', width: '10%' }}>Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -208,6 +234,11 @@ export const EmailSecHistoryTable: React.FC<EmailSecHistoryTableProps> = ({ item
                     {new Date(item.createdAt).toLocaleString('es-ES')}
                   </td>
 
+                  {/* Columna Tester */}
+                  <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                    {renderTesterBadge(item.testerEmail)}
+                  </td>
+
                   {/* Acciones */}
                   <td style={{ padding: '14px 16px', textAlign: 'center', whiteSpace: 'nowrap' }}>
                     <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'center' }}>
@@ -255,10 +286,10 @@ export const EmailSecHistoryTable: React.FC<EmailSecHistoryTableProps> = ({ item
                   </td>
                 </tr>
 
-                {/* FILA ACORDEÓN DESPLEGABLE CON DETALLE COMPLETO DE EMAIL SEC */}
+                {/* FILA ACORDEÓN DESPLEGABLE */}
                 {isExpanded && (
                   <tr style={{ borderBottom: '1px solid rgba(30, 41, 59, 0.8)', backgroundColor: 'rgba(15, 23, 42, 0.85)' }}>
-                    <td colSpan={6} style={{ padding: '20px' }}>
+                    <td colSpan={7} style={{ padding: '20px' }}>
                       <div
                         style={{
                           backgroundColor: '#090d16',

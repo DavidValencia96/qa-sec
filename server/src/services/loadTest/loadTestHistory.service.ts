@@ -3,6 +3,7 @@ import type { LoadTestMetrics } from '../../modules/loadTest/loadTest.types.js';
 
 export interface LoadTestHistoryItem {
   id: string;
+  testerEmail: string;
   targetUrl: string;
   method: string;
   concurrency: number;
@@ -24,11 +25,16 @@ export interface LoadTestHistoryItem {
 }
 
 export class LoadTestHistoryService {
-  public async fetchHistory(limit: number = 20): Promise<LoadTestHistoryItem[]> {
+  public async fetchHistory(
+    limit: number = 20,
+    sqlClause: string = '',
+    params: string[] = []
+  ): Promise<LoadTestHistoryItem[]> {
     try {
       const query = `
         SELECT 
           id, 
+          tester_email AS testerEmail,
           target_url AS targetUrl, 
           method, 
           concurrency, 
@@ -44,15 +50,17 @@ export class LoadTestHistoryService {
           ai_diagnosis_json AS aiDiagnosisJson, 
           created_at AS createdAt
         FROM load_test_history
+        ${sqlClause}
         ORDER BY created_at DESC
         LIMIT ?
       `;
 
-      const [rows] = await getDbPool().query(query, [limit]);
+      const [rows] = await getDbPool().query(query, [...params, limit]);
       const items = rows as any[];
 
       return items.map((row) => ({
         id: row.id,
+        testerEmail: row.testerEmail || 'visitante',
         targetUrl: row.targetUrl,
         method: row.method,
         concurrency: row.concurrency,

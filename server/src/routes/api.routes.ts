@@ -30,8 +30,8 @@ import complianceRoutes from './compliance.routes.js';
 import { handleHeartbeat } from '../controllers/telemetry.controller.js';
 import authRoutes from './auth.routes.js';
 import adminRoutes from './admin.routes.js';
-import { authenticateJwt } from '../middleware/auth.middleware.js';
-import { requireRole } from '../middleware/rbac.middleware.js';
+import { authenticateJwt, optionalJwt } from '../middleware/auth.middleware.js';
+import { requireModuleAccess, requireRole } from '../middleware/rbac.middleware.js';
 import { guestScanLimiter } from '../middleware/rateLimit.middleware.js';
 
 const router = Router();
@@ -49,23 +49,24 @@ router.get('/threats/latest', getLatestThreats);
 // 3. Módulos Públicos: Escáner Web General e Inputs & Sanitización
 router.post('/projects', createProject);
 router.post('/suites/generate-ai', generateSuiteWithAI);
-router.post('/tests/run', guestScanLimiter, executeTestRun);
+router.post('/tests/run', optionalJwt, guestScanLimiter, executeTestRun);
 router.get('/reports/:runId', getRunReport);
 
-// 4. Auditorías Avanzadas y Motores Profundos (Requieren sesión: ADMIN o AUDITOR)
-router.post('/network/analyze-config', authenticateJwt, requireRole(['ADMIN', 'AUDITOR']), handleAnalyzeNetworkConfig);
-router.post('/threats/analyze-cve', authenticateJwt, requireRole(['ADMIN', 'AUDITOR']), analyzeCveWithAiHandler);
-router.post('/sast/analyze', authenticateJwt, requireRole(['ADMIN', 'AUDITOR']), analyzeSastContentHandler);
-router.post('/load-test/run', authenticateJwt, requireRole(['ADMIN', 'AUDITOR']), runLoadTestHandler);
-router.post('/dast/run', authenticateJwt, requireRole(['ADMIN', 'AUDITOR']), runDastAuditHandler);
-router.post('/sca/run', authenticateJwt, requireRole(['ADMIN', 'AUDITOR']), runScaAuditHandler);
-router.post('/easm/audit', authenticateJwt, requireRole(['ADMIN', 'AUDITOR']), runEasmAuditHandler);
-router.post('/redteam/audit', authenticateJwt, requireRole(['ADMIN', 'AUDITOR']), runRedTeamAuditHandler);
-router.use('/emailsec', authenticateJwt, requireRole(['ADMIN', 'AUDITOR']), emailSecRoutes);
-router.use('/compliance', authenticateJwt, requireRole(['ADMIN', 'AUDITOR']), complianceRoutes);
+// 4. Auditorías Especializadas (Validadas por Módulo Granular RBAC)
+// Al usar requireModuleAccess, cualquier rol (incluso VIEWER) puede ejecutar si tiene el módulo habilitado
+router.post('/network/analyze-config', authenticateJwt, requireModuleAccess('NETWORK'), handleAnalyzeNetworkConfig);
+router.post('/threats/analyze-cve', authenticateJwt, requireModuleAccess('CVE'), analyzeCveWithAiHandler);
+router.post('/sast/analyze', authenticateJwt, requireModuleAccess('SAST'), analyzeSastContentHandler);
+router.post('/load-test/run', authenticateJwt, requireModuleAccess('LOADTEST'), runLoadTestHandler);
+router.post('/dast/run', authenticateJwt, requireModuleAccess('DAST'), runDastAuditHandler);
+router.post('/sca/run', authenticateJwt, requireModuleAccess('SCA'), runScaAuditHandler);
+router.post('/easm/audit', authenticateJwt, requireModuleAccess('EASM'), runEasmAuditHandler);
+router.post('/redteam/audit', authenticateJwt, requireModuleAccess('REDTEAM'), runRedTeamAuditHandler);
+router.use('/emailsec', authenticateJwt, requireModuleAccess('EMAILSEC'), emailSecRoutes);
+router.use('/compliance', authenticateJwt, requireModuleAccess('COMPLIANCE'), complianceRoutes);
 
-// 5. Historial Centralizado y Exportación (Requieren sesión: ADMIN, AUDITOR o VIEWER)
-router.get('/history', authenticateJwt, requireRole(['ADMIN', 'AUDITOR', 'VIEWER']), getTestRunsHistory);
+// 5. Historial Centralizado y Exportación
+router.get('/history', optionalJwt, getTestRunsHistory);
 router.get('/sast/history', authenticateJwt, requireRole(['ADMIN', 'AUDITOR', 'VIEWER']), getSastHistoryHandler);
 router.get('/sast/history/:id', authenticateJwt, requireRole(['ADMIN', 'AUDITOR', 'VIEWER']), getSastHistoryItemHandler);
 router.get('/load-test/history', authenticateJwt, requireRole(['ADMIN', 'AUDITOR', 'VIEWER']), getLoadTestHistoryHandler);
