@@ -167,6 +167,8 @@ const defaultModuleState: ModuleState = {
   complianceRadarDataResponse: null,
 };
 
+const PUBLIC_TABS: TabType[] = ['home', 'scanner', 'injection'];
+
 export function App() {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('home');
@@ -208,10 +210,16 @@ export function App() {
     };
   }, [sessionId]);
 
-  // Pestaña efectiva: Si no hay usuario y se intenta ver un módulo restringido, se evalúa como 'home' directamente en render
-  const isRestricted = !['home', 'scanner', 'injection'].includes(activeTab);
-  const currentTab = !user && isRestricted ? 'home' : activeTab;
+  // Manejador centralizado de navegación (tanto para HomeTab como para NavigationTabs)
+  const handleNavigate = (targetTab: TabType) => {
+    if (PUBLIC_TABS.includes(targetTab) || user) {
+      setActiveTab(targetTab);
+    } else {
+      setIsLoginModalOpen(true);
+    }
+  };
 
+  const currentTab = !user && !PUBLIC_TABS.includes(activeTab) ? 'home' : activeTab;
   const currentModuleState = modulesData[currentTab] || defaultModuleState;
 
   const updateCurrentModule = (patch: Partial<ModuleState>) => {
@@ -409,9 +417,9 @@ export function App() {
             boxSizing: 'border-box',
           }}
         >
-          {/* LOGO E INFORMACIÓN (A LA IZQUIERDA) */}
+          {/* LOGO E INFORMACIÓN */}
           <div
-            onClick={() => setActiveTab('home')}
+            onClick={() => handleNavigate('home')}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -460,7 +468,7 @@ export function App() {
             </div>
           </div>
 
-          {/* INSIGNIAS Y CONTROL DE SESIÓN (AL EXTREMO DERECHO) */}
+          {/* INSIGNIAS Y CONTROL DE SESIÓN */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto', flexWrap: 'wrap' }}>
             {/* AUDITORES EN LÍNEA */}
             <div
@@ -521,7 +529,7 @@ export function App() {
                 {user.role === 'ADMIN' ? (
                   <button
                     type="button"
-                    onClick={() => setActiveTab('admin')}
+                    onClick={() => handleNavigate('admin')}
                     title="Ir a Consola RBAC"
                     style={{
                       fontSize: '0.65rem',
@@ -613,10 +621,10 @@ export function App() {
         </header>
 
         {currentTab !== 'home' && (
-          <NavigationTabs activeTab={currentTab} onTabChange={setActiveTab} />
+          <NavigationTabs activeTab={currentTab} onTabChange={handleNavigate} />
         )}
 
-        {currentTab === 'home' && <HomeTab onNavigate={setActiveTab} />}
+        {currentTab === 'home' && <HomeTab onNavigate={handleNavigate} />}
 
         {/* PESTAÑA 1: ESCÁNER GENERAL */}
         {currentTab === 'scanner' && (

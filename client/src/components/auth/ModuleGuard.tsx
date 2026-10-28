@@ -47,7 +47,6 @@ export const ModuleGuard: React.FC<ModuleGuardProps> = ({
     return <>{children}</>;
   }
   
-  console.log('RBAC DEBUG USER:', user);
   return (
     <div
       style={{
