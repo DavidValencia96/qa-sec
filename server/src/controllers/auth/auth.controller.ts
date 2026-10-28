@@ -90,7 +90,14 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
 
     await updateLastLogin(user.id);
 
-    const token = signAccessToken({ userId: user.id, email: user.email, role: user.role });
+    // Se incluye allowed_modules requerido por la interfaz JwtPayload
+    const token = signAccessToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      allowed_modules: user.allowed_modules,
+    });
+
     res.json({ success: true, token, user });
   } catch (error: any) {
     console.error('[AUTH-CONTROLLER] Error en verifyOtp:', error);
