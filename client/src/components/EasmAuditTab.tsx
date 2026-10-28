@@ -60,7 +60,7 @@ export const EasmAuditTab: React.FC<EasmAuditTabProps> = ({
   onUpdateEasmData,
 }) => {
   const [targetDomain, setTargetDomain] = useState<string>(
-    easmData?.targetDomain || 'example.com'
+    easmData?.targetDomain || ''
   );
   const [enableSubdomainDiscovery, setEnableSubdomainDiscovery] = useState<boolean>(
     easmData?.enableSubdomainDiscovery ?? true
@@ -274,16 +274,16 @@ export const EasmAuditTab: React.FC<EasmAuditTabProps> = ({
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'flex', alignItems: 'center', color: '#cbd5e1', fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '6px' }}>
               Dominio Objetivo (FQDN)
-              {renderHelpIcon('domain', 'Ingresa el nombre de dominio principal a auditar (ej: google.com).')}
+              {renderHelpIcon('domain', 'Ingresa el nombre de dominio principal a auditar.')}
             </label>
             <input
               type="text"
               value={targetDomain}
+              placeholder="https://urlExample/api"
               onChange={(e) => {
                 setTargetDomain(e.target.value);
                 handleUpdateGlobalState({ targetDomain: e.target.value });
               }}
-              placeholder="ej. mi-empresa.com"
               required
               disabled={loading}
               style={{

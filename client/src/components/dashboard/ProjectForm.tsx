@@ -92,7 +92,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
           type="text"
           value={targetUrl}
           onChange={(e) => onTargetUrlChange(e.target.value)}
-          placeholder="https://ejemplo.com"
+          placeholder="https://urlExample.com/"
           disabled={isRunning}
           style={{
             width: '100%',

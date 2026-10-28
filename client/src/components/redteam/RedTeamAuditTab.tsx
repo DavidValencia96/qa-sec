@@ -44,7 +44,7 @@ export const RedTeamAuditTab: React.FC<RedTeamAuditTabProps> = ({
   onUpdateRedTeamData,
 }) => {
   const [targetUrl, setTargetUrl] = useState<string>(
-    redTeamData?.targetUrl || 'http://localhost:3000/api/users'
+    redTeamData?.targetUrl || ''
   );
   const [jwtToken, setJwtToken] = useState<string>(
     redTeamData?.jwtToken || ''
@@ -80,7 +80,7 @@ export const RedTeamAuditTab: React.FC<RedTeamAuditTabProps> = ({
   };
 
   const handleLoadExample = () => {
-    const exampleUrl = 'http://urlExample/users';
+    const exampleUrl = 'https://urlExample/users';
     const exampleJwt =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkFkbWluIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
 
@@ -279,11 +279,12 @@ export const RedTeamAuditTab: React.FC<RedTeamAuditTabProps> = ({
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'flex', alignItems: 'center', color: '#cbd5e1', fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '6px' }}>
               URL Endpoint Objetivo:
-              {renderHelpIcon('url', 'Ingresa la ruta completa de la API o servicio objetivo a auditar (ej: http://urlExample/users).')}
+              {renderHelpIcon('url', 'Ingresa la ruta completa de la API o servicio objetivo a auditar.')}
             </label>
             <input
               type="url"
               value={targetUrl}
+              placeholder="https://urlExample/api"
               onChange={(e) => {
                 setTargetUrl(e.target.value);
                 handleUpdateGlobalState({ targetUrl: e.target.value });

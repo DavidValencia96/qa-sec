@@ -134,7 +134,7 @@ const defaultModuleState: ModuleState = {
   sastLanguage: 'typescript',
   sastShowDiffModal: false,
   loadTestResult: null,
-  dastTargetBaseUrl: 'http://localhost:3000/api',
+  dastTargetBaseUrl: '',
   dastOpenApiSpecJson: '',
   dastPrimaryAuthHeader: '',
   dastSecondaryAuthHeader: '',
@@ -146,18 +146,18 @@ const defaultModuleState: ModuleState = {
   scaEnableDependencyScan: true,
   scaEnableGitHistoryScan: true,
   scaAuditResult: null,
-  easmTargetDomain: 'google.com',
+  easmTargetDomain: '',
   easmEnableSubdomainDiscovery: true,
   easmEnableWafTechDetection: true,
   easmEnableSslAudit: true,
   easmResult: null,
-  redTeamTargetUrl: 'http://localhost:3000/api/users',
+  redTeamTargetUrl: '',
   redTeamJwtToken: '',
   redTeamEnableJwt: true,
   redTeamEnableCors: true,
   redTeamResult: null,
   emailSecActiveSubTab: 'domain',
-  emailSecDomain: 'google.com',
+  emailSecDomain: '',
   emailSecDkimSelector: 'google',
   emailSecTargetIp: '',
   emailSecRawHeaders: '',
@@ -172,7 +172,7 @@ const PUBLIC_TABS: TabType[] = ['home', 'scanner', 'injection'];
 export function App() {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('home');
-  const [targetUrl, setTargetUrl] = useState('https://www.google.com/');
+  const [targetUrl, setTargetUrl] = useState('');
   const [targetInputs, setTargetInputs] = useState<TargetInput[]>([]);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
 
@@ -892,7 +892,7 @@ export function App() {
         {currentTab === 'dast' && (
           <DastAuditTab
             dastData={{
-              targetBaseUrl: currentModuleState.dastTargetBaseUrl || 'http://localhost:3000/api',
+              targetBaseUrl: currentModuleState.dastTargetBaseUrl || '',
               openApiSpecJson: currentModuleState.dastOpenApiSpecJson || '',
               primaryAuthHeader: currentModuleState.dastPrimaryAuthHeader || '',
               secondaryAuthHeader: currentModuleState.dastSecondaryAuthHeader || '',
@@ -940,7 +940,7 @@ export function App() {
         {currentTab === 'easm' && (
           <EasmAuditTab
             easmData={{
-              targetDomain: currentModuleState.easmTargetDomain || 'google.com',
+              targetDomain: currentModuleState.easmTargetDomain || '',
               enableSubdomainDiscovery: currentModuleState.easmEnableSubdomainDiscovery ?? true,
               enableWafTechDetection: currentModuleState.easmEnableWafTechDetection ?? true,
               enableSslAudit: currentModuleState.easmEnableSslAudit ?? true,
@@ -962,7 +962,7 @@ export function App() {
         {currentTab === 'redteam' && (
           <RedTeamAuditTab
             redTeamData={{
-              targetUrl: currentModuleState.redTeamTargetUrl || 'http://localhost:3000/api/users',
+              targetUrl: currentModuleState.redTeamTargetUrl || '',
               jwtToken: currentModuleState.redTeamJwtToken || '',
               enableJwt: currentModuleState.redTeamEnableJwt ?? true,
               enableCors: currentModuleState.redTeamEnableCors ?? true,
@@ -985,7 +985,7 @@ export function App() {
           <EmailSecAuditTab
             emailSecData={{
               activeSubTab: currentModuleState.emailSecActiveSubTab || 'domain',
-              domain: currentModuleState.emailSecDomain || 'google.com',
+              domain: currentModuleState.emailSecDomain || '',
               dkimSelector: currentModuleState.emailSecDkimSelector || 'google',
               targetIp: currentModuleState.emailSecTargetIp || '',
               rawHeaders: currentModuleState.emailSecRawHeaders || '',

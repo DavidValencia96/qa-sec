@@ -145,7 +145,7 @@ export const NetworkConfigAuditor: React.FC<NetworkConfigAuditorProps> = ({
               value={targetHost}
               onChange={handleHostChange}
               disabled={loading}
-              placeholder="ej. https://www.google.com/ o 192.168.1.10"
+              placeholder="https://www.urlExample.com/ o 192.168.1.10"
               style={{
                 flex: 1,
                 minWidth: '240px',

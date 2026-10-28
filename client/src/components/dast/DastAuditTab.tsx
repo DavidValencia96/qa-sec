@@ -22,7 +22,7 @@ export const DastAuditTab: React.FC<DastAuditTabProps> = ({
   onUpdateDastData,
 }) => {
   const [targetBaseUrl, setTargetBaseUrl] = useState<string>(
-    dastData?.targetBaseUrl || 'http://localhost:3000/api'
+    dastData?.targetBaseUrl || ''
   );
   const [openApiSpecJson, setOpenApiSpecJson] = useState<string>(
     dastData?.openApiSpecJson || ''
@@ -67,7 +67,7 @@ export const DastAuditTab: React.FC<DastAuditTabProps> = ({
   };
 
   const handleLoadExample = () => {
-    const exampleUrl = 'http://localhost:3000/api';
+    const exampleUrl = 'https://urlExample/api';
     const exampleSpec = JSON.stringify(
       {
         openapi: '3.0.0',
@@ -295,11 +295,13 @@ export const DastAuditTab: React.FC<DastAuditTabProps> = ({
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'flex', alignItems: 'center', color: '#cbd5e1', fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '6px' }}>
               URL Base de la API Target
-              {renderHelpIcon('url', 'Ingresa el dominio o endpoint base de la API a probar (ej: http://localhost:3000/api).')}
+              {renderHelpIcon('url', 'Ingresa el dominio o endpoint base de la API a probar.')}
+              
             </label>
             <input
               type="url"
               value={targetBaseUrl}
+              placeholder="https://urlExample/api"
               onChange={(e) => {
                 setTargetBaseUrl(e.target.value);
                 handleUpdateGlobalState({ targetBaseUrl: e.target.value });

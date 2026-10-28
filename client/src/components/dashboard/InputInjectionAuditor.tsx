@@ -100,7 +100,7 @@ export const InputInjectionAuditor: React.FC<InputInjectionAuditorProps> = ({
           type="text"
           value={targetUrl}
           onChange={(e) => onTargetUrlChange(e.target.value)}
-          placeholder="https://ejemplo.com/login"
+          placeholder="https://urlExample.com/login"
           disabled={isRunning}
           style={{
             width: '100%',

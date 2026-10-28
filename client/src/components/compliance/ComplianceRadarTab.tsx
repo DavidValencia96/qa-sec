@@ -94,7 +94,7 @@ export const ComplianceRadarTab: React.FC<ComplianceRadarTabProps> = ({
   );
 
   const handleLoadExample = () => {
-    const exampleTarget = 'urlexample.com';
+    const exampleTarget = 'urlExample.com';
     setCustomTargetInput(exampleTarget);
     setSelectedTarget('');
 

@@ -102,7 +102,7 @@ export const EmailSecAuditTab: React.FC<EmailSecAuditTabProps> = ({
   const handleLoadExample = () => {
     const exampleDomain = 'google.com';
     const exampleSelector = 'google';
-    const exampleIp = '172.217.162.142';
+    const exampleIp = '';
     const exampleHeaders =
       'Received: from mail-pj1-f41.google.com (mail-pj1-f41.google.com [209.85.216.41])\nAuthentication-Results: spf=pass (google.com: domain of user@google.com designates 209.85.216.41 as permitted sender)\nDKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=20230601;\nSubject: Notificación de Seguridad de Cuenta';
 

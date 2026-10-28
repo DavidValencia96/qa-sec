@@ -13,7 +13,7 @@ export const LoadTestConfigForm: React.FC<LoadTestConfigFormProps> = ({
   initialConfig,
 }) => {
   const [targetUrl, setTargetUrl] = useState<string>(
-    initialConfig?.targetUrl || 'http://localhost:3000/api/projects'
+    initialConfig?.targetUrl || ''
   );
   const [method, setMethod] = useState<'GET' | 'POST' | 'PUT' | 'DELETE'>(
     initialConfig?.method || 'GET'
