@@ -1,29 +1,32 @@
 import { Request } from 'express';
+import { SystemModuleKey } from './auth.constants.js';
 
 export type UserRole = 'ADMIN' | 'AUDITOR' | 'VIEWER';
 
 export interface UserRecord {
-  id: string;
-  email: string;
-  full_name: string | null;
-  role: UserRole;
-  is_active: boolean;
-  last_login_at: Date | null;
+  readonly id: string;
+  readonly email: string;
+  readonly full_name: string | null;
+  readonly role: UserRole;
+  readonly allowed_modules: SystemModuleKey[];
+  readonly is_active: boolean;
+  readonly last_login_at: Date | null;
 }
 
 export interface JwtPayload {
-  userId: string;
-  email: string;
-  role: UserRole;
+  readonly userId: string;
+  readonly email: string;
+  readonly role: UserRole;
+  readonly allowed_modules: SystemModuleKey[];
 }
 
 export interface OtpRecord {
-  id: string;
-  email: string;
-  otp_code: string;
-  attempts_left: number;
-  expires_at: Date;
-  consumed: boolean;
+  readonly id: string;
+  readonly email: string;
+  readonly otp_code: string;
+  readonly attempts_left: number;
+  readonly expires_at: Date;
+  readonly consumed: boolean;
 }
 
 export interface AuthenticatedRequest extends Request {

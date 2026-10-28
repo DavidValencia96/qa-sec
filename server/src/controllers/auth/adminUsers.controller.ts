@@ -1,7 +1,13 @@
 import { Response } from 'express';
 import { fetchAllUsers, updateUserRoleAndStatus } from '../../services/auth/admin.repository.js';
 import type { AuthenticatedRequest, UserRole } from '../../modules/auth/auth.types.js';
+import { SYSTEM_MODULES, SystemModuleKey } from '../../modules/auth/auth.constants.js';
 import { logAuditEvent } from '../../services/auditLog.service.js';
+
+const sanitizeModules = (modules: unknown): SystemModuleKey[] => {
+  if (!Array.isArray(modules)) return [];
+  return modules.filter((m): m is SystemModuleKey => SYSTEM_MODULES.includes(m as SystemModuleKey));
+};
 
 export const listAllUsers = async (_req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
@@ -14,18 +20,19 @@ export const listAllUsers = async (_req: AuthenticatedRequest, res: Response): P
 
 export const modifyUserAccess = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { userId } = req.params;
-  const { role, isActive }: { role: UserRole; isActive: boolean } = req.body;
+  const { role, allowedModules, isActive }: { role: UserRole; allowedModules?: unknown; isActive: boolean } = req.body;
 
   try {
-    await updateUserRoleAndStatus(userId, role, isActive);
+    const safeModules = sanitizeModules(allowedModules);
+    await updateUserRoleAndStatus(userId, role, safeModules, isActive);
 
-    const adminUser = req.user as { id?: string; email?: string } | undefined;
+    const adminUser = req.user;
     await logAuditEvent({
-      userId: adminUser?.id || null,
+      userId: adminUser?.userId || null,
       userEmail: adminUser?.email || 'admin@qa-sec.local',
       action: !isActive ? 'USER_SUSPEND' : 'ROLE_CHANGE',
       module: 'ADMIN_RBAC',
-      details: `Actualizó usuario (${userId}): Rol=${role}, Estado=${isActive ? 'Activo' : 'Suspendido'}`,
+      details: `Modificó usuario (${userId}): Rol=${role}, Módulos=[${safeModules.join(', ')}], Activo=${isActive}`,
       ipAddress: req.ip,
     });
 

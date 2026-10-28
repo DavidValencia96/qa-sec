@@ -516,20 +516,60 @@ export function App() {
                 }}
               >
                 <span style={{ fontSize: '0.8rem', color: '#cbd5e1', fontFamily: 'monospace' }}>{user.email}</span>
-                <span
-                  style={{
-                    fontSize: '0.65rem',
-                    fontWeight: 800,
-                    color: user.role === 'ADMIN' ? '#c084fc' : '#38bdf8',
-                    backgroundColor: user.role === 'ADMIN' ? 'rgba(88, 28, 135, 0.4)' : 'rgba(2, 132, 199, 0.25)',
-                    border: `1px solid ${user.role === 'ADMIN' ? 'rgba(192, 132, 252, 0.4)' : 'rgba(56, 189, 248, 0.3)'}`,
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  {user.role}
-                </span>
+                
+                {/* BOTÓN O BADGE DE ROL */}
+                {user.role === 'ADMIN' ? (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('admin')}
+                    title="Ir a Consola RBAC"
+                    style={{
+                      fontSize: '0.65rem',
+                      fontWeight: 800,
+                      color: '#f3e8ff',
+                      backgroundColor: 'rgba(147, 51, 234, 0.45)',
+                      border: '1px solid #a855f7',
+                      padding: '3px 8px',
+                      borderRadius: '5px',
+                      letterSpacing: '0.5px',
+                      cursor: 'pointer',
+                      boxShadow: '0 0 10px rgba(168, 85, 247, 0.35)',
+                      transition: 'all 0.15s ease',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(168, 85, 247, 0.7)';
+                      e.currentTarget.style.boxShadow = '0 0 16px rgba(168, 85, 247, 0.65)';
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(147, 51, 234, 0.45)';
+                      e.currentTarget.style.boxShadow = '0 0 10px rgba(168, 85, 247, 0.35)';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                    }}
+                  >
+                    <span>⚙️</span>
+                    <span>ADMIN</span>
+                  </button>
+                ) : (
+                  <span
+                    style={{
+                      fontSize: '0.65rem',
+                      fontWeight: 800,
+                      color: '#38bdf8',
+                      backgroundColor: 'rgba(2, 132, 199, 0.25)',
+                      border: '1px solid rgba(56, 189, 248, 0.3)',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      letterSpacing: '0.5px',
+                    }}
+                  >
+                    {user.role}
+                  </span>
+                )}
+
                 <button
                   type="button"
                   onClick={logout}

@@ -11,14 +11,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let active = true;
 
-    if (!token) return;
+    if (!token) {
+      return;
+    }
 
     fetchCurrentUserApi(token).then((userData) => {
       if (!active) return;
-      setUser(userData);
-      if (!userData) {
+      if (userData) {
+        setUser({
+          ...userData,
+          allowed_modules: Array.isArray(userData.allowed_modules) ? userData.allowed_modules : [],
+        });
+      } else {
         localStorage.removeItem('qa_sec_token');
         setToken(null);
+        setUser(null);
       }
       setIsLoading(false);
     });
@@ -37,7 +44,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!result) return false;
     localStorage.setItem('qa_sec_token', result.token);
     setToken(result.token);
-    setUser(result.user);
+    setUser({
+      ...result.user,
+      allowed_modules: Array.isArray(result.user.allowed_modules) ? result.user.allowed_modules : [],
+    });
     return true;
   };
 
@@ -45,6 +55,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('qa_sec_token');
     setToken(null);
     setUser(null);
+    setIsLoading(false);
   };
 
   return (

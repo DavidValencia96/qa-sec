@@ -3,6 +3,8 @@ import type { CveItem, CveAiAnalysis } from './cve.types';
 import { StackFilterBar } from './StackFilterBar';
 import { CveAiSummaryModal } from './CveAiSummaryModal';
 import { getLatestThreatsApi, analyzeCveWithAiApi } from '../../services/api.client';
+import { ModuleGuard } from '../auth/ModuleGuard';
+import { useAuth } from '../../context/useAuth';
 
 export interface CveModuleData {
   vulnerabilities: CveItem[];
@@ -19,6 +21,8 @@ interface CveRadarTabProps {
 }
 
 export const CveRadarTab: React.FC<CveRadarTabProps> = ({ cveData, onUpdateCveData }) => {
+  const { user } = useAuth();
+
   const [vulnerabilities, setVulnerabilities] = useState<CveItem[]>(cveData?.vulnerabilities || []);
   const [selectedKeyword, setSelectedKeyword] = useState<string>(cveData?.selectedKeyword || '');
   const [selectedStartDate, setSelectedStartDate] = useState<string | undefined>(cveData?.selectedStartDate);
@@ -67,6 +71,12 @@ export const CveRadarTab: React.FC<CveRadarTabProps> = ({ cveData, onUpdateCveDa
   };
 
   useEffect(() => {
+    // Evita consultar el backend y evita errores 403 si el usuario no tiene la clave CVE
+    const hasPermission = user?.role === 'ADMIN' || user?.allowed_modules?.includes('CVE');
+    if (!hasPermission) {
+      return;
+    }
+
     if (!cveData?.vulnerabilities || cveData.vulnerabilities.length === 0) {
       const timer = setTimeout(() => {
         loadThreats(selectedKeyword, selectedStartDate, selectedEndDate);
@@ -74,7 +84,7 @@ export const CveRadarTab: React.FC<CveRadarTabProps> = ({ cveData, onUpdateCveDa
       return () => clearTimeout(timer);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user]);
 
   const handleFilterSubmit = (keyword: string, startDate?: string, endDate?: string) => {
     setSelectedKeyword(keyword);
@@ -168,163 +178,167 @@ export const CveRadarTab: React.FC<CveRadarTabProps> = ({ cveData, onUpdateCveDa
   };
 
   return (
-    <div
-      style={{
-        background: 'rgba(15, 23, 42, 0.35)',
-        backdropFilter: 'blur(10px)',
-        padding: '28px',
-        borderRadius: '12px',
-        border: '1px solid rgba(56, 189, 248, 0.25)',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-        marginBottom: '28px',
-      }}
-    >
-      {/* CABECERA CON BADGE DE CATEGORÍA */}
+    <ModuleGuard moduleKey="CVE" moduleTitle="Radar de Amenazas y CVE">
       <div
         style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '20px',
-          flexWrap: 'wrap',
-          gap: '12px',
+          background: 'rgba(15, 23, 42, 0.35)',
+          backdropFilter: 'blur(10px)',
+          padding: '28px',
+          borderRadius: '12px',
+          border: '1px solid rgba(56, 189, 248, 0.25)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+          marginBottom: '28px',
+          width: '100%',
+          boxSizing: 'border-box',
         }}
       >
-        <div>
-          <h2 style={{ margin: 0, color: '#ffffff', fontSize: '1.3rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            📰 CiberThreat Feed & CVE Radar
-          </h2>
-          <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: '4px 0 0 0' }}>
-            Monitoreo en tiempo real de vulnerabilidades reportadas en la NVD/NIST. Filtra por stack tecnológico o rango de fechas y analiza su impacto con Gemini AI.
-          </p>
-        </div>
-
-        {/* BADGE CATEGORÍA ENTERPRISE */}
-        <span
-          style={{
-            background: 'rgba(56, 189, 248, 0.15)',
-            color: '#38bdf8',
-            padding: '4px 12px',
-            borderRadius: '20px',
-            border: '1px solid #38bdf8',
-            fontSize: '0.75rem',
-            fontWeight: 'bold',
-            letterSpacing: '0.5px',
-            boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)',
-          }}
-        >
-          Threat Intelligence
-        </span>
-      </div>
-
-      <StackFilterBar
-        selectedKeyword={selectedKeyword}
-        onFilterSubmit={handleFilterSubmit}
-        disabled={loading}
-      />
-
-      {loading ? (
-        <div style={{ padding: '40px', textAlign: 'center' }}>
-          <span style={{ fontSize: '2rem', display: 'inline-block', animation: 'spin 1s linear infinite' }}>🔄</span>
-          <p style={{ color: '#38bdf8', fontWeight: 'bold', marginTop: '12px' }}>
-            Consultando vulnerabilidades con los criterios seleccionados...
-          </p>
-        </div>
-      ) : error ? (
-        <p style={{ color: '#f87171', padding: '16px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', border: '1px solid #ef4444' }}>
-          ⚠️ Error al conectar con el Radar: {error}
-        </p>
-      ) : vulnerabilities.length === 0 ? (
+        {/* CABECERA CON BADGE DE CATEGORÍA */}
         <div
           style={{
-            background: 'rgba(15, 23, 42, 0.6)',
-            padding: '28px',
-            borderRadius: '10px',
-            border: '1px solid #ef4444',
-            textAlign: 'center',
-            marginTop: '20px',
-            boxShadow: '0 0 15px rgba(239, 68, 68, 0.15)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '20px',
+            flexWrap: 'wrap',
+            gap: '12px',
           }}
         >
-          <p style={{ color: '#fca5a5', fontSize: '1.05rem', fontWeight: 'bold', margin: 0 }}>
-            ⚠️ No se encontró información para la tecnología y fechas seleccionadas
-          </p>
-          <div style={{ color: '#94a3b8', fontSize: '0.88rem', marginTop: '10px' }}>
-            <span>Tecnología: <strong style={{ color: '#38bdf8' }}>"{selectedKeyword || 'Todas'}"</strong></span>
-            {selectedStartDate && selectedEndDate && (
-              <span style={{ marginLeft: '12px' }}>
-                | Rango enviado: <strong style={{ color: '#f4f4f5' }}>{selectedStartDate}</strong> a <strong style={{ color: '#f4f4f5' }}>{selectedEndDate}</strong>
-              </span>
-            )}
+          <div>
+            <h2 style={{ margin: 0, color: '#ffffff', fontSize: '1.3rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              📰 CiberThreat Feed & CVE Radar
+            </h2>
+            <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: '4px 0 0 0' }}>
+              Monitoreo en tiempo real de vulnerabilidades reportadas en la NVD/NIST. Filtra por stack tecnológico o rango de fechas y analiza su impacto con Gemini AI.
+            </p>
           </div>
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gap: '14px' }}>
-          {vulnerabilities.map((item) => (
-            <div
-              key={item.id}
-              style={{
-                background: 'rgba(15, 23, 42, 0.5)',
-                padding: '20px',
-                borderRadius: '10px',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                gap: '16px',
-                flexWrap: 'wrap',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <div style={{ flex: 1, minWidth: '280px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                  <span style={{ fontWeight: 'bold', color: '#f4f4f5', fontSize: '1rem', fontFamily: 'monospace' }}>
-                    {item.id}
-                  </span>
-                  {getSeverityBadge(item.severity)}
-                  <span style={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: 'bold' }}>
-                    CVSS: {item.cvssScore}
-                  </span>
-                </div>
-                <p style={{ color: '#cbd5e1', fontSize: '0.88rem', margin: '0 0 10px 0', lineHeight: '1.5' }}>
-                  {item.description}
-                </p>
-                <small style={{ color: '#64748b', fontWeight: '600' }}>
-                  Publicado: {new Date(item.publishedAt).toLocaleDateString()}
-                </small>
-              </div>
 
-              <button
-                type="button"
-                onClick={() => handleAnalyzeWithAi(item)}
+          {/* BADGE CATEGORÍA ENTERPRISE */}
+          <span
+            style={{
+              background: 'rgba(56, 189, 248, 0.15)',
+              color: '#38bdf8',
+              padding: '4px 12px',
+              borderRadius: '20px',
+              border: '1px solid #38bdf8',
+              fontSize: '0.75rem',
+              fontWeight: 'bold',
+              letterSpacing: '0.5px',
+              boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)',
+            }}
+          >
+            Threat Intelligence
+          </span>
+        </div>
+
+        <StackFilterBar
+          selectedKeyword={selectedKeyword}
+          onFilterSubmit={handleFilterSubmit}
+          disabled={loading}
+        />
+
+        {loading ? (
+          <div style={{ padding: '40px', textAlign: 'center' }}>
+            <span style={{ fontSize: '2rem', display: 'inline-block', animation: 'spin 1s linear infinite' }}>🔄</span>
+            <p style={{ color: '#38bdf8', fontWeight: 'bold', marginTop: '12px' }}>
+              Consultando vulnerabilidades con los criterios seleccionados...
+            </p>
+          </div>
+        ) : error ? (
+          <p style={{ color: '#f87171', padding: '16px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', border: '1px solid #ef4444' }}>
+            ⚠️ Error al conectar con el Radar: {error}
+          </p>
+        ) : vulnerabilities.length === 0 ? (
+          <div
+            style={{
+              background: 'rgba(15, 23, 42, 0.6)',
+              padding: '28px',
+              borderRadius: '10px',
+              border: '1px solid #ef4444',
+              textAlign: 'center',
+              marginTop: '20px',
+              boxShadow: '0 0 15px rgba(239, 68, 68, 0.15)',
+            }}
+          >
+            <p style={{ color: '#fca5a5', fontSize: '1.05rem', fontWeight: 'bold', margin: 0 }}>
+              ⚠️ No se encontró información para la tecnología y fechas seleccionadas
+            </p>
+            <div style={{ color: '#94a3b8', fontSize: '0.88rem', marginTop: '10px' }}>
+              <span>Tecnología: <strong style={{ color: '#38bdf8' }}>"{selectedKeyword || 'Todas'}"</strong></span>
+              {selectedStartDate && selectedEndDate && (
+                <span style={{ marginLeft: '12px' }}>
+                  | Rango enviado: <strong style={{ color: '#f4f4f5' }}>{selectedStartDate}</strong> a <strong style={{ color: '#f4f4f5' }}>{selectedEndDate}</strong>
+                </span>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gap: '14px' }}>
+            {vulnerabilities.map((item) => (
+              <div
+                key={item.id}
                 style={{
-                  background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)',
-                  color: '#fff',
-                  border: '1px solid #38bdf8',
-                  borderRadius: '6px',
-                  padding: '9px 16px',
-                  fontSize: '0.85rem',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  boxShadow: '0 0 10px rgba(56, 189, 248, 0.25)',
+                  background: 'rgba(15, 23, 42, 0.5)',
+                  padding: '20px',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  gap: '16px',
+                  flexWrap: 'wrap',
+                  transition: 'all 0.2s ease',
                 }}
               >
-                ✨ Analizar con IA
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+                <div style={{ flex: 1, minWidth: '280px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                    <span style={{ fontWeight: 'bold', color: '#f4f4f5', fontSize: '1rem', fontFamily: 'monospace' }}>
+                      {item.id}
+                    </span>
+                    {getSeverityBadge(item.severity)}
+                    <span style={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                      CVSS: {item.cvssScore}
+                    </span>
+                  </div>
+                  <p style={{ color: '#cbd5e1', fontSize: '0.88rem', margin: '0 0 10px 0', lineHeight: '1.5' }}>
+                    {item.description}
+                  </p>
+                  <small style={{ color: '#64748b', fontWeight: '600' }}>
+                    Publicado: {new Date(item.publishedAt).toLocaleDateString()}
+                  </small>
+                </div>
 
-      {Boolean(activeCveId) && (
-        <CveAiSummaryModal
-          cveId={activeCveId}
-          analysis={aiAnalysis}
-          loading={loadingAi}
-          onClose={handleCloseModal}
-        />
-      )}
-    </div>
+                <button
+                  type="button"
+                  onClick={() => handleAnalyzeWithAi(item)}
+                  style={{
+                    background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)',
+                    color: '#fff',
+                    border: '1px solid #38bdf8',
+                    borderRadius: '6px',
+                    padding: '9px 16px',
+                    fontSize: '0.85rem',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    boxShadow: '0 0 10px rgba(56, 189, 248, 0.25)',
+                  }}
+                >
+                  ✨ Analizar con IA
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {Boolean(activeCveId) && (
+          <CveAiSummaryModal
+            cveId={activeCveId}
+            analysis={aiAnalysis}
+            loading={loadingAi}
+            onClose={handleCloseModal}
+          />
+        )}
+      </div>
+    </ModuleGuard>
   );
 };

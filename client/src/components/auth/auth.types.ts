@@ -3,10 +3,13 @@ export type UserRole = 'ADMIN' | 'AUDITOR' | 'VIEWER';
 export interface AuthUser {
   id: string;
   email: string;
-  fullName: string | null;
   role: UserRole;
-  isActive: boolean;
-  lastLoginAt: string | null;
+  allowed_modules: string[];
+  full_name?: string | null;
+  isActive?: boolean;
+  is_active?: boolean;
+  lastLoginAt?: string | null;
+  last_login_at?: string | null;
 }
 
 export interface AuthContextType {

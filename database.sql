@@ -374,3 +374,52 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   INDEX idx_audit_action (action),
   INDEX idx_audit_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- Ejecutar en la base de datos qa_sec_db
+ALTER TABLE users 
+ADD COLUMN allowed_modules JSON NOT NULL 
+DEFAULT ('["REPORTS"]') 
+AFTER role_id;
+
+-- Asegurar que el usuario administrador tenga acceso a la suite completa
+UPDATE users u
+JOIN roles r ON u.role_id = r.id
+SET u.allowed_modules = JSON_ARRAY(
+    'SAST', 'DAST', 'SCA', 'EASM', 'REDTEAM', 
+    'EMAILSEC', 'LOADTEST', 'NETWORK', 'COMPLIANCE', 
+    'REPORTS', 'ADMIN'
+)
+WHERE r.name = 'ADMIN';
+
+
+USE qa_sec_db;
+
+-- 1. Agregar las columnas requeridas por el servicio de auditoría
+ALTER TABLE audit_logs 
+ADD COLUMN user_email VARCHAR(255) NOT NULL DEFAULT 'system@qa-sec.local' AFTER user_id,
+ADD COLUMN module VARCHAR(64) NOT NULL DEFAULT 'SYSTEM' AFTER action,
+ADD COLUMN details TEXT NULL AFTER module;
+
+-- 2. Modificar action para soportar los tipos de evento requeridos
+ALTER TABLE audit_logs 
+MODIFY COLUMN action VARCHAR(100) NOT NULL;
+
+
+USE qa_sec_db;
+
+DROP TABLE IF EXISTS audit_logs;
+
+CREATE TABLE audit_logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id VARCHAR(64) NULL,
+  user_email VARCHAR(255) NOT NULL,
+  action VARCHAR(100) NOT NULL,
+  module VARCHAR(64) NOT NULL,
+  details TEXT NOT NULL,
+  ip_address VARCHAR(45) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_audit_user (user_id),
+  INDEX idx_audit_action (action),
+  INDEX idx_audit_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
