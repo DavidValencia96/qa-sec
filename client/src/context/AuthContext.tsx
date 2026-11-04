@@ -1,34 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import type { AuthUser } from '../components/auth/auth.types.js';
 import { AuthContext } from './auth.context.js';
-import { requestOtpApi, verifyOtpApi, fetchCurrentUserApi } from '../services/auth.client.js';
+import { requestOtpApi, verifyOtpApi, fetchCurrentUserApi, logoutApi } from '../services/auth.client.js';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('qa_sec_token'));
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(() => Boolean(localStorage.getItem('qa_sec_token')));
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     let active = true;
 
-    if (!token) {
-      return;
-    }
-
-    fetchCurrentUserApi(token).then((userData) => {
-      if (!active) return;
-      if (userData) {
-        setUser({
-          ...userData,
-          allowed_modules: Array.isArray(userData.allowed_modules) ? userData.allowed_modules : [],
-        });
-      } else {
-        localStorage.removeItem('qa_sec_token');
-        setToken(null);
-        setUser(null);
-      }
-      setIsLoading(false);
-    });
+    // Consulta sesión mediante la cookie HttpOnly o token residual
+    fetchCurrentUserApi(token)
+      .then((userData) => {
+        if (!active) return;
+        if (userData) {
+          setUser({
+            ...userData,
+            allowed_modules: Array.isArray(userData.allowed_modules) ? userData.allowed_modules : [],
+          });
+        } else {
+          localStorage.removeItem('qa_sec_token');
+          setToken(null);
+          setUser(null);
+        }
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
 
     return () => {
       active = false;
@@ -51,7 +51,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await logoutApi();
     localStorage.removeItem('qa_sec_token');
     setToken(null);
     setUser(null);

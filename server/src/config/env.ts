@@ -1,7 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Carga tanto de la raíz como de server/.env
 dotenv.config();
 dotenv.config({ path: path.resolve(process.cwd(), 'server/.env') });
 
@@ -21,6 +20,7 @@ export interface ResendConfig {
 
 export interface AppConfig {
   port: number;
+  frontendUrl: string;
   geminiApiKey: string;
   dbHost: string;
   dbPort: number;
@@ -40,6 +40,7 @@ const getEnvNumber = (key: string, defaultValue: number): number => {
 
 export const config: AppConfig = {
   port: getEnvNumber('PORT', 3000),
+  frontendUrl: process.env.FRONTEND_URL || '',
   geminiApiKey: process.env.GEMINI_API_KEY || '',
   dbHost: process.env.DB_HOST || 'localhost',
   dbPort: getEnvNumber('DB_PORT', 3306),

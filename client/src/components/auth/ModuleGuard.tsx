@@ -12,19 +12,44 @@ export const ModuleGuard: React.FC<ModuleGuardProps> = ({
   moduleTitle,
   children,
 }) => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div style={{ padding: '60px 20px', textAlign: 'center', color: '#64748b', fontFamily: 'monospace' }}>
+        Verificando credenciales de acceso seguro...
+      </div>
+    );
+  }
 
   if (!user) {
     return (
-      <div style={{ padding: '40px', textAlign: 'center', color: '#64748b', fontFamily: 'monospace' }}>
-        Verificando credenciales de acceso...
+      <div
+        style={{
+          maxWidth: '680px',
+          margin: '40px auto',
+          backgroundColor: '#090e17',
+          border: '1px solid rgba(56, 189, 248, 0.3)',
+          borderRadius: '16px',
+          padding: '36px 28px',
+          textAlign: 'center',
+          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.8)',
+        }}
+      >
+        <div style={{ fontSize: '32px', marginBottom: '12px' }}>🔑</div>
+        <h3 style={{ color: '#f8fafc', margin: '0 0 10px 0', fontSize: '1.2rem' }}>
+          Autenticación Requerida
+        </h3>
+        <p style={{ color: '#94a3b8', fontSize: '0.85rem', lineHeight: '1.6' }}>
+          Para auditar con el módulo <strong>{moduleTitle}</strong> necesitas iniciar sesión en la suite corporativa.
+        </p>
       </div>
     );
   }
 
   const isAdmin = user.role === 'ADMIN';
 
-  // Acceso seguro sin `any` mediante casting a Record<string, unknown>
+  // Normalización estricta sin cast a any
   const userRecord = user as unknown as Record<string, unknown>;
   const rawModules = userRecord.allowed_modules ?? userRecord.allowedModules ?? [];
 
@@ -43,10 +68,12 @@ export const ModuleGuard: React.FC<ModuleGuardProps> = ({
   }
 
   const hasModuleAccess = Array.isArray(userModules) && userModules.includes(moduleKey);
+
+  // ADMIN siempre tiene pase global; los demás roles dependen de su matriz
   if (isAdmin || hasModuleAccess) {
     return <>{children}</>;
   }
-  
+
   return (
     <div
       style={{
@@ -110,7 +137,7 @@ export const ModuleGuard: React.FC<ModuleGuardProps> = ({
 
       <p
         style={{
-          fontSize: '0.8rem',
+          fontSize: '0.85rem',
           color: '#94a3b8',
           lineHeight: '1.6',
           maxWidth: '520px',
@@ -132,15 +159,14 @@ export const ModuleGuard: React.FC<ModuleGuardProps> = ({
           borderRadius: '8px',
           backgroundColor: '#05070e',
           border: '1px solid #1e293b',
-          fontSize: '0.72rem',
+          fontSize: '0.75rem',
           color: '#ffffff',
           fontFamily: 'monospace',
           display: 'inline-block',
         }}
       >
-        🛡️ Contacta al administrador para solicitar acceso a este módulo.
+        🛡️ Contacta al administrador para habilitar este módulo en tu perfil.
       </div>
     </div>
   );
-  
 };

@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import {
   generateSecureNumericOtp,
@@ -16,6 +17,14 @@ import {
 import { emailService } from '../../services/auth/email.service.js';
 import { signAccessToken } from '../../services/auth/token.service.js';
 import type { AuthenticatedRequest, UserRecord } from '../../modules/auth/auth.types.js';
+
+// Comparación segura en tiempo constante para mitigar Timing Attacks
+const safeCompareHash = (providedHash: string, storedHash: string): boolean => {
+  const bufA = Buffer.from(providedHash);
+  const bufB = Buffer.from(storedHash);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+};
 
 export const requestOtp = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -37,14 +46,14 @@ export const requestOtp = async (req: Request, res: Response): Promise<void> => 
     if (!delivered) {
       res.json({
         success: true,
-        message: 'Código despachado (Modo local activado: revisa la terminal del servidor).',
+        message: 'Código enviado (Modo local activado: revisa la terminal del servidor).',
       });
       return;
     }
 
     res.json({
       success: true,
-      message: 'Código de verificación despachado a tu correo corporativo.',
+      message: 'Código de verificación enviado a tu correo corporativo.',
     });
   } catch (error: any) {
     console.error('[AUTH-CONTROLLER] Error en requestOtp:', error);
@@ -73,13 +82,27 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
     const cleanEmail = String(email).trim().toLowerCase();
     const cleanCode = String(code).trim();
 
+    // Validación de formato: únicamente 6 dígitos numéricos
+    if (!/^\d{6}$/.test(cleanCode)) {
+      res.status(400).json({ success: false, error: 'El formato del código debe ser de 6 dígitos numéricos.' });
+      return;
+    }
+
     const challenge = await findValidOtp(cleanEmail);
-    if (!challenge || challenge.otp_code !== hashOtp(cleanCode)) {
-      if (challenge) await decrementOtpAttempts(challenge.id);
+    const providedHash = hashOtp(cleanCode);
+
+    if (!challenge || !safeCompareHash(providedHash, challenge.otp_code)) {
+      if (challenge) {
+        await decrementOtpAttempts(challenge.id);
+        if (challenge.attempts_left <= 1) {
+          await markOtpConsumed(challenge.id);
+        }
+      }
       res.status(400).json({ success: false, error: 'Código inválido o expirado.' });
       return;
     }
 
+    // Código correcto: se consume de inmediato para impedir cualquier reuso
     await markOtpConsumed(challenge.id);
     const user = await resolveUserSession(cleanEmail);
 
@@ -90,12 +113,20 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
 
     await updateLastLogin(user.id);
 
-    // Se incluye allowed_modules requerido por la interfaz JwtPayload
     const token = signAccessToken({
       userId: user.id,
       email: user.email,
       role: user.role,
       allowed_modules: user.allowed_modules,
+    });
+
+    // Emisión segura de sesión en Cookie HttpOnly
+    res.cookie('qa_sec_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000, // 24 horas de vigencia
+      path: '/',
     });
 
     res.json({ success: true, token, user });
@@ -122,4 +153,14 @@ export const getCurrentUser = async (req: AuthenticatedRequest, res: Response): 
     console.error('[AUTH-CONTROLLER] Error en getCurrentUser:', error);
     res.status(500).json({ success: false, error: 'Error al recuperar usuario.' });
   }
+};
+
+export const logoutController = (_req: Request, res: Response): void => {
+  res.clearCookie('qa_sec_token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+  });
+  res.json({ success: true, message: 'Sesión finalizada exitosamente.' });
 };

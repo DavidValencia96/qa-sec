@@ -7,6 +7,9 @@ export type DependencyManifestType = 'package_json' | 'requirements_txt' | 'pom_
 
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
+/**
+ * Cabeceras estándar con fallback opcional para tokens residuales
+ */
 export const getAuthHeaders = (): HeadersInit => {
   const token = localStorage.getItem('qa_sec_token') || sessionStorage.getItem('qa_sec_token');
   return {
@@ -15,19 +18,41 @@ export const getAuthHeaders = (): HeadersInit => {
   };
 };
 
+/**
+ * Wrapper seguro para fetch con transmisión de cookies HttpOnly y control centralizado de errores
+ */
+const secureFetch = async (endpoint: string, options: RequestInit = {}): Promise<Response> => {
+  const url = endpoint.startsWith('http') ? endpoint : `${BASE_URL}${endpoint}`;
+  
+  const response = await fetch(url, {
+    ...options,
+    credentials: 'include', // Garantiza el despacho de la cookie qa_sec_token
+    headers: {
+      ...getAuthHeaders(),
+      ...(options.headers || {}),
+    },
+  });
+
+  if (response.status === 401) {
+    // Si la sesión expiró o fue revocada en backend, limpia referencias locales
+    localStorage.removeItem('qa_sec_token');
+    sessionStorage.removeItem('qa_sec_token');
+  }
+
+  return response;
+};
+
 export const createProjectApi = async (name: string, targetUrl: string, description?: string) => {
-  const res = await fetch(`${BASE_URL}/projects`, {
+  const res = await secureFetch('/projects', {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify({ name, targetUrl, description }),
   });
   return res.json();
 };
 
 export const generateSuiteAIApi = async (projectId: string, userPrompt: string, promptId?: string) => {
-  const res = await fetch(`${BASE_URL}/suites/generate-ai`, {
+  const res = await secureFetch('/suites/generate-ai', {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify({ projectId, userPrompt, promptId }),
   });
   return res.json();
@@ -39,39 +64,33 @@ export const runTestApi = async (
   targetInputs?: TargetInput[],
   promptId?: string
 ) => {
-  const res = await fetch(`${BASE_URL}/tests/run`, {
+  const res = await secureFetch('/tests/run', {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify({ suiteId, targetUrl, targetInputs, promptId }),
   });
   return res.json();
 };
 
 export const getReportApi = async (runId: string) => {
-  const res = await fetch(`${BASE_URL}/reports/${runId}`, {
-    headers: getAuthHeaders(),
-  });
+  const res = await secureFetch(`/reports/${runId}`);
   return res.json();
 };
 
 export const getHistoryApi = async () => {
-  const response = await fetch(`${BASE_URL}/history`, {
-    headers: getAuthHeaders(),
-  });
+  const response = await secureFetch('/history');
   return await response.json();
 };
 
 export const analyzeNetworkConfigApi = async (targetHost: string) => {
-  const response = await fetch(`${BASE_URL}/network/analyze-config`, {
+  const response = await secureFetch('/network/analyze-config', {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify({ targetHost }),
   });
   return await response.json();
 };
 
 export const getPromptPresetsApi = async () => {
-  const response = await fetch(`${BASE_URL}/prompts/presets`);
+  const response = await secureFetch('/prompts/presets');
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: No se pudieron obtener las plantillas generales.`);
   }
@@ -79,7 +98,7 @@ export const getPromptPresetsApi = async () => {
 };
 
 export async function getPromptsApi() {
-  const response = await fetch(`${BASE_URL}/prompts`);
+  const response = await secureFetch('/prompts');
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: No se pudo obtener la lista de prompts de inputs.`);
   }
@@ -97,7 +116,7 @@ export const getLatestThreatsApi = async (
   if (startDate) params.append('startDate', startDate);
   if (endDate) params.append('endDate', endDate);
 
-  const res = await fetch(`${BASE_URL}/threats/latest?${params.toString()}`);
+  const res = await secureFetch(`/threats/latest?${params.toString()}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}: Error obteniendo vulnerabilidades.`);
   return res.json();
 };
@@ -109,9 +128,8 @@ export const analyzeCveWithAiApi = async (cveData: {
   description: string;
   targetStack?: string;
 }) => {
-  const res = await fetch(`${BASE_URL}/threats/analyze-cve`, {
+  const res = await secureFetch('/threats/analyze-cve', {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify(cveData),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}: Error al analizar CVE con IA.`);
@@ -124,14 +142,14 @@ export const analyzeSastContentApi = async (payload: {
   fileType?: 'code' | 'env' | 'package_json';
   language?: string;
 }) => {
-  const res = await fetch(`${BASE_URL}/sast/analyze`, {
+  const res = await secureFetch('/sast/analyze', {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
-    throw new Error(`HTTP ${res.status}: Error al realizar el análisis estático.`);
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || `HTTP ${res.status}: Error al realizar el análisis estático.`);
   }
 
   return res.json();
@@ -152,9 +170,8 @@ export const exportReportApi = async (payload: {
   remediatedCode?: string;
   format: 'html' | 'markdown';
 }): Promise<void> => {
-  const res = await fetch(`${BASE_URL}/reports/export`, {
+  const res = await secureFetch('/reports/export', {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 
@@ -200,9 +217,7 @@ export interface SastHistoryItem {
 }
 
 export const fetchSastHistoryApi = async (): Promise<SastHistoryItem[]> => {
-  const res = await fetch(`${BASE_URL}/sast/history`, {
-    headers: getAuthHeaders(),
-  });
+  const res = await secureFetch('/sast/history');
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}: Error al obtener el historial SAST.`);
   }
@@ -211,9 +226,8 @@ export const fetchSastHistoryApi = async (): Promise<SastHistoryItem[]> => {
 };
 
 export const runLoadTestApi = async (payload: LoadTestConfig): Promise<LoadTestResult> => {
-  const res = await fetch(`${BASE_URL}/load-test/run`, {
+  const res = await secureFetch('/load-test/run', {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 
@@ -249,9 +263,7 @@ export interface LoadTestHistoryItem {
 }
 
 export const fetchLoadTestHistoryApi = async (): Promise<LoadTestHistoryItem[]> => {
-  const res = await fetch(`${BASE_URL}/load-test/history`, {
-    headers: getAuthHeaders(),
-  });
+  const res = await secureFetch('/load-test/history');
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}: Error al obtener el historial de pruebas de carga.`);
   }
@@ -311,9 +323,8 @@ export const exportConsolidatedReportApi = async (options: ConsolidatedReportOpt
     },
   };
 
-  const res = await fetch(`${BASE_URL}/reports/consolidated/export`, {
+  const res = await secureFetch('/reports/consolidated/export', {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 
@@ -345,9 +356,8 @@ export const exportSingleRecordApi = async (payload: {
   recordData: unknown;
   format?: 'html' | 'markdown';
 }): Promise<void> => {
-  const res = await fetch(`${BASE_URL}/reports/single/export`, {
+  const res = await secureFetch('/reports/single/export', {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 
@@ -405,9 +415,8 @@ export const runDastAuditApi = async (data: {
   enableBolaTesting: boolean;
   enableHeaderInjectionTesting: boolean;
 }): Promise<DastAuditResponse> => {
-  const response = await fetch(`${BASE_URL}/dast/run`, {
+  const response = await secureFetch('/dast/run', {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   return response.json();
@@ -453,9 +462,8 @@ export const runScaAuditApi = async (data: {
   enableDependencyScan: boolean;
   enableGitHistoryScan: boolean;
 }): Promise<ScaAuditResponse> => {
-  const response = await fetch(`${BASE_URL}/sca/run`, {
+  const response = await secureFetch('/sca/run', {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   return response.json();
@@ -469,13 +477,12 @@ export interface EasmAuditPayload {
 }
 
 export const runEasmAuditApi = async (payload: EasmAuditPayload) => {
-  const response = await fetch(`${BASE_URL}/easm/audit`, {
+  const response = await secureFetch('/easm/audit', {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
   if (!response.ok) {
-    const errorData = await response.json();
+    const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.error || 'Error al ejecutar la auditoría EASM.');
   }
   return response.json();
@@ -492,14 +499,13 @@ export interface RedTeamAuditPayload {
 }
 
 export const runRedTeamAuditApi = async (payload: RedTeamAuditPayload) => {
-  const response = await fetch(`${BASE_URL}/redteam/audit`, {
+  const response = await secureFetch('/redteam/audit', {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
+    const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.error || 'Error al ejecutar la auditoría de Red Team.');
   }
 
@@ -514,15 +520,14 @@ export interface EmailSecAuditPayload {
 }
 
 export const runEmailSecAuditApi = async (payload: EmailSecAuditPayload) => {
-  const response = await fetch(`${BASE_URL}/emailsec/audit`, {
+  const response = await secureFetch('/emailsec/audit', {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || 'Error al ejecutar la auditoría de Email Security');
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Error al ejecutar la auditoría de Email Security.');
   }
 
   return response.json();
@@ -570,9 +575,7 @@ export const getComplianceRadarApi = async (target?: string): Promise<Compliance
     url.searchParams.append('target', target.trim());
   }
 
-  const response = await fetch(url.toString(), {
-    headers: getAuthHeaders(),
-  });
+  const response = await secureFetch(url.toString());
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.error || `HTTP ${response.status}: Error al obtener métricas de cumplimiento normativo.`);
@@ -581,9 +584,7 @@ export const getComplianceRadarApi = async (target?: string): Promise<Compliance
 };
 
 export const getComplianceTargetsApi = async (): Promise<string[]> => {
-  const response = await fetch(`${BASE_URL}/compliance/targets`, {
-    headers: getAuthHeaders(),
-  });
+  const response = await secureFetch('/compliance/targets');
   if (!response.ok) {
     return [];
   }
@@ -593,9 +594,8 @@ export const getComplianceTargetsApi = async (): Promise<string[]> => {
 
 export async function sendHeartbeatApi(sessionId: string): Promise<number> {
   try {
-    const res = await fetch(`${BASE_URL}/telemetry/heartbeat`, {
+    const res = await secureFetch('/telemetry/heartbeat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sessionId }),
     });
     if (!res.ok) return 1;

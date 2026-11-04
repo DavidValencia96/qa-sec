@@ -1,12 +1,18 @@
-// server/src/middleware/auth.middleware.ts
-
 import { Response, NextFunction } from 'express';
 import { verifyAccessToken } from '../services/auth/token.service.js';
 import type { AuthenticatedRequest } from '../modules/auth/auth.types.js';
 
-const extractBearerToken = (authHeader?: string): string | null => {
-  if (!authHeader?.startsWith('Bearer ')) return null;
-  return authHeader.substring(7).trim();
+const extractToken = (req: AuthenticatedRequest): string | null => {
+  // 1. Prioridad: Cookie HttpOnly
+  if (req.cookies && req.cookies.qa_sec_token) {
+    return req.cookies.qa_sec_token;
+  }
+  // 2. Fallback: Cabecera Authorization Bearer
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.substring(7).trim();
+  }
+  return null;
 };
 
 export const authenticateJwt = (
@@ -14,7 +20,7 @@ export const authenticateJwt = (
   res: Response,
   next: NextFunction
 ): void => {
-  const token = extractBearerToken(req.headers.authorization);
+  const token = extractToken(req);
   if (!token) {
     res.status(401).json({ success: false, error: 'Token no proporcionado.' });
     return;
@@ -33,12 +39,12 @@ export const optionalJwt = (
   _res: Response,
   next: NextFunction
 ): void => {
-  const token = extractBearerToken(req.headers.authorization);
+  const token = extractToken(req);
   if (token) {
     try {
       req.user = verifyAccessToken(token);
     } catch {
-      // Token inválido o expirado: se ignora el error para continuar en modo visitante
+      // Ignora error si el token expiró para continuar en modo visitante
     }
   }
   next();
