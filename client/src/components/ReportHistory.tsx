@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { useAuth } from '../context/auth.context';
 import {
   getHistoryApi,
   getReportApi,
@@ -93,7 +94,31 @@ export interface EmailSecHistoryItem {
 
 type SubTabType = 'web' | 'sast' | 'load' | 'dast' | 'sca' | 'easm' | 'redteam' | 'emailsec';
 
+interface TabDefinition {
+  id: SubTabType;
+  label: string;
+  icon: string;
+  moduleKey?: string;
+}
+
 export const ReportHistory: React.FC = () => {
+  const { user } = useAuth();
+
+  // Menú completo de subpestañas: Escáneres Web permanece libre (sin moduleKey)
+  const tabsConfig: TabDefinition[] = useMemo(
+    () => [
+      { id: 'web', label: 'Escáneres & Pruebas Web', icon: '🌐', moduleKey: '' },
+      { id: 'sast', label: 'Auditorías SAST & Código', icon: '🔍', moduleKey: 'SAST' },
+      { id: 'load', label: 'Pruebas de Carga & DoS', icon: '🎯', moduleKey: 'LOADTEST' },
+      { id: 'dast', label: 'DAST & OpenAPI', icon: '🛡️', moduleKey: 'DAST' },
+      { id: 'sca', label: 'SCA & Supply Chain', icon: '🔐', moduleKey: 'SCA' },
+      { id: 'easm', label: 'EASM & OSINT', icon: '🕸️', moduleKey: 'EASM' },
+      { id: 'redteam', label: 'Red Team & Explotación', icon: '⚔️', moduleKey: 'REDTEAM' },
+      { id: 'emailsec', label: 'Email Sec & OSINT', icon: '✉️', moduleKey: 'EMAILSEC' },
+    ],
+    []
+  );
+
   const [activeSubTab, setActiveSubTab] = useState<SubTabType>('web');
 
   // Estados del Historial Web
@@ -101,7 +126,7 @@ export const ReportHistory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // Estados fuertemente tipados
+  // Estados de submódulos
   const [dastItems, setDastItems] = useState<DastHistoryItem[]>([]);
   const [scaItems, setScaItems] = useState<ScaHistoryItem[]>([]);
   const [easmItems, setEasmItems] = useState<EasmHistoryItem[]>([]);
@@ -179,7 +204,6 @@ export const ReportHistory: React.FC = () => {
     };
   }, []);
 
-  // Bloquea el scroll del fondo cuando hay un detalle SAST abierto en portal
   useEffect(() => {
     if (selectedSastAudit) {
       document.body.style.overflow = 'hidden';
@@ -327,43 +351,32 @@ export const ReportHistory: React.FC = () => {
       }))
     : [];
 
-  const tabsConfig: Array<{ id: SubTabType; label: string; icon: string }> = [
-    { id: 'web', label: 'Escáneres & Pruebas Web', icon: '🌐' },
-    { id: 'sast', label: 'Auditorías SAST & Código', icon: '🔍' },
-    { id: 'load', label: 'Pruebas de Carga & DoS', icon: '🎯' },
-    { id: 'dast', label: 'DAST & OpenAPI', icon: '🛡️' },
-    { id: 'sca', label: 'SCA & Supply Chain', icon: '🔐' },
-    { id: 'easm', label: 'EASM & OSINT', icon: '🕸️' },
-    { id: 'redteam', label: 'Red Team & Explotación', icon: '⚔️' },
-    { id: 'emailsec', label: 'Email Sec & OSINT', icon: '✉️' },
-  ];
-
   return (
-    <ModuleGuard moduleKey="REPORTS" moduleTitle="Historial Centralizado de Seguridad">
-      <div style={{ width: '100%', margin: '0', padding: '0', backgroundColor: 'transparent', boxSizing: 'border-box' }}>
-        <div
-          style={{
-            width: '100%',
-            backgroundColor: 'rgba(15, 23, 42, 0.65)',
-            border: '1px solid rgba(30, 41, 59, 0.9)',
-            borderRadius: '16px',
-            padding: '24px',
-            backdropFilter: 'blur(16px)',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
-            boxSizing: 'border-box',
-          }}
-        >
-          {/* HEADER Y BOTÓN EXPORTAR */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
-            <div>
-              <h2 style={{ margin: 0, fontSize: '20px', color: '#f8fafc', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ color: '#38bdf8' }}>📜</span> Historial Centralizado de Seguridad
-              </h2>
-              <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#94a3b8' }}>
-                Persistencia global de ejecuciones, trazabilidad técnica y reportes exportables.
-              </p>
-            </div>
+    <div style={{ width: '100%', margin: '0', padding: '0', backgroundColor: 'transparent', boxSizing: 'border-box' }}>
+      <div
+        style={{
+          width: '100%',
+          backgroundColor: 'rgba(15, 23, 42, 0.65)',
+          border: '1px solid rgba(30, 41, 59, 0.9)',
+          borderRadius: '16px',
+          padding: '24px',
+          backdropFilter: 'blur(16px)',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
+          boxSizing: 'border-box',
+        }}
+      >
+        {/* HEADER */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '20px', color: '#f8fafc', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ color: '#38bdf8' }}>📜</span> Historial Centralizado de Seguridad
+            </h2>
+            <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#94a3b8' }}>
+              Persistencia global de ejecuciones, trazabilidad técnica y reportes exportables.
+            </p>
+          </div>
 
+          {(user?.role === 'ADMIN' || user?.role === 'AUDITOR') && (
             <button
               type="button"
               onClick={() => setShowConsolidatedModal(true)}
@@ -385,80 +398,82 @@ export const ReportHistory: React.FC = () => {
             >
               <span>📄</span> Exportar Informe Consolidado Global
             </button>
-          </div>
+          )}
+        </div>
 
-          {/* SUBPESTAÑAS */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '16px', borderBottom: '1px solid rgba(30, 41, 59, 0.8)' }}>
-            {tabsConfig.map((tab) => {
-              const isActive = activeSubTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => handleTabChange(tab.id)}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    fontWeight: isActive ? '700' : '500',
-                    cursor: 'pointer',
-                    backgroundColor: isActive ? '#0284c7' : 'rgba(2, 6, 23, 0.7)',
-                    color: '#ffffff',
-                    border: isActive ? '1px solid #38bdf8' : '1px solid rgba(30, 41, 59, 0.9)',
-                    boxShadow: isActive ? '0 0 12px rgba(2, 132, 199, 0.5)' : 'none',
-                    whiteSpace: 'nowrap',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  <span>{tab.icon}</span>
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
+        {/* SUBPESTAÑAS: Todas visibles en la interfaz */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '16px', borderBottom: '1px solid rgba(30, 41, 59, 0.8)' }}>
+          {tabsConfig.map((tab) => {
+            const isActive = activeSubTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => handleTabChange(tab.id)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: isActive ? '700' : '500',
+                  cursor: 'pointer',
+                  backgroundColor: isActive ? '#0284c7' : 'rgba(2, 6, 23, 0.7)',
+                  color: '#ffffff',
+                  border: isActive ? '1px solid #38bdf8' : '1px solid rgba(30, 41, 59, 0.9)',
+                  boxShadow: isActive ? '0 0 12px rgba(2, 132, 199, 0.5)' : 'none',
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <span>{tab.icon}</span>
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
 
-          {/* BUSCADOR */}
-          <div style={{ marginBottom: '20px' }}>
-            <input
-              type="text"
-              placeholder="🔍 Buscar por ID, Tipo, Proyecto, Suite o URL..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                width: '100%',
-                backgroundColor: 'rgba(2, 6, 23, 0.95)',
-                border: '1px solid rgba(30, 41, 59, 0.9)',
-                color: '#f8fafc',
-                fontSize: '12px',
-                borderRadius: '10px',
-                padding: '12px 16px',
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
+        {/* BUSCADOR */}
+        <div style={{ marginBottom: '20px' }}>
+          <input
+            type="text"
+            placeholder="🔍 Buscar por ID, Tipo, Proyecto, Suite o URL..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              width: '100%',
+              backgroundColor: 'rgba(2, 6, 23, 0.95)',
+              border: '1px solid rgba(30, 41, 59, 0.9)',
+              color: '#f8fafc',
+              fontSize: '12px',
+              borderRadius: '10px',
+              padding: '12px 16px',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+        </div>
 
-          {/* CONTENIDO DE TABLAS */}
-          <div style={{ backgroundColor: 'rgba(2, 6, 23, 0.5)', border: '1px solid rgba(30, 41, 59, 0.8)', borderRadius: '12px', padding: '16px', minHeight: '380px', width: '100%', boxSizing: 'border-box' }}>
-            {activeSubTab === 'web' && (
-              <div className="space-y-4">
-                {loading ? (
-                  <div className="flex items-center justify-center py-12 text-slate-400 text-xs">
-                    <span className="animate-spin text-lg mr-2">🔄</span> Cargando historial desde la base de datos...
-                  </div>
-                ) : (
-                  <>
-                    <HistoryTable items={filteredItems} onOpenReportModal={handleOpenReportModal} />
-                    <ReportModal report={selectedReport} targetUrl={selectedTargetUrl} loading={loadingReport} onClose={() => setSelectedReport(null)} />
-                  </>
-                )}
-              </div>
-            )}
+        {/* CONTENIDO DE TABLAS: 'web' libre de restricciones; el resto protegido con ModuleGuard */}
+        <div style={{ backgroundColor: 'rgba(2, 6, 23, 0.5)', border: '1px solid rgba(30, 41, 59, 0.8)', borderRadius: '12px', padding: '16px', minHeight: '380px', width: '100%', boxSizing: 'border-box' }}>
+          {activeSubTab === 'web' && (
+            <div className="space-y-4">
+              {loading ? (
+                <div className="flex items-center justify-center py-12 text-slate-400 text-xs">
+                  <span className="animate-spin text-lg mr-2">🔄</span> Cargando historial desde la base de datos...
+                </div>
+              ) : (
+                <>
+                  <HistoryTable items={filteredItems} onOpenReportModal={handleOpenReportModal} />
+                  <ReportModal report={selectedReport} targetUrl={selectedTargetUrl} loading={loadingReport} onClose={() => setSelectedReport(null)} />
+                </>
+              )}
+            </div>
+          )}
 
-            {activeSubTab === 'sast' && (
+          {activeSubTab === 'sast' && (
+            <ModuleGuard moduleKey="SAST" moduleTitle="Auditorías SAST & Código Fuente">
               <div className="space-y-4">
                 {loadingSast ? (
                   <div className="flex items-center justify-center py-12 text-cyan-400 text-xs">
@@ -468,9 +483,11 @@ export const ReportHistory: React.FC = () => {
                   <SastHistoryTable items={sastItems} onSelectAudit={(item) => setSelectedSastAudit(item)} />
                 )}
               </div>
-            )}
+            </ModuleGuard>
+          )}
 
-            {activeSubTab === 'load' && (
+          {activeSubTab === 'load' && (
+            <ModuleGuard moduleKey="LOADTEST" moduleTitle="Pruebas de Carga & DoS">
               <div className="space-y-4">
                 {loadingLoadTest ? (
                   <div className="flex items-center justify-center py-12 text-cyan-400 text-xs">
@@ -480,77 +497,93 @@ export const ReportHistory: React.FC = () => {
                   <LoadTestHistoryTable items={loadTestItems} onExportSingleRecord={handleExportSingleLoadTest} />
                 )}
               </div>
-            )}
-
-            {activeSubTab === 'dast' && <DastHistoryTable items={dastItems} />}
-
-            {activeSubTab === 'sca' && <ScaHistoryTable items={scaItems} />}
-
-            {activeSubTab === 'easm' && (
-              <EasmHistoryTable items={easmItems} onExportSingleRecord={handleExportSingleEasm} />
-            )}
-
-            {activeSubTab === 'redteam' && (
-              <RedTeamHistoryTable items={redteamItems} onExportSingleRecord={handleExportSingleRedTeam} />
-            )}
-
-            {activeSubTab === 'emailsec' && (
-              <EmailSecHistoryTable items={emailsecItems} onExportSingleRecord={handleExportSingleEmailSec} />
-            )}
-          </div>
-        </div>
-
-        {/* MODAL DETALLE DE SAST EN PORTAL CIBERNÉTICO CENTRADO */}
-        {selectedSastAudit &&
-          createPortal(
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(2, 6, 23, 0.88)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999, padding: '20px', boxSizing: 'border-box' }}>
-              <div style={{ width: '100%', maxWidth: '920px', maxHeight: '85vh', backgroundColor: '#090d16', border: '1px solid #0284c7', borderRadius: '16px', boxShadow: '0 0 35px rgba(2, 132, 199, 0.45)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', overflow: 'hidden', position: 'relative', boxSizing: 'border-box' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(30, 41, 59, 0.8)', paddingBottom: '14px' }}>
-                  <div>
-                    <span style={{ fontSize: '10px', fontFamily: 'monospace', fontWeight: 'bold', color: '#38bdf8', backgroundColor: 'rgba(2, 132, 199, 0.15)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '2px 8px', borderRadius: '4px' }}>
-                      SAST AUDIT DIAGNOSTIC PANEL
-                    </span>
-                    <h3 style={{ margin: '6px 0 0 0', fontSize: '18px', fontWeight: 'bold', color: '#f8fafc' }}>
-                      📄 Detalle de Auditoría: <span style={{ color: '#38bdf8' }}>{selectedSastAudit.fileName}</span>
-                    </h3>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    {selectedSastAudit.remediatedCode && (
-                      <button
-                        type="button"
-                        onClick={() => setShowDiffModal(true)}
-                        style={{ backgroundColor: '#0284c7', color: '#ffffff', border: '1px solid #38bdf8', padding: '8px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 10px rgba(2, 132, 199, 0.3)' }}
-                      >
-                        ✨ Ver Refactorización
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setSelectedSastAudit(null)}
-                      style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.4)', color: '#ef4444', padding: '8px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
-                    >
-                      ✕ Cerrar
-                    </button>
-                  </div>
-                </div>
-
-                <div style={{ overflowY: 'auto', flex: 1, paddingRight: '4px' }}>
-                  <SastFindingsTable findings={mappedSastFindings} />
-                </div>
-              </div>
-            </div>,
-            document.body
+            </ModuleGuard>
           )}
 
-        {/* MODAL REFACTORIZACIÓN DIFF */}
-        {showDiffModal && selectedSastAudit?.remediatedCode && (
-          <SastDiffModal remediatedCode={selectedSastAudit.remediatedCode} fileName={selectedSastAudit.fileName} onClose={() => setShowDiffModal(false)} />
+          {activeSubTab === 'dast' && (
+            <ModuleGuard moduleKey="DAST" moduleTitle="DAST & OpenAPI Fuzzer">
+              <DastHistoryTable items={dastItems} />
+            </ModuleGuard>
+          )}
+
+          {activeSubTab === 'sca' && (
+            <ModuleGuard moduleKey="SCA" moduleTitle="SCA & Supply Chain">
+              <ScaHistoryTable items={scaItems} />
+            </ModuleGuard>
+          )}
+
+          {activeSubTab === 'easm' && (
+            <ModuleGuard moduleKey="EASM" moduleTitle="EASM & OSINT">
+              <EasmHistoryTable items={easmItems} onExportSingleRecord={handleExportSingleEasm} />
+            </ModuleGuard>
+          )}
+
+          {activeSubTab === 'redteam' && (
+            <ModuleGuard moduleKey="REDTEAM" moduleTitle="Red Team & Explotación">
+              <RedTeamHistoryTable items={redteamItems} onExportSingleRecord={handleExportSingleRedTeam} />
+            </ModuleGuard>
+          )}
+
+          {activeSubTab === 'emailsec' && (
+            <ModuleGuard moduleKey="EMAILSEC" moduleTitle="Email Security & OSINT">
+              <EmailSecHistoryTable items={emailsecItems} onExportSingleRecord={handleExportSingleEmailSec} />
+            </ModuleGuard>
+          )}
+        </div>
+      </div>
+
+      {/* MODAL DETALLE DE SAST */}
+      {selectedSastAudit &&
+        createPortal(
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(2, 6, 23, 0.88)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999, padding: '20px', boxSizing: 'border-box' }}>
+            <div style={{ width: '100%', maxWidth: '920px', maxHeight: '85vh', backgroundColor: '#090d16', border: '1px solid #0284c7', borderRadius: '16px', boxShadow: '0 0 35px rgba(2, 132, 199, 0.45)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', overflow: 'hidden', position: 'relative', boxSizing: 'border-box' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(30, 41, 59, 0.8)', paddingBottom: '14px' }}>
+                <div>
+                  <span style={{ fontSize: '10px', fontFamily: 'monospace', fontWeight: 'bold', color: '#38bdf8', backgroundColor: 'rgba(2, 132, 199, 0.15)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '2px 8px', borderRadius: '4px' }}>
+                    SAST AUDIT DIAGNOSTIC PANEL
+                  </span>
+                  <h3 style={{ margin: '6px 0 0 0', fontSize: '18px', fontWeight: 'bold', color: '#f8fafc' }}>
+                    📄 Detalle de Auditoría: <span style={{ color: '#38bdf8' }}>{selectedSastAudit.fileName}</span>
+                  </h3>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  {selectedSastAudit.remediatedCode && (
+                    <button
+                      type="button"
+                      onClick={() => setShowDiffModal(true)}
+                      style={{ backgroundColor: '#0284c7', color: '#ffffff', border: '1px solid #38bdf8', padding: '8px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 10px rgba(2, 132, 199, 0.3)' }}
+                    >
+                      ✨ Ver Refactorización
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSastAudit(null)}
+                    style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.4)', color: '#ef4444', padding: '8px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+                  >
+                    ✕ Cerrar
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ overflowY: 'auto', flex: 1, paddingRight: '4px' }}>
+                <SastFindingsTable findings={mappedSastFindings} />
+              </div>
+            </div>
+          </div>,
+          document.body
         )}
 
-        {/* MODAL EXPORTACIÓN CONSOLIDADA */}
-        <ConsolidatedReportExportModal isOpen={showConsolidatedModal} onClose={() => setShowConsolidatedModal(false)} onExport={handleExportConsolidated} loading={exportingConsolidated} />
-      </div>
-    </ModuleGuard>
+      {/* MODAL REFACTORIZACIÓN DIFF */}
+      {showDiffModal && selectedSastAudit?.remediatedCode && (
+        <SastDiffModal remediatedCode={selectedSastAudit.remediatedCode} fileName={selectedSastAudit.fileName} onClose={() => setShowDiffModal(false)} />
+      )}
+
+      {/* MODAL EXPORTACIÓN CONSOLIDADA */}
+      <ConsolidatedReportExportModal isOpen={showConsolidatedModal} onClose={() => setShowConsolidatedModal(false)} onExport={handleExportConsolidated} loading={exportingConsolidated} />
+    </div>
   );
 };
+
+export default ReportHistory;
