@@ -1,24 +1,27 @@
 import React from 'react';
 import type { TabType } from './dashboard.types';
+import { useLanguage } from '../../context/useLanguage';
 
 interface HomeTabProps {
   onNavigate: (tab: TabType) => void;
 }
 
 export const HomeTab: React.FC<HomeTabProps> = ({ onNavigate }) => {
+  const { t } = useLanguage();
+
   const modules = [
-    { id: 'scanner' as TabType, title: 'Escáner & Diseñador IA', icon: '🚀', desc: 'Fuzzing de parámetros web y generación de suites con IA.', category: 'Web App Security' },
-    { id: 'injection' as TabType, title: 'Inyección & Inputs Sec', icon: '🎯', desc: 'Auditoría defensiva de sanitización y bypass en formularios.', category: 'Input Security' },
-    { id: 'network' as TabType, title: 'Configuración de Red', icon: '🛡️', desc: 'Análisis de puertos TCP expuestos y superficie de perímetro.', category: 'Infrastructure' },
-    { id: 'cve' as TabType, title: 'CiberThreat Feed & CVE Radar', icon: '📰', desc: 'Monitoreo NVD/CVE en tiempo real y diagnóstico IA.', category: 'Threat Intel' },
-    { id: 'sast' as TabType, title: 'Auditoría SAST & Secret Scanning', icon: '🔍', desc: 'Análisis estático de código fuente y fuga de credenciales.', category: 'Code Security' },
-    { id: 'load-test' as TabType, title: 'Pruebas de Carga & DoS', icon: '💥', desc: 'Simulación de estrés masivo y validación de Rate Limiting.', category: 'Resilience' },
-    { id: 'dast' as TabType, title: 'DAST & OpenAPI Fuzzer', icon: '🛡️', desc: 'Pruebas dinámicas en APIs (BOLA/IDOR e inyecciones HTTP).', category: 'API Security' },
-    { id: 'sca' as TabType, title: 'SCA & Supply Chain Sec', icon: '🔐', desc: 'Auditoría de librerías vulnerables e historial de commits Git.', category: 'Supply Chain' },
-    { id: 'easm' as TabType, title: 'EASM & Recon OSINT', icon: '🕸️', desc: 'Descubrimiento de subdominios, certificados SSL y WAF.', category: 'Reconnaissance' },
-    { id: 'redteam' as TabType, title: 'Red Team & Explotación', icon: '⚔️', desc: 'Simulador de firma JWT, bypass CORS y phishing.', category: 'Offensive Security' },
-    { id: 'emailsec' as TabType, title: 'Email Sec & OSINT', icon: '📧', desc: 'Inspección de registros SPF/DMARC, RBL y forensia .eml.', category: 'Email Security' },
-    { id: 'compliance' as TabType, title: 'Compliance Radar', icon: '📊', desc: 'Mapeo contra OWASP Top 10, ISO 27001 y NIST SP 800-53.', category: 'Governance' },
+    {id: 'scanner' as TabType,title: t.modules.scanner.title,icon: '🚀',desc: t.modules.scanner.desc,category: t.modules.scanner.badge,},
+    {id: 'injection' as TabType, title: t.modules.injection.title, icon: '🎯', desc: t.modules.injection.desc, category: t.modules.injection.badge,},
+    {id: 'network' as TabType,title: t.modules.network.title,icon: '🛡️',desc: t.modules.network.desc,category: t.modules.network.badge,},
+    {id: 'cve' as TabType,title: t.modules.cve.title,icon: '📰',desc: t.modules.cve.desc,category: t.modules.cve.badge,},
+    {id: 'sast' as TabType,title: t.modules.sast.title,icon: '🔍',desc: t.modules.sast.desc,category: t.modules.sast.badge,},
+    {id: 'load-test' as TabType,title: t.modules.loadTest.title,icon: '💥',desc: t.modules.loadTest.desc,category: t.modules.loadTest.badge,},
+    {id: 'dast' as TabType,title: t.modules.dast.title,icon: '🛡️',desc: t.modules.dast.desc,category: t.modules.dast.badge,},
+    {id: 'sca' as TabType,title: t.modules.sca.title,icon: '🔐',desc: t.modules.sca.desc,category: t.modules.sca.badge,},
+    {id: 'easm' as TabType,title: t.modules.easm.title,icon: '🕸️',desc: t.modules.easm.desc,category: t.modules.easm.badge,},
+    {id: 'redteam' as TabType,title: t.modules.redteam.title,icon: '⚔️',desc: t.modules.redteam.desc,category: t.modules.redteam.badge,},
+    {id: 'emailsec' as TabType,title: t.modules.emailsec.title,icon: '📧',desc: t.modules.emailsec.desc,category: t.modules.emailsec.badge,},
+    {id: 'compliance' as TabType,title: t.modules.compliance.title,icon: '📊',desc: t.modules.compliance.desc,category: t.modules.compliance.badge,},
   ];
 
   return (
@@ -40,7 +43,9 @@ export const HomeTab: React.FC<HomeTabProps> = ({ onNavigate }) => {
         <div style={{ position: 'relative', zIndex: 2 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(30, 41, 59, 0.6)', padding: '6px 14px', borderRadius: '20px', border: '1px solid #38bdf8', marginBottom: '16px' }}>
             <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e' }} />
-            <span style={{ color: '#38bdf8', fontSize: '0.8rem', fontWeight: 'bold', letterSpacing: '0.5px' }}>SYSTEM OPERATIONAL • ALL MODULES READY</span>
+            <span style={{ color: '#38bdf8', fontSize: '0.8rem', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+              {t.homeSystemOperational}
+            </span>
           </div>
 
           <h1 style={{ color: '#ffffff', fontSize: '2.5rem', fontWeight: '800', margin: '0 0 12px 0', letterSpacing: '-0.5px' }}>
@@ -48,7 +53,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({ onNavigate }) => {
           </h1>
 
           <p style={{ color: '#e2e8f0', fontSize: '1.05rem', maxWidth: '750px', margin: '0 0 24px 0', lineHeight: '1.6' }}>
-            Plataforma modular de auditoría ofensiva y defensiva impulsada por Gemini AI. Evalúa vulnerabilidades en tiempo real, verifica el cumplimiento normativo y asegura el ciclo de vida del software.
+            {t.homeHeroDesc}
           </p>
 
           <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
@@ -68,7 +73,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({ onNavigate }) => {
                 transition: 'all 0.2s ease',
               }}
             >
-              🚀 Iniciar Auditoría Web
+              🚀 {t.homeBtnStartWebAudit}
             </button>
             <button
               type="button"
@@ -85,7 +90,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({ onNavigate }) => {
                 transition: 'all 0.2s ease',
               }}
             >
-              📊 Ver Compliance Radar
+              📊 {t.homeBtnViewCompliance}
             </button>
           </div>
         </div>
@@ -94,10 +99,10 @@ export const HomeTab: React.FC<HomeTabProps> = ({ onNavigate }) => {
       {/* METRICAS RAPIDAS DE CABECERA */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '32px' }}>
         {[
-          { label: 'MÓDULOS DE AUDITORÍA', val: '12 Activos', color: '#fff' },
-          { label: 'MOTOR DE IA', val: 'Gemini AI 3.x', color: '#38bdf8' },
-          { label: 'INTEGRACIÓN CI/CD', val: 'qa-sec-cli', color: '#22c55e' },
-          { label: 'MARCOS NORMATIVOS', val: 'OWASP - ISO - NIST', color: '#facc15' },
+          { label: t.homeStatModulesLabel, val: t.homeStatModulesValue, color: '#fff' },
+          { label: t.homeStatAiLabel, val: t.homeStatAiValue, color: '#38bdf8' },
+          { label: t.homeStatCicdLabel, val: t.homeStatCicdValue, color: '#22c55e' },
+          { label: t.homeStatStandardsLabel, val: t.homeStatStandardsValue, color: '#facc15' },
         ].map((kpi, idx) => (
           <div key={idx} style={{ background: 'rgba(15, 23, 42, 0.3)', backdropFilter: 'blur(6px)', padding: '18px', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
             <span style={{ color: '#94a3b8', fontSize: '0.8rem', display: 'block' }}>{kpi.label}</span>
@@ -108,7 +113,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({ onNavigate }) => {
 
       {/* GRID DE CARDS TRANSPARENTES */}
       <h3 style={{ color: '#ffffff', fontSize: '1.2rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        ⚙️ Módulos de Auditoría & Análisis Espacial
+        ⚙️ {t.homeModulesSectionTitle}
       </h3>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
@@ -153,7 +158,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({ onNavigate }) => {
             </div>
 
             <div style={{ marginTop: '16px', color: '#38bdf8', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              Abrir Módulo ➔
+              {t.homeOpenModuleBtn}
             </div>
           </div>
         ))}

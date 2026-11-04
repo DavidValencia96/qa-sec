@@ -33,6 +33,8 @@ import { EmailSecAuditTab, type EmailSecResultState } from './components/EmailSe
 import { ComplianceRadarTab, type ComplianceModuleData } from './components/compliance/ComplianceRadarTab';
 import { AdminDashboardTab } from './components/admin/AdminDashboardTab';
 import { CyberBackground } from './components/ui/CyberBackground';
+import { LanguageSelector } from './components/ui/LanguageSelector';
+import { useLanguage } from './context/useLanguage';
 import { useAuth } from './context/useAuth.js';
 import { LoginOtpModal } from './components/auth/LoginOtpModal.js';
 import type { CveItem, CveAiAnalysis } from './components/cve/cve.types';
@@ -54,25 +56,20 @@ interface ModuleState {
   generatingSuite: boolean;
   progress: number;
   statusText: string;
-  // Memoria Red
   services?: ServiceItem[];
   analysis?: NetworkAnalysis | null;
-  // Memoria CVE Radar
   vulnerabilities?: CveItem[];
   activeCveId?: string;
   aiAnalysis?: CveAiAnalysis | null;
   startDate?: string;
   endDate?: string;
-  // Memoria SAST & Code
   sastResult?: SastAnalysisResponse | null;
   sastCodeSnippet?: string;
   sastFileName?: string;
   sastLanguage?: string;
   sastShowDiffModal?: boolean;
-  // Memoria Carga & DoS
   loadTestResult?: LoadTestResult | null;
   loadTestConfig?: LoadTestConfig;
-  // Memoria DAST API
   dastTargetBaseUrl?: string;
   dastOpenApiSpecJson?: string;
   dastPrimaryAuthHeader?: string;
@@ -80,32 +77,27 @@ interface ModuleState {
   dastEnableBolaTesting?: boolean;
   dastEnableHeaderInjectionTesting?: boolean;
   dastAuditResult?: DastAuditResponse | null;
-  // Memoria SCA & Supply Chain
   scaManifestType?: DependencyManifestType;
   scaManifestContent?: string;
   scaEnableDependencyScan?: boolean;
   scaEnableGitHistoryScan?: boolean;
   scaAuditResult?: ScaAuditResponse | null;
-  // Memoria EASM
   easmTargetDomain?: string;
   easmEnableSubdomainDiscovery?: boolean;
   easmEnableWafTechDetection?: boolean;
   easmEnableSslAudit?: boolean;
   easmResult?: EasmAuditResult | null;
-  // Memoria Red Team
   redTeamTargetUrl?: string;
   redTeamJwtToken?: string;
   redTeamEnableJwt?: boolean;
   redTeamEnableCors?: boolean;
   redTeamResult?: RedTeamAuditResult | null;
-  // Memoria Email Security
   emailSecActiveSubTab?: 'domain' | 'ip' | 'headers';
   emailSecDomain?: string;
   emailSecDkimSelector?: string;
   emailSecTargetIp?: string;
   emailSecRawHeaders?: string;
   emailSecResult?: EmailSecResultState | null;
-  // Memoria Compliance Radar
   complianceSelectedTarget?: string;
   complianceCustomTargetInput?: string;
   complianceRadarDataResponse?: ComplianceModuleData['radarDataResponse'];
@@ -171,6 +163,7 @@ const PUBLIC_TABS: TabType[] = ['home', 'scanner', 'injection'];
 
 export function App() {
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const [targetUrl, setTargetUrl] = useState('');
   const [targetInputs, setTargetInputs] = useState<TargetInput[]>([]);
@@ -178,7 +171,6 @@ export function App() {
 
   const [modulesData, setModulesData] = useState<Record<string, ModuleState>>({});
 
-  // Identificador de sesión persistente por pestaña
   const [sessionId] = useState<string>(() => {
     let id = sessionStorage.getItem('qa_sec_session_id');
     if (!id) {
@@ -201,7 +193,6 @@ export function App() {
     };
 
     emitHeartbeat();
-
     const timer = setInterval(emitHeartbeat, 15000);
 
     return () => {
@@ -210,7 +201,6 @@ export function App() {
     };
   }, [sessionId]);
 
-  // Manejador centralizado de navegación (tanto para HomeTab como para NavigationTabs)
   const handleNavigate = (targetTab: TabType) => {
     if (PUBLIC_TABS.includes(targetTab) || user) {
       setActiveTab(targetTab);
@@ -246,17 +236,17 @@ export function App() {
           if (current.progress < 30) {
             newStatus =
               currentTab === 'injection'
-                ? 'Localizando campos objetivo en el DOM con Playwright...'
-                : 'Interceptando tráfico de red y encabezados HTTP...';
+                ? t.statusLocatingDom
+                : t.statusInterceptingNetwork;
             newProgress += 5;
           } else if (current.progress < 65) {
             newStatus =
               currentTab === 'injection'
-                ? 'Analizando tipos de datos, atributos de sanitización y respuestas...'
-                : 'Escaneando archivos sensibles y configuraciones...';
+                ? t.statusAnalyzingSanitization
+                : t.statusScanningSensitives;
             newProgress += 5;
           } else if (current.progress < 90) {
-            newStatus = 'Analizando respuestas y ejecutando análisis defensivo con Gemini...';
+            newStatus = t.statusGeminiDefensive;
             newProgress += 2;
           }
 
@@ -272,7 +262,7 @@ export function App() {
       }, 600);
     }
     return () => clearInterval(interval);
-  }, [currentModuleState.running, currentTab]);
+  }, [currentModuleState.running, currentTab, t]);
 
   const handleInitProject = async () => {
     let formattedUrl = targetUrl.trim();
@@ -283,15 +273,15 @@ export function App() {
     const data = await createProjectApi('Proyecto QA Test', formattedUrl, 'Prueba automatizada');
     if (data.success) {
       updateCurrentModule({ projectId: data.projectId });
-      alert('Proyecto inicializado correctamente en MySQL.');
+      alert(t.projectCreatedAlert);
     }
   };
 
   const handleRunScanner = async () => {
-    if (!currentModuleState.suiteId) return alert('Debes generar o seleccionar una suite primero.');
+    if (!currentModuleState.suiteId) return alert(t.suiteRequiredAlert);
     updateCurrentModule({
       progress: 5,
-      statusText: 'Iniciando navegador headless (Playwright)...',
+      statusText: t.statusStartingHeadless,
       running: true,
       report: null,
     });
@@ -301,7 +291,7 @@ export function App() {
       if (data.success) {
         updateCurrentModule({
           progress: 95,
-          statusText: 'Generando reporte técnico...',
+          statusText: t.statusGeneratingReport,
         });
         const reportData = await getReportApi(data.runId);
         updateCurrentModule({
@@ -310,24 +300,24 @@ export function App() {
           running: false,
         });
       } else {
-        alert(`Error durante la ejecución del escáner: ${data.error || 'Fallo desconocido'}`);
+        alert(t.scanErrorAlert(data.error || 'Fallo desconocido'));
         updateCurrentModule({ progress: 0, running: false });
       }
     } catch (err) {
-      alert(`Error de conexión con el backend: ${(err as Error).message}`);
+      alert(t.backendConnErrorAlert((err as Error).message));
       updateCurrentModule({ progress: 0, running: false });
     }
   };
 
   const handleRunScannerWithInputs = async () => {
-    if (!currentModuleState.suiteId) return alert('Debes generar o seleccionar una suite primero.');
+    if (!currentModuleState.suiteId) return alert(t.suiteRequiredAlert);
     if (targetInputs.length === 0) {
-      alert('Por favor agrega al menos un campo/localizador (ID, Name, XPath o CSS) para auditar.');
+      alert(t.inputsRequiredAlert);
       return;
     }
     updateCurrentModule({
       progress: 5,
-      statusText: 'Iniciando navegador e interactuando con los campos objetivo...',
+      statusText: t.statusStartingInputs,
       running: true,
       report: null,
     });
@@ -337,7 +327,7 @@ export function App() {
       if (data.success) {
         updateCurrentModule({
           progress: 95,
-          statusText: 'Generando reporte técnico de sanitización...',
+          statusText: t.statusGeneratingInputReport,
         });
         const reportData = await getReportApi(data.runId);
         updateCurrentModule({
@@ -346,11 +336,11 @@ export function App() {
           running: false,
         });
       } else {
-        alert(`Error durante la ejecución del análisis de inputs: ${data.error || 'Fallo desconocido'}`);
+        alert(t.scanErrorAlert(data.error || 'Fallo desconocido'));
         updateCurrentModule({ progress: 0, running: false });
       }
     } catch (err) {
-      alert(`Error de conexión con el backend: ${(err as Error).message}`);
+      alert(t.backendConnErrorAlert((err as Error).message));
       updateCurrentModule({ progress: 0, running: false });
     }
   };
@@ -417,59 +407,85 @@ export function App() {
             boxSizing: 'border-box',
           }}
         >
-          {/* LOGO E INFORMACIÓN */}
+          {/* LOGO E INFORMACIÓN DINÁMICA */}
           <div
             onClick={() => handleNavigate('home')}
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '14px',
+              gap: '16px',
               cursor: 'pointer',
               userSelect: 'none',
               transition: 'opacity 0.15s ease',
               flex: 1,
             }}
-            title="Ir a Inicio"
+            title={t.goHomeTitle}
             onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.85')}
             onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
           >
+            {/* Ícono de Escudo */}
             <div
               style={{
-                background: 'radial-gradient(circle, #2563eb 0%, #0f172a 100%)',
-                padding: '10px',
+                width: '46px',
+                height: '46px',
+                background: 'linear-gradient(135deg, rgba(14, 116, 144, 0.25) 0%, rgba(3, 105, 161, 0.4) 100%)',
                 borderRadius: '10px',
-                border: '1px solid #38bdf8',
-                boxShadow: '0 0 15px rgba(56, 189, 248, 0.3)',
+                border: '1.5px solid #0284c7',
+                boxShadow: '0 0 16px rgba(2, 132, 199, 0.45)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                flexShrink: 0,
               }}
             >
-              <span style={{ fontSize: '1.6rem' }}>🛡️</span>
+              <span style={{ fontSize: '1.5rem', filter: 'drop-shadow(0 0 6px rgba(56, 189, 248, 0.8))' }}>🛡️</span>
             </div>
 
+            {/* Textos de Marca Traducidos */}
             <div>
               <h1
                 style={{
                   margin: 0,
-                  fontSize: '1.6rem',
-                  fontWeight: '800',
-                  letterSpacing: '-0.5px',
-                  background: 'linear-gradient(90deg, #ffffff 0%, #38bdf8 50%, #60a5fa 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
+                  fontSize: '1.35rem',
+                  letterSpacing: '0.5px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  lineHeight: '1.2',
                 }}
               >
-                QA-SEC <span style={{ fontWeight: '300', color: '#94a3b8', WebkitTextFillColor: '#94a3b8' }}>SUITE</span>
+                <span style={{ fontWeight: '400', color: '#cbd5e1' }}>{t.headerTitlePrefix}</span>
+                <span
+                  style={{
+                    fontWeight: '900',
+                    color: '#38bdf8',
+                    textShadow: '0 0 18px rgba(56, 189, 248, 0.35)',
+                  }}
+                >
+                  {t.headerTitleHighlight}
+                </span>
               </h1>
-              <span style={{ color: '#64748b', fontSize: '0.78rem', letterSpacing: '1px', fontWeight: '600', textTransform: 'uppercase' }}>
-                AI-Powered DevSecOps & Audit Platform
+              <span
+                style={{
+                  display: 'block',
+                  marginTop: '4px',
+                  color: '#64748b',
+                  fontSize: '0.72rem',
+                  letterSpacing: '1.2px',
+                  fontWeight: '600',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {t.headerSubtitle}
               </span>
             </div>
           </div>
 
-          {/* INSIGNIAS Y CONTROL DE SESIÓN */}
+          {/* INSIGNIAS, SELECTOR DE IDIOMA Y CONTROL DE SESIÓN */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto', flexWrap: 'wrap' }}>
+            {/* SELECTOR ES / EN */}
+            <LanguageSelector />
+
             {/* AUDITORES EN LÍNEA */}
             <div
               style={{
@@ -482,7 +498,7 @@ export function App() {
                 gap: '8px',
                 boxShadow: '0 0 10px rgba(34, 197, 94, 0.15)',
               }}
-              title="Auditores conectados actualmente"
+              title={t.onlineAuditors(onlineUsers)}
             >
               <span
                 style={{
@@ -495,21 +511,20 @@ export function App() {
                 }}
               />
               <span style={{ color: '#4ade80', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                {onlineUsers} Auditor(es) en Línea
+                {t.onlineAuditors(onlineUsers)}
               </span>
             </div>
 
             <div style={{ background: '#0284c715', padding: '6px 12px', borderRadius: '6px', border: '1px solid #0284c740', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 6px #38bdf8' }} />
-              <span style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 'bold' }}>v3.x • Gemini Active</span>
+              <span style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 'bold' }}>{t.geminiActive}</span>
             </div>
 
             <div style={{ background: '#16653415', padding: '6px 12px', borderRadius: '6px', border: '1px solid #22c55e40', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 6px #22c55e' }} />
-              <span style={{ color: '#22c55e', fontSize: '0.75rem', fontWeight: 'bold' }}>Secured</span>
+              <span style={{ color: '#22c55e', fontSize: '0.75rem', fontWeight: 'bold' }}>{t.securedBadge}</span>
             </div>
 
-            {/* SECCIÓN DE USUARIO / INICIAR SESIÓN */}
             {user ? (
               <div
                 style={{
@@ -525,12 +540,11 @@ export function App() {
               >
                 <span style={{ fontSize: '0.8rem', color: '#cbd5e1', fontFamily: 'monospace' }}>{user.email}</span>
                 
-                {/* BOTÓN O BADGE DE ROL */}
                 {user.role === 'ADMIN' ? (
                   <button
                     type="button"
                     onClick={() => handleNavigate('admin')}
-                    title="Ir a Consola RBAC"
+                    title={t.adminConsoleTitle}
                     style={{
                       fontSize: '0.65rem',
                       fontWeight: 800,
@@ -559,7 +573,7 @@ export function App() {
                     }}
                   >
                     <span>⚙️</span>
-                    <span>ADMIN</span>
+                    <span>{t.adminConsoleBtn}</span>
                   </button>
                 ) : (
                   <span
@@ -592,7 +606,7 @@ export function App() {
                     paddingLeft: '4px',
                   }}
                 >
-                  Salir
+                  {t.logoutBtn}
                 </button>
               </div>
             ) : (
@@ -614,7 +628,7 @@ export function App() {
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#0369a1')}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#0284c7')}
               >
-                🔑 Iniciar Sesión
+                {t.loginBtn}
               </button>
             )}
           </div>
@@ -651,7 +665,7 @@ export function App() {
                 }
                 onSuiteCreated={(id: string) => {
                   updateCurrentModule({ suiteId: id, generatingSuite: false });
-                  alert('Suite configurada por Gemini AI y lista para ejecutar.');
+                  alert(t.suiteAiConfigured);
                 }}
               />
             )}
@@ -698,10 +712,10 @@ export function App() {
                   }}
                 >
                   {currentModuleState.generatingSuite
-                    ? '⏳ Espere, configurando suite con Gemini AI...'
+                    ? t.btnConfiguringSuite
                     : currentModuleState.running
-                    ? 'Escaneando en progreso...'
-                    : '🚀 Ejecutar Pruebas de Seguridad'}
+                    ? t.btnScanningProgress
+                    : t.btnRunScanner}
                 </button>
 
                 {currentModuleState.running && (
@@ -743,7 +757,7 @@ export function App() {
                 }
                 onSuiteCreated={(id: string) => {
                   updateCurrentModule({ suiteId: id, generatingSuite: false });
-                  alert('Suite de prueba de inputs configurada por Gemini AI.');
+                  alert(t.suiteAiInputsConfigured);
                 }}
               />
             )}
@@ -790,10 +804,10 @@ export function App() {
                   }}
                 >
                   {currentModuleState.generatingSuite
-                    ? '⏳ Espere, configurando suite con Gemini AI...'
+                    ? t.btnConfiguringSuite
                     : currentModuleState.running
-                    ? 'Auditando Inputs...'
-                    : '🚀 Ejecutar Auditoría de Inputs'}
+                    ? t.btnAuditingInputsProgress
+                    : t.btnRunInputAudit}
                 </button>
 
                 {currentModuleState.running && (
