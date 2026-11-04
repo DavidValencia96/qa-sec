@@ -44,7 +44,8 @@ export const translations = {
 
     // HomeTab (Hero & Stats)
     homeSystemOperational: 'SISTEMA OPERACIONAL • TODOS LOS MÓDULOS LISTOS',
-    homeHeroTitle: 'Motor DevSecOps de QA-Sec Suite',
+    homeHeroTitle1: 'Motor DevSecOps',
+    homeHeroTitle2: ' de QA-Sec Suite',
     homeHeroDesc:
       'Plataforma modular de auditoría ofensiva y defensiva impulsada por Gemini AI. Evalúa vulnerabilidades en tiempo real, verifica el cumplimiento normativo y asegura el ciclo de vida del software.',
     homeBtnStartWebAudit: 'Iniciar Auditoría Web',
@@ -167,7 +168,8 @@ export const translations = {
 
     // HomeTab (Hero & Stats)
     homeSystemOperational: 'SYSTEM OPERATIONAL • ALL MODULES READY',
-    homeHeroTitle: 'QA-Sec Suite DevSecOps Engine',
+    homeHeroTitle1: 'QA-Sec Suite',
+    homeHeroTitle2: ' DevSecOps Engine',
     homeHeroDesc:
       'Modular offensive and defensive security platform powered by Gemini AI. Evaluates vulnerabilities in real time, verifies compliance standards, and hardens your software lifecycle.',
     homeBtnStartWebAudit: 'Start Web Audit',

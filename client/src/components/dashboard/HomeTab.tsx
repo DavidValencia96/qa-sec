@@ -49,7 +49,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({ onNavigate }) => {
           </div>
 
           <h1 style={{ color: '#ffffff', fontSize: '2.5rem', fontWeight: '800', margin: '0 0 12px 0', letterSpacing: '-0.5px' }}>
-            QA-Sec Suite <span style={{ color: '#38bdf8' }}>DevSecOps Engine</span>
+            {t.homeHeroTitle1} <span style={{ color: '#38bdf8' }}> {t.homeHeroTitle2}</span>
           </h1>
 
           <p style={{ color: '#e2e8f0', fontSize: '1.05rem', maxWidth: '750px', margin: '0 0 24px 0', lineHeight: '1.6' }}>
